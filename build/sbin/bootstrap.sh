@@ -18,16 +18,16 @@
 #
 
 source $(cd -P -- "$(dirname -- "$0")" && pwd -P)/header.sh $@
-version=`cat ${KYLIN_HOME}/VERSION | awk '{print $3}'`
-${KYLIN_HOME}/sbin/rotate-logs.sh $@
+source "${KYLIN_HOME}"/sbin/init-customer-env.sh
+version=$(cat "${KYLIN_HOME}"/VERSION | awk '{print $3}')
+"${KYLIN_HOME}"/sbin/rotate-logs.sh "$@"
+
+export KYLIN_SKIP_CHECK=${KYLIN_SKIP_CHECK:-0}
+KYLIN_SKIP_CHECK_MODE=1
 
 if [ "$1" == "-v" ]; then
     shift
 fi
-
-KYLIN_ENV_CHANNEL=`$KYLIN_HOME/bin/get-properties.sh kylin.env.channel`
-SPARK_SCHEDULER_MODE=`$KYLIN_HOME/bin/get-properties.sh kylin.query.engine.spark-scheduler-mode`
-MAX_CONCURRENT_JOBS=`$KYLIN_HOME/bin/get-properties.sh kylin.job.max-concurrent-jobs`
 
 if [[ $(hadoop version 2>/dev/null) == *"mapr"* ]]; then
     MAPR_AUTHENTICATION="-Djava.security.auth.login.config=${MAPR_HOME}/conf/mapr.login.conf"
@@ -37,7 +37,14 @@ if [ "${SPARK_SCHEDULER_MODE}" == "" ] || [[ "${SPARK_SCHEDULER_MODE}" != "FAIR"
   SPARK_SCHEDULER_MODE="FAIR"
 fi
 
-function prepareEnv {
+function prepareEnv() {
+    # avoid re-entering
+    if [[ -n $SKIP_PRE_ENV ]]; then
+        return
+    fi
+
+    SKIP_PRE_ENV=1
+
     export KYLIN_CONFIG_FILE="${KYLIN_HOME}/conf/kylin.properties"
     export SPARK_HOME=${KYLIN_HOME}/spark
 
@@ -68,45 +75,73 @@ function retrieveDependency() {
 }
 
 function checkRestPort() {
-    used=`netstat -tpln | grep "\<$port\>" | awk '{print $7}' | sed "s/\// /g"`
+    SERVER_PORT=${SERVER_PORT:-$("$KYLIN_HOME"/bin/get-properties.sh server.port)}
+    local used=$(netstat -tpln | grep "\<$SERVER_PORT\>" | awk '{print $7}' | sed "s/\// /g")
     if [ ! -z "$used" ]; then
-        echo "<$used> already listen on $port"
-        exit -1
+        echo "<$used> already listen on $SERVER_PORT"
+        exit 1
     fi
 }
 
-function checkZookeeperRole {
-    source ${KYLIN_HOME}/sbin/check-2000-zookeeper-role.sh
+function skipCheckOrNot() {
+    if [[ $KYLIN_SKIP_CHECK -ge $1 ]]; then
+        echo "true"
+    else
+      echo ""
+    fi
+}
+
+function checkZookeeperRole() {
+    # this is necessary in FI
+    source "${KYLIN_HOME}"/sbin/load-zookeeper-config.sh
+    if [[ $(skipCheckOrNot $KYLIN_SKIP_CHECK_MODE) ]]; then
+        return 0
+    fi
+    verboseLog "checking zookeeper role"
+    source "${KYLIN_HOME}"/sbin/check-2000-zookeeper-role.sh
 }
 
 function checkSparkDir() {
-    source ${KYLIN_HOME}/sbin/check-1600-spark-dir.sh
-}
+    if [[ $(skipCheckOrNot $KYLIN_SKIP_CHECK_MODE) ]]; then
+        return 0
+    fi
 
-function checkHiveDirAcl() {
-  source ${KYLIN_HOME}/sbin/check-2100-hive-acl.sh
+    if [[ ${KYLIN_ENV_CHANNEL} == "on-premises" || -z ${KYLIN_ENV_CHANNEL} ]]; then
+      verboseLog "checking spark dir"
+      source "${KYLIN_HOME}"/sbin/check-1600-spark-dir.sh
+    fi
 }
 
 function checkIfStopUserSameAsStartUser() {
-    startUser=`ps -p $1 -o user=`
-    currentUser=`whoami`
+    if [[ `skipCheckOrNot $KYLIN_SKIP_CHECK_MODE` ]]; then
+        return 0
+    fi
+    verboseLog "checking stop user"
 
-    if [ ${startUser} != ${currentUser} ]; then
-        echo `setColor 33 "Warning: You started Kylin as user [${startUser}], please stop the instance as the same user."`
+    startUser=$(ps -p "$1" -o user=)
+    currentUser=$(whoami)
+
+    if [[ ${startUser} != "${currentUser}" ]]; then
+        echo $(setColor 33 "Warning: You started Kylin as user [${startUser}], please stop the instance as the same user.")
     fi
 }
 
 function quit {
     echo "$@"
     if [[ -n "${QUIT_MESSAGE_LOG}" ]]; then
-        echo `setColor 31 "$@"` >> ${QUIT_MESSAGE_LOG}
+        echo $(setColor 31 "$@") >> "${QUIT_MESSAGE_LOG}"
     fi
     exit 1
 }
 
 
 function prepareFairScheduler() {
-    cat > ${KYLIN_HOME}/conf/fairscheduler.xml <<EOL
+    local spark_scheduler_mode=$("$KYLIN_HOME"/bin/get-properties.sh kylin.query.engine.spark-scheduler-mode)
+    if [ "${spark_scheduler_mode}" == "" ] || [[ "${spark_scheduler_mode}" != "FAIR" && "${spark_scheduler_mode}" != "SJF" ]]; then
+      spark_scheduler_mode="FAIR"
+    fi
+
+    cat > "${KYLIN_HOME}"/conf/fairscheduler.xml <<EOL
 <?xml version="1.0"?>
 
 <!--
@@ -169,12 +204,13 @@ function runToolInternal() {
     else
         kylin_tools_log4j="file:${KYLIN_HOME}/tool/conf/kylin-tools-log4j.xml"
     fi
-    java -Xms${JAVA_VM_TOOL_XMS} -Xmx${JAVA_VM_TOOL_XMX} ${KYLIN_KERBEROS_OPTS} ${MAPR_AUTHENTICATION} -Dfile.encoding=UTF-8 -Dlog4j.configurationFile=${kylin_tools_log4j} -Dkylin.hadoop.conf.dir=${kylin_hadoop_conf_dir} -Dhdp.version=current -cp "${kylin_hadoop_conf_dir}:${KYLIN_HOME}/conf/:${KYLIN_HOME}/lib/ext/*:${KYLIN_HOME}/server/jars/*:${SPARK_HOME}/jars/*" "$@"
+    java -Xms${JAVA_VM_TOOL_XMS} -Xmx${JAVA_VM_TOOL_XMX} ${KYLIN_KERBEROS_OPTS} -Dfile.encoding=UTF-8 -Dlog4j.configurationFile=${kylin_tools_log4j} -Dkylin.hadoop.conf.dir=${kylin_hadoop_conf_dir} -Dhdp.version=current -cp "${kylin_hadoop_conf_dir}:${KYLIN_HOME}/conf/:${KYLIN_HOME}/lib/ext/*:${KYLIN_HOME}/server/jars/*:${SPARK_HOME}/jars/*" "$@"
 }
 
 function killChildProcess {
     if [ -f "${KYLIN_HOME}/child_process" ]
     then
+        MAX_CONCURRENT_JOBS=$("$KYLIN_HOME"/bin/get-properties.sh kylin.job.max-concurrent-jobs)
         count=0
         while childPid='' read -r line || [[ -n "$line" ]]; do
             # only kill orphan processes and spark-submit processes
@@ -208,6 +244,17 @@ function killChildProcess {
 }
 
 function clearRedundantProcess {
+    if [[ $(skipCheckOrNot $KYLIN_SKIP_CHECK_MODE) ]]; then
+        return 0
+    fi
+
+    verboseLog "checking redundant process"
+
+    #sleep or not
+    if [[ -n $1 ]]; then
+      sleep "$1"
+    fi
+
     if [ -f "${KYLIN_HOME}/pid" ]
     then
         pidKeep=0
@@ -238,6 +285,38 @@ function clearRedundantProcess {
             quit "Kylin is redundant, start canceled."
         fi
     fi
+}
+
+function checkKeMetaList() {
+    if [[ $(skipCheckOrNot $KYLIN_SKIP_CHECK_MODE) ]]; then
+      return 0
+    fi
+
+    verboseLog "checking ke meta"
+
+    runToolInternal io.kyligence.kap.tool.upgrade.UpdateSessionTableColumnLengthCLI
+
+    runToolInternal io.kyligence.kap.tool.security.AdminUserInitCLI
+
+}
+
+function checkLog4jConf() {
+    if [[ -f ${KYLIN_HOME}/conf/kylin-server-log4j.xml ]]; then
+        KYLIN_SERVER_LOG4J="file:${KYLIN_HOME}/conf/kylin-server-log4j.xml"
+    else
+        KYLIN_SERVER_LOG4J="file:${KYLIN_HOME}/server/conf/kylin-server-log4j.xml"
+    fi
+}
+
+function checkTimeZone() {
+    TIME_ZONE=$("$KYLIN_HOME"/bin/get-properties.sh kylin.web.timezone)
+    if [[ -n ${TIME_ZONE} ]]; then
+        TIME_ZONE="-Duser.timezone=${TIME_ZONE}"
+    fi
+}
+
+function checkEnv() {
+    "${KYLIN_HOME}"/bin/check-env.sh "if-not-yet" || exit 1
 }
 
 function clearCrontab() {
@@ -283,7 +362,7 @@ function startKylin(){
         fi
     fi
 
-    ${KYLIN_HOME}/bin/check-env.sh "if-not-yet" || exit 1
+    checkEnv
 
     START_TIME=$(date "+%Y-%m-%d %H:%M:%S")
 
@@ -293,54 +372,37 @@ function startKylin(){
 
     prepareEnv
 
-    cd ${KYLIN_HOME}/server
-    source ${KYLIN_HOME}/sbin/load-zookeeper-config.sh
-    fetchFIZkInfo
+    #this is necessary in FI
+    source "${KYLIN_HOME}"/sbin/load-zookeeper-config.sh
 
-    prepareFairScheduler
-
-    port=`$KYLIN_HOME/bin/get-properties.sh server.port`
     if [[ -f ${KYLIN_HOME}/bin/check-env-bypass ]]; then
         checkRestPort
         checkZookeeperRole
     fi
 
-    if [[ ${KYLIN_ENV_CHANNEL} == "on-premises" || -z ${KYLIN_ENV_CHANNEL} ]]; then
-        checkSparkDir
-    fi
+    checkSparkDir
 
-    checkHiveDirAcl
+    checkKeMetaList
 
-    runToolInternal org.apache.kylin.tool.security.AdminUserInitCLI
-    if [[ $? == 1 ]]; then
-      quit "Create Admin user failed, for more details please refer to \"\$KYLIN_HOME/logs/shell.stderr\"."
-    fi
+    checkLog4jConf
 
-    if [[ -f ${KYLIN_HOME}/conf/kylin-server-log4j.xml ]]; then
-        kylin_server_log4j="file:${KYLIN_HOME}/conf/kylin-server-log4j.xml"
-    else
-        kylin_server_log4j="file:${KYLIN_HOME}/server/conf/kylin-server-log4j.xml"
-    fi
+    checkTimeZone
 
-    TIME_ZONE=`${KYLIN_HOME}/bin/get-properties.sh kylin.web.timezone`
-    if [[ -n ${TIME_ZONE} ]]; then
-        TIME_ZONE="-Duser.timezone=${TIME_ZONE}"
-    fi
+    SERVER_MODE=$("${KYLIN_HOME}"/bin/get-properties.sh kylin.server.mode)
 
-    SERVER_MODE=`${KYLIN_HOME}/bin/get-properties.sh kylin.server.mode`
+    cd "${KYLIN_HOME}"/server
+    nohup java ${KYLIN_KERBEROS_OPTS} ${KYLIN_EXTRA_START_OPTS} ${TIME_ZONE} -Dfile.encoding=UTF-8 -Dlogging.path=${KYLIN_HOME}/logs -Dspring.profiles.active=prod -Dlogging.config=${KYLIN_SERVER_LOG4J} -Dkylin.hadoop.conf.dir=${kylin_hadoop_conf_dir} -Dhdp.version=current -Dloader.path="${kylin_hadoop_conf_dir},${KYLIN_HOME}/conf,${KYLIN_HOME}/lib/ext,${KYLIN_HOME}/server/jars,${SPARK_HOME}/jars" -XX:OnOutOfMemoryError="sh ${KYLIN_HOME}/bin/guardian.sh kill"  -jar newten.jar --kylin.server.mode=${SERVER_MODE} >> ${KYLIN_HOME}/logs/kylin.out 2>&1 < /dev/null & echo $! >> ${KYLIN_HOME}/pid &
 
-    nohup java ${KYLIN_KERBEROS_OPTS} ${KYLIN_EXTRA_START_OPTS} ${TIME_ZONE} -Dfile.encoding=UTF-8 -Dlogging.path=${KYLIN_HOME}/logs -Dspring.profiles.active=prod -Dlogging.config=${kylin_server_log4j} -Dkylin.hadoop.conf.dir=${kylin_hadoop_conf_dir} -Dhdp.version=current -Dloader.path="${kylin_hadoop_conf_dir},${KYLIN_HOME}/conf,${KYLIN_HOME}/lib/ext,${KYLIN_HOME}/server/jars,${SPARK_HOME}/jars" -XX:OnOutOfMemoryError="sh ${KYLIN_HOME}/bin/guardian.sh kill"  -jar newten.jar --kylin.server.mode=${SERVER_MODE} >> ${KYLIN_HOME}/logs/kylin.out 2>&1 < /dev/null & echo $! >> ${KYLIN_HOME}/pid &
-    sleep 3
-    clearRedundantProcess
+    clearRedundantProcess 3
 
-    PID=`cat ${KYLIN_HOME}/pid`
+    PID=$(cat "${KYLIN_HOME}"/pid)
     CUR_DATE=$(date "+%Y-%m-%d %H:%M:%S")
     echo $CUR_DATE" new Kylin process pid is "$PID >> ${KYLIN_HOME}/logs/kylin.log
 
-    sh ${KYLIN_HOME}/bin/guardian.sh start
+    sh "${KYLIN_HOME}"/bin/guardian.sh start
 
-    echo "Kylin is starting. It may take a while. For status, please visit http://`hostname`:$port/kylin/index.html."
-    echo "You may also check status via: PID:`cat ${KYLIN_HOME}/pid`, or Log: ${KYLIN_HOME}/logs/kylin.log."
+    echo "Kylin is starting. It may take a while. For status, please visit http://$(hostname):$SERVER_PORT/kylin/index.html."
+    echo "You may also check status via: PID:$(cat "${KYLIN_HOME}"/pid), or Log: ${KYLIN_HOME}/logs/kylin.log."
     recordKylinStartOrStop "start success" "${START_TIME}"
 }
 
@@ -384,8 +446,8 @@ function stopKylin(){
 
 function recordKylinStartOrStop() {
     currentIp=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n 1)
-    serverPort=`$KYLIN_HOME/bin/get-properties.sh server.port`
-    echo `date '+%Y-%m-%d %H:%M:%S '`"INFO : [Operation: $1] user:`whoami`, start time:$2, ip and port:${currentIp}:${serverPort}" >> ${KYLIN_HOME}/logs/security.log
+    SERVER_PORT=${SERVER_PORT:-$("$KYLIN_HOME"/bin/get-properties.sh server.port)}
+    echo $(date '+%Y-%m-%d %H:%M:%S ')"INFO : [Operation: $1] user:$(whoami), start time:$2, ip and port:${currentIp}:${SERVER_PORT}" >> "${KYLIN_HOME}"/logs/security.log
 }
 
 if [[ "$1" == org.apache.kylin.* ]]; then

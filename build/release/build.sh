@@ -22,7 +22,7 @@ dir=$(dirname ${0})
 cd ${dir}/../..
 
 echo 'Build back-end'
-mvn clean install -DskipTests $@ || { exit 1; }
+#mvn clean install -DskipTests $@ || { exit 1; }
 
 #package webapp
 echo 'Build front-end'
