@@ -109,6 +109,7 @@ public class ModelServiceBrokenRepairTest extends SourceTestCase {
         ReflectionTestUtils.setField(indexPlanService, "aclEvaluate", aclEvaluate);
         ReflectionTestUtils.setField(modelService, "aclEvaluate", aclEvaluate);
         ReflectionTestUtils.setField(modelService, "userGroupService", userGroupService);
+        ReflectionTestUtils.setField(semanticService, "userGroupService", userGroupService);
         modelService.setSemanticUpdater(semanticService);
         modelService.setModelQuerySupporter(modelQueryService);
         modelService.setIndexPlanService(indexPlanService);

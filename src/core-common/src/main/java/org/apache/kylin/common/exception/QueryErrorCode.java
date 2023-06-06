@@ -21,12 +21,6 @@ package org.apache.kylin.common.exception;
 public enum QueryErrorCode implements ErrorCodeSupplier {
 
     // 20002XXX model
-    SCD2_DUPLICATE_JOIN_COL("KE-020002001"), //
-    SCD2_DUPLICATE_FK_PK_PAIR("KE-020002002"), //
-    SCD2_EMPTY_EQUI_JOIN("KE-020002003"), //
-    SCD2_DUPLICATE_CONDITION("KE-020002004"), //
-    SCD2_COMMON_ERROR("KE-020002005"), //
-    SCD2_SAVE_MODEL_WHEN_DISABLED("KE-020002006"), //
     CC_EXPRESSION_ILLEGAL("KE-020002007"),
 
     // 20003XXX user

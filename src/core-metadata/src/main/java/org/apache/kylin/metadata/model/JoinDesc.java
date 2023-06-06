@@ -26,11 +26,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -309,5 +310,30 @@ public class JoinDesc implements Serializable {
             joinKey.addAll(Arrays.stream(foreignKey).filter(Objects::nonNull).collect(Collectors.toList()));
         }
         return joinKey;
+    }
+
+    public static class NonEquivJoinDesc extends JoinDesc {
+
+        @Override
+        public int hashCode() {
+            return super.hashCode() * 31 + Objects.hashCode(getNonEquiJoinCondition());
+        }
+
+        @Override
+        public boolean equals(Object o2) {
+            if (Objects.isNull(o2) || !(o2 instanceof NonEquivJoinDesc)) {
+                return false;
+            }
+
+            JoinDesc nonEquivJoin = ((NonEquivJoinDesc) o2);
+
+            // check equiv-join part
+            if (!super.equals(nonEquivJoin)) {
+                return false;
+            }
+
+            //check non-equiv-join part
+            return Objects.equals(this.getNonEquiJoinCondition(), nonEquivJoin.getNonEquiJoinCondition());
+        }
     }
 }

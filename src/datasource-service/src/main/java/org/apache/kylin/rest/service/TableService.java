@@ -70,7 +70,7 @@ import org.apache.kylin.common.KapConfig;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.KylinConfigBase;
 import org.apache.kylin.common.exception.KylinException;
-import org.apache.kylin.common.exception.QueryErrorCode;
+import org.apache.kylin.common.exception.code.ErrorCodeServer;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.persistence.transaction.AddS3CredentialToSparkBroadcastEventNotifier;
 import org.apache.kylin.common.persistence.transaction.TransactionException;
@@ -1406,8 +1406,8 @@ public class TableService extends BasicService {
             if (root instanceof IllegalCCExpressionException) {
                 throw new KylinException(INVALID_COMPUTED_COLUMN_EXPRESSION, String.format(Locale.ROOT,
                         MsgPicker.getMsg().getReloadTableCcRetry(), root.getMessage(), tableName, columnNames));
-            } else if (root instanceof KylinException
-                    && ((KylinException) root).getErrorCode() == QueryErrorCode.SCD2_COMMON_ERROR.toErrorCode()) {
+            } else if (root instanceof KylinException && ((KylinException) root).getErrorCodeProducer()
+                    .getErrorCode() == ErrorCodeServer.SCD2_MODEL_UNKNOWN_EXCEPTION.getErrorCode()) {
                 throw new KylinException(TABLE_RELOAD_MODEL_RETRY, tableName, columnNames, model.getAlias());
             }
             throw e;
@@ -1626,8 +1626,8 @@ public class TableService extends BasicService {
         context.setRemoveColumns(dataTypeDiff.entriesOnlyOnRight().keySet());
         context.setChangedColumns(diff.entriesDiffering().keySet());
         context.setChangeTypeColumns(dataTypeDiff.entriesDiffering().keySet());
-        context.setTableCommentChanged(!Objects.equals(originTableDesc.getTableComment(), newTableDesc.getTableComment()));
-
+        context.setTableCommentChanged(
+                !Objects.equals(originTableDesc.getTableComment(), newTableDesc.getTableComment()));
 
         if (!context.isNeedProcess()) {
             return context;
@@ -1743,8 +1743,7 @@ public class TableService extends BasicService {
             val colName = value.getKey();
             val colDiff = value.getValue();
 
-            Graphs.reachableNodes(dependencyGraph,
-                    SchemaNode.ofTableColumn(columnMap.get(colName))).stream()
+            Graphs.reachableNodes(dependencyGraph, SchemaNode.ofTableColumn(columnMap.get(colName))).stream()
                     .filter(node -> node.getType() == SchemaNodeType.MODEL_MEASURE).forEach(node -> {
                         String modelAlias = node.getSubject();
                         String measureId = node.getDetail();

@@ -66,8 +66,8 @@ import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.MetadataConstants;
-import org.apache.kylin.metadata.model.graph.JoinsGraph;
 import org.apache.kylin.metadata.model.PartitionDesc.PartitionType;
+import org.apache.kylin.metadata.model.graph.JoinsGraph;
 import org.apache.kylin.metadata.model.tool.CalciteParser;
 import org.apache.kylin.metadata.model.util.ComputedColumnUtil;
 import org.apache.kylin.metadata.project.NProjectManager;
@@ -923,7 +923,7 @@ public class NDataModel extends RootPersistentEntity {
             return;
         }
 
-        if (cond.getType() == NonEquiJoinConditionType.COLUMN) {
+        if (cond.getType() == NonEquiJoinCondition.Type.COLUMN) {
             cond.setColRef(findColumn(cond.getValue()));
         }
         if (cond.getOperands().length > 0) {

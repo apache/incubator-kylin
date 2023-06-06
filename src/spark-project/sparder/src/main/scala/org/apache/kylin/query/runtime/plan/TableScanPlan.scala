@@ -83,7 +83,11 @@ object TableScanPlan extends LogEx {
 
     // The reason why we use Project to package it here is because the output method of Union needs to be analyzed,
     // so it needs to be packaged by Project so that subsequent operators can easily obtain the output information of nodes.
-    Project(plans.head.output, Union(plans))
+    if (plans.size == 1) {
+      plans.head
+    } else {
+      Project(plans.head.output, Union(plans))
+    }
   }
 
   def createMetadataTable(rel: KapRel): LogicalPlan = {

@@ -52,17 +52,16 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.kylin.metadata.model.JoinDesc;
-import org.apache.kylin.metadata.model.NonEquiJoinCondition;
-import org.apache.kylin.metadata.model.TblColRef;
-import org.apache.kylin.query.util.RexToTblColRefTranslator;
-import org.apache.kylin.query.util.ICutContextStrategy;
-import org.apache.kylin.query.util.RexUtils;
-
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableSet;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.metadata.model.JoinDesc;
+import org.apache.kylin.metadata.model.NonEquiJoinCondition;
+import org.apache.kylin.metadata.model.TblColRef;
+import org.apache.kylin.query.util.ICutContextStrategy;
+import org.apache.kylin.query.util.RexToTblColRefTranslator;
+import org.apache.kylin.query.util.RexUtils;
 
 public class KapNonEquiJoinRel extends EnumerableThetaJoin implements KapRel {
 
@@ -73,18 +72,17 @@ public class KapNonEquiJoinRel extends EnumerableThetaJoin implements KapRel {
     private boolean isPreCalJoin = true;
     private boolean aboveContextPreCalcJoin = false;
 
-    // record left input size before rewrite for runtime join expression parseing
+    // record left input size before rewrite for runtime join expression parsing
     private int leftInputSizeBeforeRewrite = -1;
 
-    private boolean isQueryNonEquiJoinModelEnabled;
+    private final boolean isScd2Rel;
 
     public KapNonEquiJoinRel(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition,
-            Set<CorrelationId> variablesSet, JoinRelType joinType, boolean isQueryNonEquiJoinModelEnabled)
-            throws InvalidRelException {
+            Set<CorrelationId> variablesSet, JoinRelType joinType, boolean isScd2Rel) throws InvalidRelException {
         super(cluster, traits, left, right, condition, variablesSet, joinType);
         leftInputSizeBeforeRewrite = left.getRowType().getFieldList().size();
         rowType = getRowType();
-        this.isQueryNonEquiJoinModelEnabled = isQueryNonEquiJoinModelEnabled;
+        this.isScd2Rel = isScd2Rel;
     }
 
     @Override
@@ -106,10 +104,7 @@ public class KapNonEquiJoinRel extends EnumerableThetaJoin implements KapRel {
 
     private void allocateContext(ContextVisitorState leftState, ContextVisitorState rightState,
             OLAPContextImplementor olapContextImplementor) {
-        // if query on non-equi-join model is not enabled
-        // allocate context like runtime join directly
-        // inner join shouldnt run here with run-time join
-        if (getJoinType() == JoinRelType.LEFT && !isQueryNonEquiJoinModelEnabled) {
+        if (!isScd2Rel) {
             if (leftState.hasFreeTable()) {
                 olapContextImplementor.allocateContext((KapRel) left, this);
                 leftState.setHasFreeTable(false);
@@ -121,7 +116,7 @@ public class KapNonEquiJoinRel extends EnumerableThetaJoin implements KapRel {
             return;
         }
 
-        if (getJoinType() == JoinRelType.LEFT && rightState.hasFreeTable() && rightState.hasFilter()) {
+        if (rightState.hasFreeTable() && rightState.hasFilter()) {
             olapContextImplementor.allocateContext((KapRel) right, this);
             rightState.setHasFreeTable(false);
         }
@@ -440,7 +435,7 @@ public class KapNonEquiJoinRel extends EnumerableThetaJoin implements KapRel {
             JoinRelType joinType, boolean semiJoinDone) {
         try {
             return new KapNonEquiJoinRel(getCluster(), traitSet, left, right, condition, variablesSet, joinType,
-                    isQueryNonEquiJoinModelEnabled);
+                    isScd2Rel);
         } catch (InvalidRelException e) {
             // Semantic error not possible. Must be a bug. Convert to
             // internal error.

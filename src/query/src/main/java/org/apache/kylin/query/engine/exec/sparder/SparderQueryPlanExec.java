@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kylin.common.ForceToTieredStorage;
@@ -36,6 +37,7 @@ import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.cube.cuboid.NLayoutCandidate;
 import org.apache.kylin.metadata.cube.model.IndexEntity;
+import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.query.engine.exec.ExecuteResult;
 import org.apache.kylin.query.engine.exec.QueryPlanExec;
 import org.apache.kylin.query.engine.exec.calcite.CalciteQueryPlanExec;
@@ -72,8 +74,15 @@ public class SparderQueryPlanExec implements QueryPlanExec {
         QueryContext.current().record("end_plan");
         QueryContext.current().getQueryTagInfo().setWithoutSyntaxError(true);
 
-        QueryContextCutter.selectRealization(rel, BackdoorToggles.getIsQueryFromAutoModeling());
-        ContextUtil.dumpCalcitePlan("EXECUTION PLAN AFTER (SparderQueryPlanExec) SELECT REALIZATION IS SET", rel, log);
+        QueryContextCutter.selectRealization(QueryContext.current().getProject(), rel,
+                BackdoorToggles.getIsQueryFromAutoModeling());
+        String msg = "EXECUTION PLAN AFTER (SparderQueryPlanExec) SELECT REALIZATION IS SET";
+        ContextUtil.dumpCalcitePlan(msg, rel, log);
+
+        // used for printing query plan when diagnosing query problem
+        if (NProjectManager.getProjectConfig(QueryContext.current().getProject()).isPrintQueryPlanEnabled()) {
+            log.info(RelOptUtil.toString(rel));
+        }
 
         val contexts = ContextUtil.listContexts();
         for (OLAPContext context : contexts) {

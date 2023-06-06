@@ -42,7 +42,7 @@ public class SCD2SqlConverter {
      * @return
      */
     public String genSCD2SqlStr(JoinDesc joinDesc,
-            List<NonEquiJoinCondition.SimplifiedNonEquiJoinCondition> simplifiedNonEquiJoinConditions) {
+            List<NonEquiJoinCondition.SimplifiedJoinCondition> simplifiedNonEquiJoinConditions) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("select * from ").append(toJoinDescQuotedString(joinDesc))
@@ -65,7 +65,7 @@ public class SCD2SqlConverter {
         return quotedIdentifierStr(cols[0]) + "." + quotedIdentifierStr(cols[1]);
     }
 
-    private String genNonEquiWithSimplified(List<NonEquiJoinCondition.SimplifiedNonEquiJoinCondition> simplified) {
+    private String genNonEquiWithSimplified(List<NonEquiJoinCondition.SimplifiedJoinCondition> simplified) {
 
         return simplified.stream()
                 .map(simplifiedNonEquiJoinCondition -> "("

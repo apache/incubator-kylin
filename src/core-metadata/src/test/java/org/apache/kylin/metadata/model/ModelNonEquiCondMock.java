@@ -22,16 +22,10 @@ import java.util.HashMap;
 
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.kylin.metadata.model.ColumnDesc;
-import org.apache.kylin.metadata.model.DataType;
-import org.apache.kylin.metadata.model.NonEquiJoinCondition;
-import org.apache.kylin.metadata.model.TableDesc;
-import org.apache.kylin.metadata.model.TableRef;
-import org.apache.kylin.metadata.model.TblColRef;
 
 public class ModelNonEquiCondMock {
 
-    private HashMap<String, TableRef> tableRefCache = new HashMap<>();
+    private final HashMap<String, TableRef> tableRefCache = new HashMap<>();
 
     public void clearTableRefCache() {
         tableRefCache.clear();

@@ -157,6 +157,11 @@ public class TableExtDesc extends RootPersistentEntity implements Serializable {
                 + MetadataConstants.FILE_SURFIX;
     }
 
+    @Override
+    public List<String> getLockPaths(String ignored) {
+        return getTableDesc().getLockPaths();
+    }
+
     public void addDataSourceProp(String key, String value) {
         this.dataSourceProps.put(key, value);
     }

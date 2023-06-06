@@ -43,7 +43,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.accept.ContentNegotiationManager;
 
-import io.kyligence.kap.metadata.user.ManagedUser;
+import org.apache.kylin.metadata.user.ManagedUser;
 import lombok.val;
 
 @MetadataInfo(onlyProps = true)

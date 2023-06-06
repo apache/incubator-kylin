@@ -24,30 +24,42 @@ import org.apache.kylin.junit.annotation.JdbcMetadataInfo;
 import org.apache.kylin.junit.annotation.MetadataInfo;
 import org.apache.kylin.metadata.epoch.EpochManager;
 import org.apache.kylin.tool.MaintainModeTool;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @MetadataInfo(onlyProps = true)
 @JdbcMetadataInfo
-public class MaintainModeToolTest {
+class MaintainModeToolTest {
 
     @Test
-    public void testForceToExit() {
-        MaintainModeTool maintainModeTool = new MaintainModeTool();
-        maintainModeTool.execute(new String[] { "-off", "--force" });
+    void testForceToExit() {
+        try {
+            MaintainModeTool maintainModeTool = new MaintainModeTool();
+            maintainModeTool.execute(new String[] { "-off", "--force" });
+        } catch (Exception e) {
+            log.info("Something wrong when running testForceToExit\n", e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
-    public void testEnterMaintainMode() {
-        MaintainModeTool maintainModeTool = new MaintainModeTool();
-        maintainModeTool.execute(new String[] { "-on", "-reason", "test" });
+    void testEnterMaintainMode() {
+        try {
+            MaintainModeTool maintainModeTool = new MaintainModeTool();
+            maintainModeTool.execute(new String[] { "-on", "-reason", "test" });
+        } catch (Exception e) {
+            log.info("Something wrong when running testEnterMaintainMode\n", e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
-    public void testEnterMaintainModeEpochCheck() {
+    void testEnterMaintainModeEpochCheck() {
         EpochManager epochManager = EpochManager.getInstance();
         epochManager.tryUpdateEpoch(EpochManager.GLOBAL, true);
 
@@ -57,22 +69,22 @@ public class MaintainModeToolTest {
 
         ReflectionTestUtils.invokeMethod(epochManager, "insertOrUpdateEpoch", globalEpoch);
 
-        Assert.assertEquals(epochManager.getGlobalEpoch().getEpochId(), id);
+        Assertions.assertEquals(id, epochManager.getGlobalEpoch().getEpochId());
         MaintainModeTool maintainModeTool = new MaintainModeTool();
         maintainModeTool.execute(new String[] { "-on", "-reason", "test" });
 
-        Assert.assertEquals(epochManager.getGlobalEpoch().getEpochId(), id + 1);
+        Assertions.assertEquals(id + 1, epochManager.getGlobalEpoch().getEpochId());
 
         maintainModeTool.execute(new String[] { "-off", "--force" });
-        Assert.assertEquals(epochManager.getGlobalEpoch().getEpochId(), id + 2);
+        Assertions.assertEquals(id + 2, epochManager.getGlobalEpoch().getEpochId());
     }
 
     @Test
-    public void testCleanProject() {
+    void testCleanProject() {
         MaintainModeTool maintainModeTool = new MaintainModeTool();
         maintainModeTool.execute(new String[] { "-on", "-reason", "test", "-p", "notExistP1" });
 
-        Assert.assertEquals(getEpochStore().list().size(), 2);
+        Assertions.assertEquals(2, getEpochStore().list().size());
     }
 
     EpochStore getEpochStore() {

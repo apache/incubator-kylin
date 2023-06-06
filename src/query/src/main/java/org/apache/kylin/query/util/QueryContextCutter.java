@@ -23,6 +23,7 @@ import static org.apache.kylin.common.exception.ServerErrorCode.STREAMING_TABLE_
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.kylin.common.QueryContext;
 import org.apache.kylin.common.exception.KylinRuntimeException;
@@ -30,6 +31,7 @@ import org.apache.kylin.common.exception.KylinTimeoutException;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.metadata.model.ISourceAware;
 import org.apache.kylin.metadata.model.TableDesc;
+import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.realization.NoRealizationFoundException;
 import org.apache.kylin.metadata.realization.NoStreamingRealizationFoundException;
 import org.apache.kylin.query.exception.UserStopQueryException;
@@ -68,13 +70,17 @@ public class QueryContextCutter {
      *         to get multiple smaller OlapContexts and use the previous steps to continue matching.
      * @return Each of the returned OlapContexts matches an index, or throws an exception.
      */
-    public static List<OLAPContext> selectRealization(RelNode root, boolean isReCutBanned) {
+    public static List<OLAPContext> selectRealization(String project, RelNode root, boolean isReCutBanned) {
         ContextInitialCutStrategy firstRoundStrategy = new ContextInitialCutStrategy();
         ContextReCutStrategy reCutStrategy = new ContextReCutStrategy();
 
         QueryContextCutter.cutContext(firstRoundStrategy, (KapRel) root.getInput(0), root);
         int retryCutTimes = 0;
+        boolean printPlan = NProjectManager.getProjectConfig(project).isPrintQueryPlanEnabled();
         while (retryCutTimes++ < MAX_RETRY_TIMES_OF_CONTEXT_CUT) {
+            if (printPlan) {
+                log.info("Cut context {} time(s)\n", RelOptUtil.toString(root));
+            }
             try {
                 fillOlapContextPropertiesWithRelTree(root);
                 List<OLAPContext> olapContexts = chooseCandidate();
@@ -83,11 +89,7 @@ public class QueryContextCutter {
                 }
                 return olapContexts;
             } catch (NoRealizationFoundException | NoStreamingRealizationFoundException e) {
-                if (isReCutBanned && e instanceof NoStreamingRealizationFoundException) {
-                    checkStreamingTableWithAutoModeling();
-                } else if (isReCutBanned || e instanceof NoStreamingRealizationFoundException || QueryContext.current().isDryRun()) {
-                    throw e;
-                }
+                throwIfReCutBanned(isReCutBanned, e);
                 reCutStrategy.tryCutToSmallerContexts(root, e);
             } catch (UserStopQueryException | KylinTimeoutException | KylinRuntimeException e) {
                 throw e;
@@ -107,6 +109,14 @@ public class QueryContextCutter {
         ContextUtil.dumpCalcitePlan("cannot find proper realizations After re-cut " + MAX_RETRY_TIMES_OF_CONTEXT_CUT
                 + " times. \nError: " + errorMsg, root, log);
         throw new NoRealizationFoundException(errorMsg);
+    }
+
+    private static void throwIfReCutBanned(boolean isReCutBanned, RuntimeException e) {
+        if (isReCutBanned && e instanceof NoStreamingRealizationFoundException) {
+            checkStreamingTableWithAutoModeling();
+        } else if (isReCutBanned || e instanceof NoStreamingRealizationFoundException) {
+            throw e;
+        }
     }
 
     private static void fillOlapContextPropertiesWithRelTree(RelNode queryRoot) {

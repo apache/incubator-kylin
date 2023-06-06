@@ -54,16 +54,22 @@ import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.util.ClassUtil;
 import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.common.util.StringHelper;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.model.ComputedColumnDesc;
 import org.apache.kylin.metadata.model.ISourceAware;
 import org.apache.kylin.metadata.model.JoinDesc;
 import org.apache.kylin.metadata.model.JoinTableDesc;
 import org.apache.kylin.metadata.model.NDataModel;
 import org.apache.kylin.metadata.model.NTableMetadataManager;
+import org.apache.kylin.metadata.model.NonEquiJoinCondition;
 import org.apache.kylin.metadata.model.SegmentRange;
 import org.apache.kylin.metadata.model.TableDesc;
 import org.apache.kylin.metadata.model.TableRef;
 import org.apache.kylin.metadata.model.TblColRef;
+import org.apache.kylin.metadata.model.util.scd2.Scd2Simplifier;
 import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.querymeta.SelectedColumnMeta;
 import org.apache.kylin.metadata.realization.NoRealizationFoundException;
@@ -76,11 +82,6 @@ import org.apache.kylin.source.adhocquery.PushdownResult;
 import org.codehaus.commons.compiler.CompileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
 public class PushDownUtil {
 
@@ -207,7 +208,8 @@ public class PushDownUtil {
                     .map(c -> c.getClass().getCanonicalName()).collect(Collectors.joining(",")));
         }
         for (IPushDownConverter converter : pushDownConverters) {
-            QueryInterruptChecker.checkThreadInterrupted("Interrupted sql transformation at the stage of " + converter.getClass(),
+            QueryInterruptChecker.checkThreadInterrupted(
+                    "Interrupted sql transformation at the stage of " + converter.getClass(),
                     "Current step: Massage push-down sql. ");
             sql = converter.convert(sql, queryParams.getProject(), queryParams.getDefaultSchema());
         }
@@ -297,8 +299,7 @@ public class PushDownUtil {
         for (JoinTableDesc lookupDesc : model.getJoinTables()) {
             JoinDesc join = lookupDesc.getJoin();
             TableRef dimTable = lookupDesc.getTableRef();
-            if (join == null || org.apache.commons.lang3.StringUtils.isEmpty(join.getType())
-                    || dimTableCache.contains(dimTable)) {
+            if (join == null || StringUtils.isEmpty(join.getType()) || dimTableCache.contains(dimTable)) {
                 continue;
             }
 
@@ -313,13 +314,16 @@ public class PushDownUtil {
                     .append(" as ").append(StringHelper.doubleQuote(dimTable.getAlias())) //
                     .append(sep).append("ON ");
 
-            if (pk.length == 0 && join.getNonEquiJoinCondition() != null) {
-                sql.append(join.getNonEquiJoinCondition().getExpr());
-                dimTableCache.add(dimTable);
-            } else {
-                sql.append(concatEqualJoinCondition(pk, fk, sep));
-                dimTableCache.add(dimTable);
+            sql.append(concatEqualJoinCondition(pk, fk, sep));
+            if (join.getNonEquiJoinCondition() != null) {
+                NonEquiJoinCondition[] operands = join.getNonEquiJoinCondition().getOperands();
+                for (NonEquiJoinCondition operand : operands) {
+                    sql.append(" AND ");
+                    String cond = Scd2Simplifier.INSTANCE.simplifySCD2ChildCond(operand, join).displaySql();
+                    sql.append(cond).append(sep);
+                }
             }
+            dimTableCache.add(dimTable);
         }
     }
 

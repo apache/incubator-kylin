@@ -219,7 +219,6 @@ import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.guava30.shaded.common.primitives.Longs;
 
-//import io.kyligence.kap.clickhouse.MockSecondStorage;
 import io.kyligence.kap.secondstorage.SecondStorageNodeHelper;
 import io.kyligence.kap.secondstorage.SecondStorageUtil;
 import io.kyligence.kap.secondstorage.config.Node;
@@ -1865,10 +1864,10 @@ public class ModelServiceTest extends SourceTestCase {
         modelService.createModel(modelRequest.getProject(), modelRequest);
     }
 
-    private List<NonEquiJoinCondition.SimplifiedNonEquiJoinCondition> genNonEquiJoinCond() {
-        NonEquiJoinCondition.SimplifiedNonEquiJoinCondition join1 = new NonEquiJoinCondition.SimplifiedNonEquiJoinCondition(
+    private List<NonEquiJoinCondition.SimplifiedJoinCondition> genNonEquiJoinCond() {
+        NonEquiJoinCondition.SimplifiedJoinCondition join1 = new NonEquiJoinCondition.SimplifiedJoinCondition(
                 "TEST_KYLIN_FACT.SELLER_ID", "TEST_ORDER.TEST_EXTENDED_COLUMN", SqlKind.GREATER_THAN_OR_EQUAL);
-        NonEquiJoinCondition.SimplifiedNonEquiJoinCondition join2 = new NonEquiJoinCondition.SimplifiedNonEquiJoinCondition(
+        NonEquiJoinCondition.SimplifiedJoinCondition join2 = new NonEquiJoinCondition.SimplifiedJoinCondition(
                 "TEST_KYLIN_FACT.SELLER_ID", "TEST_ORDER.BUYER_ID", SqlKind.LESS_THAN);
         return Arrays.asList(join1, join2);
     }
@@ -3476,7 +3475,7 @@ public class ModelServiceTest extends SourceTestCase {
         okModel.setFilterCondition("TEST_KYLIN_FACT.SELLER_ID > 0");
         ModelRequest okModelRequest = new ModelRequest(okModel);
         okModelRequest.setProject(project);
-        when(semanticService.convertToDataModel(okModelRequest)).thenReturn(okModel);
+        doReturn(okModel).when(semanticService).convertToDataModel(okModelRequest);
         okModelRequest.setPartitionDesc(null);
         modelService.checkBeforeModelSave(okModelRequest);
     }
@@ -3550,7 +3549,8 @@ public class ModelServiceTest extends SourceTestCase {
                 + "and TEST_KYLIN_FACT.order_id < 100 and DEAL_AMOUNT > 123";
         model.setFilterCondition(originSql);
         modelService.massageModelFilterCondition(model);
-        Assert.assertEquals("(((((`TEST_KYLIN_FACT`.`TRANS_ID` = 0) AND (`TEST_KYLIN_FACT`.`TRANS_ID` > 0)) "
+        Assert.assertEquals(
+                "(((((`TEST_KYLIN_FACT`.`TRANS_ID` = 0) AND (`TEST_KYLIN_FACT`.`TRANS_ID` > 0)) "
                         + "AND (`TEST_KYLIN_FACT`.`TRANS_ID` > 0)) AND (`TEST_KYLIN_FACT`.`ORDER_ID` < 100)) "
                         + "AND ((`TEST_KYLIN_FACT`.`PRICE` * `TEST_KYLIN_FACT`.`ITEM_COUNT`) > 123))",
                 model.getFilterCondition());
@@ -5740,16 +5740,15 @@ public class ModelServiceTest extends SourceTestCase {
 
     @Test
     public void testInitModel() throws IOException {
-        String modelRequest =
-                "{\"uuid\":null,\"name\":\"sum_lc_null_val_test_clone\",\"owner\":\"ADMIN\",\"project\":\"sum_lc\",\"description\":null,"
-                        + "\"alias\":\"sum_lc_null_val_test_clone\",\"fact_table\":\"SSB.SUM_LC_NULL_TBL\",\"join_tables\":[],"
-                        + "\"simplified_dimensions\":[{\"id\":0,\"name\":\"PART_COL\",\"column\":\"SUM_LC_NULL_TBL.PART_COL\",\"status\":\"DIMENSION\",\"excluded\":false,\"cardinality\":null,\"min_value\":null,\"max_value\":null,\"max_length_value\":null,\"min_length_value\":null,\"null_count\":null,\"comment\":null,\"type\":\"date\",\"simple\":null,\"datatype\":\"date\"},"
-                        + "{\"id\":1,\"name\":\"SUM_DATE1\",\"column\":\"SUM_LC_NULL_TBL.SUM_DATE1\",\"status\":\"DIMENSION\",\"excluded\":false,\"cardinality\":null,\"min_value\":null,\"max_value\":null,\"max_length_value\":null,\"min_length_value\":null,\"null_count\":null,\"comment\":null,\"type\":\"varchar(1024)\",\"simple\":null,\"datatype\":\"varchar(1024)\"},{\"id\":2,\"name\":\"ACCOUNT1\",\"column\":\"SUM_LC_NULL_TBL.ACCOUNT1\",\"status\":\"DIMENSION\",\"excluded\":false,\"cardinality\":null,\"min_value\":null,\"max_value\":null,\"max_length_value\":null,\"min_length_value\":null,\"null_count\":null,\"comment\":null,\"type\":\"char(1)\",\"simple\":null,\"datatype\":\"char(1)\"},"
-                        + "{\"id\":6,\"name\":\"ACCOUNT2\",\"column\":\"SUM_LC_NULL_TBL.ACCOUNT2\",\"status\":\"DIMENSION\",\"excluded\":false,\"cardinality\":null,\"min_value\":null,\"max_value\":null,\"max_length_value\":null,\"min_length_value\":null,\"null_count\":null,\"comment\":null,\"type\":\"varchar(52)\",\"simple\":null,\"datatype\":\"varchar(52)\"}],"
-                        + "\"simplified_measures\":[{\"id\":100000,\"expression\":\"COUNT\",\"name\":\"COUNT_ALL\",\"return_type\":\"bigint\",\"parameter_value\":[{\"type\":\"constant\",\"value\":\"1\"}],\"converted_columns\":[],\"column\":null,\"comment\":null},{\"id\":100001,\"expression\":\"SUM_LC\",\"name\":\"sumlc_double_null\",\"return_type\":\"double\",\"parameter_value\":[{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.DATA_NULL\"},{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.SUM_DATE1\"}],"
-                        + "\"converted_columns\":[],\"column\":null,\"comment\":\"\"},{\"id\":100002,\"expression\":\"SUM_LC\",\"name\":\"sumlc_decimal_null\",\"return_type\":\"decimal(20,6)\",\"parameter_value\":[{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.DATA_DECIMAL\"},{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.SUM_DATE1\"}],\"converted_columns\":[],\"column\":null,\"comment\":\"\"},{\"name\":\"abc\",\"expression\":\"SUM_LC\",\"return_type\":\"\",\"comment\":\"\",\"parameter_value\":[{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.BALANCE1\"},{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.BALANCE1\",\"table_guid\":null}]}],"
-                        + "\"computed_columns\":[],\"last_modified\":1668402813791,\"filter_condition\":\"\",\"partition_desc\":null,\"multi_partition_desc\":null,\"management_type\":\"MODEL_BASED\",\"with_second_storage\":false,\"second_storage_size\":0,\"canvas\":{\"coordinate\":{\"SUM_LC_NULL_TBL\":{\"x\":462.44444105360253,\"y\":108.66667005750864,\"width\":200,\"height\":486.66666666666663,\"isSpread\":true}},\"zoom\":9,\"marginClient\":{\"left\":0,\"top\":0}},\"available_indexes_count\":0,\"other_columns\":[{\"column\":\"SUM_LC_NULL_TBL.BALANCE1\",\"name\":\"BALANCE1\",\"datatype\":\"double\"},"
-                        + "{\"column\":\"SUM_LC_NULL_TBL.DATA_NULL\",\"name\":\"DATA_NULL\",\"datatype\":\"double\"},{\"column\":\"SUM_LC_NULL_TBL.DATA_DECIMAL\",\"name\":\"DATA_DECIMAL\",\"datatype\":\"decimal(10,6)\"}]}";
+        String modelRequest = "{\"uuid\":null,\"name\":\"sum_lc_null_val_test_clone\",\"owner\":\"ADMIN\",\"project\":\"sum_lc\",\"description\":null,"
+                + "\"alias\":\"sum_lc_null_val_test_clone\",\"fact_table\":\"SSB.SUM_LC_NULL_TBL\",\"join_tables\":[],"
+                + "\"simplified_dimensions\":[{\"id\":0,\"name\":\"PART_COL\",\"column\":\"SUM_LC_NULL_TBL.PART_COL\",\"status\":\"DIMENSION\",\"excluded\":false,\"cardinality\":null,\"min_value\":null,\"max_value\":null,\"max_length_value\":null,\"min_length_value\":null,\"null_count\":null,\"comment\":null,\"type\":\"date\",\"simple\":null,\"datatype\":\"date\"},"
+                + "{\"id\":1,\"name\":\"SUM_DATE1\",\"column\":\"SUM_LC_NULL_TBL.SUM_DATE1\",\"status\":\"DIMENSION\",\"excluded\":false,\"cardinality\":null,\"min_value\":null,\"max_value\":null,\"max_length_value\":null,\"min_length_value\":null,\"null_count\":null,\"comment\":null,\"type\":\"varchar(1024)\",\"simple\":null,\"datatype\":\"varchar(1024)\"},{\"id\":2,\"name\":\"ACCOUNT1\",\"column\":\"SUM_LC_NULL_TBL.ACCOUNT1\",\"status\":\"DIMENSION\",\"excluded\":false,\"cardinality\":null,\"min_value\":null,\"max_value\":null,\"max_length_value\":null,\"min_length_value\":null,\"null_count\":null,\"comment\":null,\"type\":\"char(1)\",\"simple\":null,\"datatype\":\"char(1)\"},"
+                + "{\"id\":6,\"name\":\"ACCOUNT2\",\"column\":\"SUM_LC_NULL_TBL.ACCOUNT2\",\"status\":\"DIMENSION\",\"excluded\":false,\"cardinality\":null,\"min_value\":null,\"max_value\":null,\"max_length_value\":null,\"min_length_value\":null,\"null_count\":null,\"comment\":null,\"type\":\"varchar(52)\",\"simple\":null,\"datatype\":\"varchar(52)\"}],"
+                + "\"simplified_measures\":[{\"id\":100000,\"expression\":\"COUNT\",\"name\":\"COUNT_ALL\",\"return_type\":\"bigint\",\"parameter_value\":[{\"type\":\"constant\",\"value\":\"1\"}],\"converted_columns\":[],\"column\":null,\"comment\":null},{\"id\":100001,\"expression\":\"SUM_LC\",\"name\":\"sumlc_double_null\",\"return_type\":\"double\",\"parameter_value\":[{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.DATA_NULL\"},{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.SUM_DATE1\"}],"
+                + "\"converted_columns\":[],\"column\":null,\"comment\":\"\"},{\"id\":100002,\"expression\":\"SUM_LC\",\"name\":\"sumlc_decimal_null\",\"return_type\":\"decimal(20,6)\",\"parameter_value\":[{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.DATA_DECIMAL\"},{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.SUM_DATE1\"}],\"converted_columns\":[],\"column\":null,\"comment\":\"\"},{\"name\":\"abc\",\"expression\":\"SUM_LC\",\"return_type\":\"\",\"comment\":\"\",\"parameter_value\":[{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.BALANCE1\"},{\"type\":\"column\",\"value\":\"SUM_LC_NULL_TBL.BALANCE1\",\"table_guid\":null}]}],"
+                + "\"computed_columns\":[],\"last_modified\":1668402813791,\"filter_condition\":\"\",\"partition_desc\":null,\"multi_partition_desc\":null,\"management_type\":\"MODEL_BASED\",\"with_second_storage\":false,\"second_storage_size\":0,\"canvas\":{\"coordinate\":{\"SUM_LC_NULL_TBL\":{\"x\":462.44444105360253,\"y\":108.66667005750864,\"width\":200,\"height\":486.66666666666663,\"isSpread\":true}},\"zoom\":9,\"marginClient\":{\"left\":0,\"top\":0}},\"available_indexes_count\":0,\"other_columns\":[{\"column\":\"SUM_LC_NULL_TBL.BALANCE1\",\"name\":\"BALANCE1\",\"datatype\":\"double\"},"
+                + "{\"column\":\"SUM_LC_NULL_TBL.DATA_NULL\",\"name\":\"DATA_NULL\",\"datatype\":\"double\"},{\"column\":\"SUM_LC_NULL_TBL.DATA_DECIMAL\",\"name\":\"DATA_DECIMAL\",\"datatype\":\"decimal(10,6)\"}]}";
         ModelRequest request = JsonUtil.readValue(modelRequest, ModelRequest.class);
         Assert.assertThrows(KylinException.class, () -> modelService.checkBeforeModelSave(request));
     }

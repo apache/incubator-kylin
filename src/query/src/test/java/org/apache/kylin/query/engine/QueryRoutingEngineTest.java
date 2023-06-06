@@ -38,6 +38,7 @@ import org.apache.kylin.common.exception.NewQueryRefuseException;
 import org.apache.kylin.common.exception.QueryErrorCode;
 import org.apache.kylin.common.exception.ServerErrorCode;
 import org.apache.kylin.common.exception.TargetSegmentNotFoundException;
+import org.apache.kylin.common.exception.code.ErrorCodeServer;
 import org.apache.kylin.common.persistence.InMemResourceStore;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.transaction.TransactionException;
@@ -120,7 +121,7 @@ public class QueryRoutingEngineTest extends NLocalFileMetadataTestCase {
         Assert.assertEquals(2, pushdownCount);
 
         // Throw Exception When push down
-        Mockito.doThrow(new KylinException(QueryErrorCode.SCD2_DUPLICATE_JOIN_COL, "")).when(queryRoutingEngine)
+        Mockito.doThrow(new KylinException(ErrorCodeServer.DUPLICATE_MODEL_JOIN_CONDITIONS)).when(queryRoutingEngine)
                 .tryPushDownSelectQuery(Mockito.any(), Mockito.any(), Mockito.anyBoolean());
         try {
             queryRoutingEngine.queryWithSqlMassage(queryParams);

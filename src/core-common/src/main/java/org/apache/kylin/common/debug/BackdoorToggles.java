@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.util.Pair;
-
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
 
 /**
@@ -75,10 +74,6 @@ public class BackdoorToggles {
 
     public static boolean getIsQueryFromAutoModeling() {
         return getBoolean(QUERY_FROM_AUTO_MODELING);
-    }
-
-    public static boolean getIsQueryNonEquiJoinModelEnabled() {
-        return getBoolean(QUERY_NON_EQUI_JOIN_MODEL_ENABLED);
     }
 
     public static String getPartitionDumpDir() {

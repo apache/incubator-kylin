@@ -107,7 +107,7 @@ class ModelRequestTest {
         List<String> actualNonEqualForeignKeys = modelRequest.getSimplifiedJoinTableDescs().stream()
                 .map(SimplifiedJoinTableDesc::getSimplifiedJoinDesc)
                 .map(SimplifiedJoinDesc::getSimplifiedNonEquiJoinConditions).filter(Objects::nonNull)
-                .flatMap(Collection::stream).map(NonEquiJoinCondition.SimplifiedNonEquiJoinCondition::getForeignKey)
+                .flatMap(Collection::stream).map(NonEquiJoinCondition.SimplifiedJoinCondition::getForeignKey)
                 .collect(Collectors.toList());
         List<String> expectedNonEqualForeignKey = Collections.singletonList("TEST_TABLE3.COLUMN2");
         Assertions.assertEquals(expectedNonEqualForeignKey, actualNonEqualForeignKeys);
@@ -115,7 +115,7 @@ class ModelRequestTest {
         List<String> actualNonEqualPrimaryKeys = modelRequest.getSimplifiedJoinTableDescs().stream()
                 .map(SimplifiedJoinTableDesc::getSimplifiedJoinDesc)
                 .map(SimplifiedJoinDesc::getSimplifiedNonEquiJoinConditions).filter(Objects::nonNull)
-                .flatMap(Collection::stream).map(NonEquiJoinCondition.SimplifiedNonEquiJoinCondition::getPrimaryKey)
+                .flatMap(Collection::stream).map(NonEquiJoinCondition.SimplifiedJoinCondition::getPrimaryKey)
                 .collect(Collectors.toList());
         List<String> expectedNonEqualPrimaryKey = Collections.singletonList("TEST_TABLE3.COLUMN3");
         Assertions.assertEquals(expectedNonEqualPrimaryKey, actualNonEqualPrimaryKeys);
@@ -191,7 +191,7 @@ class ModelRequestTest {
             simplifiedJoinDesc.setPrimaryKey(new String[] { "TEST_TABLE3.cOLUMn3" });
             simplifiedList.add(simplified);
 
-            val condition = new NonEquiJoinCondition.SimplifiedNonEquiJoinCondition();
+            val condition = new NonEquiJoinCondition.SimplifiedJoinCondition();
             condition.setPrimaryKey("TEST_TABLE3.cOLUMn3");
             condition.setForeignKey("TEST_TABLE3.COLUMN2");
             simplifiedJoinDesc.setSimplifiedNonEquiJoinConditions(Collections.singletonList(condition));

@@ -29,11 +29,30 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class SimplifiedJoinDesc extends JoinDesc {
+public class SimplifiedJoinDesc extends JoinDesc.NonEquivJoinDesc {
 
     private static final long serialVersionUID = 3422512377209976139L;
 
     @JsonProperty("simplified_non_equi_join_conditions")
-    private List<NonEquiJoinCondition.SimplifiedNonEquiJoinCondition> simplifiedNonEquiJoinConditions;
+    private List<NonEquiJoinCondition.SimplifiedJoinCondition> simplifiedNonEquiJoinConditions;
+
+    /**
+     * non-equi join condition to fks,pks
+     */
+    public void simplifyEqualJoinPairs(List<NonEquiJoinCondition.SimplifiedJoinCondition> simplifiedNeqConditions) {
+
+        int len = simplifiedNeqConditions.size();
+
+        String[] fks = new String[len];
+        String[] pks = new String[len];
+
+        for (int i = 0; i < len; i++) {
+            fks[i] = simplifiedNeqConditions.get(i).getForeignKey();
+            pks[i] = simplifiedNeqConditions.get(i).getPrimaryKey();
+        }
+
+        this.setForeignKey(fks);
+        this.setPrimaryKey(pks);
+    }
 
 }

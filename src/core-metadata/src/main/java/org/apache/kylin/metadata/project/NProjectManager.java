@@ -249,8 +249,12 @@ public class NProjectManager {
     }
 
     public static KylinConfig getProjectConfig(String project) {
-        NProjectManager projectManager = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv());
-        ProjectInstance projectInstance = projectManager.getProject(project);
-        return projectInstance.getConfig();
+        KylinConfig envConfig = KylinConfig.getInstanceFromEnv();
+        if (project == null) {
+            logger.warn("The project name is null, return KylinCong.getInstanceFromEnv() instead.");
+            return envConfig;
+        }
+        ProjectInstance projectInstance = NProjectManager.getInstance(envConfig).getProject(project);
+        return projectInstance == null ? envConfig : projectInstance.getConfig();
     }
 }

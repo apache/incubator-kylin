@@ -193,7 +193,7 @@ public class TableServiceTest extends CSVSourceTestCase {
                 projectInstance.getOwner(), projectInstance.getDescription(), overrideKylinProps);
         projectManager.updateProject(projectInstance, projectInstanceUpdate.getName(),
                 projectInstanceUpdate.getDescription(), projectInstanceUpdate.getOverrideKylinProps());
-        Mockito.when(userService.listSuperAdminUsers()).thenReturn(Arrays.asList("admin"));
+        Mockito.doReturn(Collections.singletonList("admin")).when(userService).listSuperAdminUsers();
         try {
             new JdbcRawRecStore(getTestConfig());
         } catch (Exception e) {

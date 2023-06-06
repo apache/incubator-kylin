@@ -28,11 +28,10 @@ import java.util.Objects;
 import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.metadata.model.JoinDesc;
 import org.apache.kylin.metadata.model.JoinTableDesc;
+import org.apache.kylin.metadata.model.NDataModel.TableKind;
 import org.apache.kylin.metadata.model.NonEquiJoinCondition;
-import org.apache.kylin.metadata.model.NonEquiJoinConditionType;
 import org.apache.kylin.metadata.model.TableRef;
 import org.apache.kylin.metadata.model.TblColRef;
-import org.apache.kylin.metadata.model.NDataModel.TableKind;
 
 public class JoinDescUtil {
 
@@ -98,13 +97,13 @@ public class JoinDescUtil {
 
     private static NonEquiJoinCondition convertNonEquiJoinCondition(NonEquiJoinCondition cond, TableRef pkTblRef,
             TableRef fkTblRef) {
-        if (cond.getType() == NonEquiJoinConditionType.EXPRESSION) {
+        if (cond.getType() == NonEquiJoinCondition.Type.EXPRESSION) {
             return new NonEquiJoinCondition(cond.getOpName(), cond.getOp(),
                     Arrays.stream(cond.getOperands())
                             .map(condInput -> convertNonEquiJoinCondition(condInput, pkTblRef, fkTblRef))
                             .toArray(NonEquiJoinCondition[]::new),
                     cond.getDataType());
-        } else if (cond.getType() == NonEquiJoinConditionType.LITERAL) {
+        } else if (cond.getType() == NonEquiJoinCondition.Type.LITERAL) {
             return cond;
         } else {
             return new NonEquiJoinCondition(convertColumn(cond.getColRef(), pkTblRef, fkTblRef), cond.getDataType());

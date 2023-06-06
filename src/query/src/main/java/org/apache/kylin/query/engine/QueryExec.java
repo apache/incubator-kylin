@@ -107,8 +107,10 @@ public class QueryExec {
     private final SimpleDataContext dataContext;
     private final boolean allowAlternativeQueryPlan;
     private final CalciteSchema rootSchema;
+    private final String project;
 
     public QueryExec(String project, KylinConfig kylinConfig, boolean allowAlternativeQueryPlan) {
+        this.project = project;
         this.kylinConfig = kylinConfig;
         config = KECalciteConfig.fromKapConfig(kylinConfig);
         schemaFactory = new ProjectSchemaFactory(project, kylinConfig);
@@ -172,6 +174,7 @@ public class QueryExec {
     public QueryResult executeQuery(String sql) throws SQLException {
         magicDirts(sql);
         QueryContext queryContext = QueryContext.current();
+        queryContext.setProject(project);
         try {
             if (kylinConfig.isQueryDryRunEnabled()) {
                 logger.trace("Dry run Mode.");
@@ -421,8 +424,7 @@ public class QueryExec {
     }
 
     private ExecuteResult tryEnhancedAggPushDown(RelNode rel) {
-        String project = QueryContext.current().getProject();
-        if (project != null && NProjectManager.getProjectConfig(project).isEnhancedAggPushDownEnabled()) {
+        if (NProjectManager.getProjectConfig(project).isEnhancedAggPushDownEnabled()) {
             Collection<RelOptRule> postOptRules = new LinkedHashSet<>();
             postOptRules.addAll(HepUtils.AggPushDownRules);
             return sparderQueryOptimized(rel, 1, postOptRules);

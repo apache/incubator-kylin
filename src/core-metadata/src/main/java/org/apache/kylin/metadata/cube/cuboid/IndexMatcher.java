@@ -43,7 +43,7 @@ import org.apache.kylin.metadata.model.DeriveInfo;
 import org.apache.kylin.metadata.model.JoinDesc;
 import org.apache.kylin.metadata.model.NDataModel;
 import org.apache.kylin.metadata.model.TblColRef;
-import org.apache.kylin.metadata.model.util.scd2.SCD2NonEquiCondSimplification;
+import org.apache.kylin.metadata.model.util.scd2.Scd2Simplifier;
 import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.realization.CapabilityResult;
 import org.apache.kylin.metadata.realization.SQLDigest;
@@ -227,9 +227,8 @@ public abstract class IndexMatcher {
     }
 
     private boolean matchNonEquiJoinFks(final IndexEntity indexEntity, final JoinDesc joinDesc) {
-        return joinDesc.isNonEquiJoin() && indexEntity.dimensionsDerive(
-                Stream.of(SCD2NonEquiCondSimplification.INSTANCE.extractFksFromNonEquiJoinDesc(joinDesc))
-                        .map(tblColMap::get).collect(Collectors.toList()));
+        return joinDesc.isNonEquiJoin() && indexEntity.dimensionsDerive(Stream
+                .of(Scd2Simplifier.INSTANCE.extractNeqFks(joinDesc)).map(tblColMap::get).collect(Collectors.toList()));
     }
 
     @Getter

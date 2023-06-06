@@ -17,17 +17,22 @@
  */
 package org.apache.kylin.metadata.model.util.scd2;
 
-import static org.apache.kylin.metadata.model.NonEquiJoinCondition.SimplifiedNonEquiJoinCondition;
+import static org.apache.kylin.metadata.model.NonEquiJoinCondition.SimplifiedJoinCondition;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.calcite.sql.SqlKind;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.kylin.guava30.shaded.common.collect.ImmutableSet;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.model.NDataModel;
 
 /**
@@ -36,6 +41,10 @@ import org.apache.kylin.metadata.model.NDataModel;
 public class SCD2CondChecker {
 
     public static final SCD2CondChecker INSTANCE = new SCD2CondChecker();
+    private static final Set<Set<SqlKind>> SCD_2_JOIN_PAIRS = ImmutableSet.of(
+            Sets.newHashSet(SqlKind.GREATER_THAN, SqlKind.LESS_THAN_OR_EQUAL),
+            Sets.newHashSet(SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN_OR_EQUAL),
+            Sets.newHashSet(SqlKind.GREATER_THAN_OR_EQUAL, SqlKind.LESS_THAN));
 
     /**
      * SCD2 must have  equi condition
@@ -45,22 +54,21 @@ public class SCD2CondChecker {
     }
 
     public boolean isScd2Model(NDataModel nDataModel) {
-        if (nDataModel.getJoinTables().stream().filter(joinTableDesc -> joinTableDesc.getJoin().isNonEquiJoin())
-                .count() == 0) {
+        if (nDataModel.getJoinTables().stream().noneMatch(joinTableDesc -> joinTableDesc.getJoin().isNonEquiJoin())) {
             return false;
         }
 
-        return nDataModel.getJoinTables().stream().filter(joinTableDesc -> joinTableDesc.getJoin().isNonEquiJoin())
-                .allMatch(joinTableDesc -> SCD2NonEquiCondSimplification.INSTANCE
-                        .simplifiedSCD2CondConvertChecker(joinTableDesc.getJoin()));
+        return nDataModel.getJoinTables().stream() //
+                .filter(joinTableDesc -> joinTableDesc.getJoin().isNonEquiJoin())
+                .allMatch(joinTableDesc -> Scd2Simplifier.INSTANCE.isValidScd2JoinDesc(joinTableDesc.getJoin()));
     }
 
     public boolean checkFkPkPairUnique(SimplifiedJoinDesc joinDesc) {
-        return checkFkPkPairUnique(SCD2NonEquiCondSimplification.INSTANCE.simplifyFksPks(joinDesc.getForeignKey(),
-                joinDesc.getPrimaryKey()), joinDesc.getSimplifiedNonEquiJoinConditions());
+        return checkFkPkPairUnique(Scd2Simplifier.INSTANCE.buildAndCheckEqualConditions(joinDesc),
+                joinDesc.getSimplifiedNonEquiJoinConditions());
     }
 
-    public boolean checkSCD2NonEquiJoinCondPair(final List<SimplifiedNonEquiJoinCondition> simplified) {
+    public boolean checkSCD2NonEquiJoinCondPair(final List<SimplifiedJoinCondition> simplified) {
         if (CollectionUtils.isEmpty(simplified)) {
             return false;
         }
@@ -71,61 +79,75 @@ public class SCD2CondChecker {
             return false;
         }
 
-        Map<String, Integer> mappingCount = new HashMap<>();
-
-        for (SimplifiedNonEquiJoinCondition cond : simplified) {
+        Map<String, List<SqlKind>> mapping = Maps.newHashMap();
+        for (SimplifiedJoinCondition cond : simplified) {
             if (!checkSCD2SqlOp(cond.getOp())) {
                 return false;
             }
 
-            int inrc = cond.getOp() == SqlKind.GREATER_THAN_OR_EQUAL ? 1 : -1;
-
-            mappingCount.put(cond.getForeignKey(), mappingCount.getOrDefault(cond.getForeignKey(), 0) + inrc);
-
+            mapping.putIfAbsent(cond.getForeignKey(), Lists.newArrayList());
+            mapping.putIfAbsent(cond.getPrimaryKey(), Lists.newArrayList());
+            mapping.get(cond.getForeignKey()).add(cond.getOp());
+            mapping.get(cond.getPrimaryKey()).add(inverse(cond.getOp()));
         }
+        mapping.entrySet().removeIf(entry -> entry.getValue().size() != 2);
 
-        return !mappingCount.values().stream().anyMatch(count -> count != 0);
-
+        return mapping.values().stream().allMatch(this::isValidOperatorPair);
     }
 
-    boolean checkFkPkPairUnique(List<SimplifiedNonEquiJoinCondition> equiFkPks,
-            List<SimplifiedNonEquiJoinCondition> nonEquiFkPks) {
-        List<SimplifiedNonEquiJoinCondition> allFkPks = new ArrayList<>();
+    public static SqlKind inverse(SqlKind kind) {
+        switch (kind) {
+        case GREATER_THAN:
+            return SqlKind.LESS_THAN;
+        case LESS_THAN:
+            return SqlKind.GREATER_THAN;
+        case GREATER_THAN_OR_EQUAL:
+            return SqlKind.LESS_THAN_OR_EQUAL;
+        case LESS_THAN_OR_EQUAL:
+            return SqlKind.GREATER_THAN_OR_EQUAL;
+        default:
+            return null;
+        }
+    }
+
+    private boolean isValidOperatorPair(List<SqlKind> ops) {
+        if (ops.size() != 2 || ops.get(0) == ops.get(1)) {
+            return false;
+        }
+        return SCD_2_JOIN_PAIRS.contains(Sets.newHashSet(ops));
+    }
+
+    boolean checkFkPkPairUnique(List<SimplifiedJoinCondition> equiFkPks, List<SimplifiedJoinCondition> nonEquiFkPks) {
+        List<SimplifiedJoinCondition> allFkPks = new ArrayList<>();
         allFkPks.addAll(equiFkPks);
         allFkPks.addAll(nonEquiFkPks);
 
-        HashSet pairSet = new HashSet<String>();
-
-        for (int i = 0; i < allFkPks.size(); i++) {
-            String key = allFkPks.get(i).getForeignKey() + allFkPks.get(i).getPrimaryKey();
+        Set<String> pairSet = new HashSet<>();
+        for (SimplifiedJoinCondition allFkPk : allFkPks) {
+            String[] joinKeys = new String[] { allFkPk.getPrimaryKey(), allFkPk.getForeignKey() };
+            Arrays.sort(joinKeys);
+            String key = String.join(",", joinKeys);
             if (pairSet.contains(key)) {
                 return false;
             }
             pairSet.add(key);
-
         }
         return true;
-
     }
 
-    /**
-     * SCD2 only support =, >=, <
-     * @param op
-     * @return
-     */
     private boolean checkSCD2SqlOp(SqlKind op) {
-
         if (Objects.isNull(op)) {
             return false;
         }
 
         switch (op) {
         case GREATER_THAN_OR_EQUAL:
+        case LESS_THAN_OR_EQUAL:
+        case GREATER_THAN:
         case LESS_THAN:
             return true;
         default:
             return false;
         }
-
     }
 }

@@ -36,6 +36,11 @@ import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.scheduler.EventBusFactory;
 import org.apache.kylin.common.util.JsonUtil;
+import org.apache.kylin.guava30.shaded.common.base.Charsets;
+import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.guava30.shaded.common.io.CharStreams;
 import org.apache.kylin.junit.rule.TransactionExceptedException;
 import org.apache.kylin.metadata.acl.AclTCR;
 import org.apache.kylin.metadata.acl.AclTCRManager;
@@ -65,12 +70,6 @@ import org.mockito.Mockito;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import org.apache.kylin.guava30.shaded.common.base.Charsets;
-import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
-import org.apache.kylin.guava30.shaded.common.io.CharStreams;
 
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
@@ -117,7 +116,7 @@ public class ModelTdsServiceTest extends SourceTestCase {
         ReflectionTestUtils.setField(modelService, "aclEvaluate", aclEvaluate);
         ReflectionTestUtils.setField(modelService, "accessService", accessService);
         ReflectionTestUtils.setField(modelService, "userGroupService", userGroupService);
-        ReflectionTestUtils.setField(modelService, "userGroupService", userGroupService);
+        ReflectionTestUtils.setField(semanticService, "userGroupService", userGroupService);
 
         ReflectionTestUtils.setField(tdsService, "accessService", accessService);
         ReflectionTestUtils.setField(tdsService, "userGroupService", userGroupService);

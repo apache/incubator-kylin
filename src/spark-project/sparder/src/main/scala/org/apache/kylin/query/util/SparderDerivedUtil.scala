@@ -25,8 +25,8 @@ import org.apache.kylin.guava30.shaded.common.collect.Maps
 import org.apache.kylin.metadata.cube.cuboid.NLayoutCandidate
 import org.apache.kylin.metadata.cube.model.NDataSegment
 import org.apache.kylin.metadata.model.DeriveInfo.DeriveType
-import org.apache.kylin.metadata.model.NonEquiJoinCondition.SimplifiedNonEquiJoinCondition
-import org.apache.kylin.metadata.model.util.scd2.SCD2NonEquiCondSimplification
+import org.apache.kylin.metadata.model.NonEquiJoinCondition.SimplifiedJoinCondition
+import org.apache.kylin.metadata.model.util.scd2.Scd2Simplifier
 import org.apache.kylin.metadata.model.{DeriveInfo, NDataModel, NTableMetadataManager, TblColRef}
 import org.apache.kylin.metadata.tuple.TupleInfo
 import org.apache.spark.sql.catalyst.plans.JoinType
@@ -220,8 +220,8 @@ case class SparderDerivedUtil(gtInfoTableName: String,
     }
 
     if (derivedInfo.deriveType == DeriveType.LOOKUP_NON_EQUI) {
-      val simplifiedCond = SCD2NonEquiCondSimplification.INSTANCE
-        .convertToSimplifiedSCD2Cond(derivedInfo.join)
+      val simplifiedCond = Scd2Simplifier.INSTANCE
+        .simplifyScd2Conditions(derivedInfo.join)
         .getSimplifiedNonEquiJoinConditions
       joinCol = genNonEquiJoinColumn(newNameLookupPlan, gTInfoNames, joinCol, simplifiedCond.asScala)
     }
@@ -231,7 +231,7 @@ case class SparderDerivedUtil(gtInfoTableName: String,
   def genNonEquiJoinColumn(newNameLookupPlan: LogicalPlan,
                            gTInfoNames: Array[String],
                            colOrigin: Column,
-                           simplifiedConds: mutable.Buffer[SimplifiedNonEquiJoinCondition]): Column = {
+                           simplifiedConds: mutable.Buffer[SimplifiedJoinCondition]): Column = {
 
     var joinCol = colOrigin
     for (simplifiedCond <- simplifiedConds) {
@@ -240,8 +240,10 @@ case class SparderDerivedUtil(gtInfoTableName: String,
       val colOp = simplifiedCond.getOp
 
       val newCol = colOp match {
+        case SqlKind.LESS_THAN_OR_EQUAL => colFk.<=(colPk)
         case SqlKind.GREATER_THAN_OR_EQUAL => colFk.>=(colPk)
         case SqlKind.LESS_THAN => colFk.<(colPk)
+        case SqlKind.GREATER_THAN => colFk.>(colPk)
       }
 
       joinCol = joinCol.and(newCol)

@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.kylin.metadata.model.tool;
+package org.apache.kylin.metadata.model;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -33,106 +32,114 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 
-public class TruthTable {
+import lombok.extern.slf4j.Slf4j;
 
-    private static Logger logger = LoggerFactory.getLogger(TruthTable.class);
+@Slf4j
+public class TruthTable<E> {
 
-    private List<Expr> allOperands;
-    private Expr expr;
+    private final List<Expr<E>> allOperands;
+    private final Expr<E> expr;
 
-    private TruthTable(List<Expr> allOperands, Expr expr) {
+    TruthTable(List<Expr<E>> allOperands, Expr<E> expr) {
         this.allOperands = allOperands;
         this.expr = expr;
     }
 
-    public static boolean equals(TruthTable tbl1, TruthTable tbl2) {
-        logger.debug("Comparing table1: {} with table2 {}", tbl1, tbl2);
-        if (tbl1.allOperands.size() != tbl2.allOperands.size()) {
+    @Override
+    public String toString() {
+        return "TruthTable{" + "allOperands=" + allOperands + ", expr=" + expr + '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return allOperands.hashCode() * 31 + expr.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof TruthTable)) {
             return false;
         }
-        for (Expr operand : tbl1.allOperands) {
+        TruthTable<E> tbl2 = (TruthTable<E>) obj;
+        log.debug("Comparing table1: {} with table2 {}", this, tbl2);
+        if (this.allOperands.size() != tbl2.allOperands.size()) {
+            return false;
+        }
+        for (Expr<E> operand : this.allOperands) {
             if (!tbl2.allOperands.contains(operand)) {
                 return false;
             }
         }
 
-        InputGenerator tbl1InputGenerator = tbl1.createInputGenerator();
+        InputGenerator<E> tbl1InputGenerator = new InputGenerator<>();
         while (tbl1InputGenerator.hasNext()) {
-            Input input = tbl1InputGenerator.next();
-            if (tbl1.eval(input) != tbl2.eval(input.mapOperands(tbl2.allOperands))) {
+            Input<E> input = tbl1InputGenerator.next();
+            if (this.eval(input) != tbl2.eval(input.mapOperands(tbl2.allOperands))) {
                 return false;
             }
         }
         return true;
     }
 
-    public boolean eval(Input input) {
+    public boolean eval(Input<E> input) {
         return doEval(expr, input);
     }
 
-    private boolean doEval(Expr expr, Input input) {
-        switch (expr.operator) {
+    private boolean doEval(Expr<E> expr, Input<E> input) {
+        switch (expr.op) {
         case IDENTITY:
             return input.getValue(expr);
         case NOT:
-            return !doEval(expr.exprs[0], input);
+            return !doEval(expr.operands.get(0), input);
         case AND:
-            for (Expr innerExpr : expr.exprs) {
+            for (Expr<E> innerExpr : expr.operands) {
                 if (!doEval(innerExpr, input)) {
                     return false;
                 }
             }
             return true;
         case OR:
-            for (Expr innerExpr : expr.exprs) {
+            for (Expr<E> innerExpr : expr.operands) {
                 if (doEval(innerExpr, input)) {
                     return true;
                 }
             }
             return false;
         default:
-            throw new IllegalStateException("Invalid Operator" + expr.operator);
+            throw new IllegalStateException("Invalid Operator" + expr.op);
         }
     }
 
-    private static class Input {
-        private Map<Expr, Boolean> inputValues;
+    private static class Input<T> {
+        private final Map<Expr<T>, Boolean> inputValues;
 
-        Input(Map<Expr, Boolean> inputValues) {
+        Input(Map<Expr<T>, Boolean> inputValues) {
             this.inputValues = inputValues;
         }
 
-        boolean getValue(Expr expr) {
+        boolean getValue(Expr<T> expr) {
             return inputValues.get(expr);
         }
 
         /**
          * map input with operands in different orderings
-         * @param operands
-         * @return
          */
-        Input mapOperands(List<Expr> operands) {
+        Input<T> mapOperands(List<Expr<T>> operands) {
             Preconditions.checkArgument(operands.size() == inputValues.size());
-            Map<Expr, Boolean> mappedInput = new HashMap<>();
-            for (Expr expr : operands) {
+            Map<Expr<T>, Boolean> mappedInput = new HashMap<>();
+            for (Expr<T> expr : operands) {
                 Preconditions.checkArgument(inputValues.get(expr) != null, "Invalid table expr for operands mapping");
                 mappedInput.put(expr, inputValues.get(expr));
             }
             Preconditions.checkArgument(mappedInput.size() == inputValues.size());
-            return new Input(mappedInput);
+            return new Input<>(mappedInput);
         }
     }
 
-    public InputGenerator createInputGenerator() {
-        return new InputGenerator();
-    }
-
-    public class InputGenerator implements Iterator<Input> {
+    private class InputGenerator<T> implements Iterator<Input<T>> {
 
         int inputSize = allOperands.size();
         int inputMax = (int) Math.pow(2, inputSize);
@@ -144,59 +151,60 @@ public class TruthTable {
         }
 
         @Override
-        public Input next() {
+        public Input<T> next() {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            Map<Expr, Boolean> input = new HashMap<>();
-            if (logger.isTraceEnabled()) {
-                logger.trace("Generating next input {}, max inputValues bits {}", Integer.toBinaryString(inputBits),
+            Map<Expr<T>, Boolean> input = new HashMap<>();
+            if (log.isTraceEnabled()) {
+                log.trace("Generating next input {}, max inputValues bits {}", Integer.toBinaryString(inputBits),
                         Integer.toBinaryString(inputMax - 1));
             }
             for (int i = 0; i < inputSize; i++) {
                 boolean value = (inputBits & (1 << i)) != 0;
-                input.put(allOperands.get(i), value);
+                input.put((Expr<T>) allOperands.get(i), value);
             }
             inputBits++;
-            return new Input(input);
+            return new Input<>(input);
         }
     }
 
-    enum Operator {
+    public enum Operator {
         AND, OR, NOT, IDENTITY
     }
 
-    private static class Expr<T> {
-        Operator operator;
-        Expr[] exprs = new Expr[0];
-        T operandRef;
+    static class Expr<T> {
+        Operator op;
+        List<Expr<T>> operands;
+        T operand;
         Comparator<T> operandComparator;
 
-        Expr(Operator operator, Expr[] exprs, Comparator<T> operandComparator) {
-            this.operator = operator;
-            this.exprs = exprs;
+        Expr(Operator op, Comparator<T> operandComparator, List<Expr<T>> operands) {
+            this.op = op;
+            this.operands = operands;
             this.operandComparator = operandComparator;
         }
 
-        Expr(T operandRef, Comparator<T> operandComparator) {
-            this.operator = Operator.IDENTITY;
-            this.operandRef = operandRef;
+        Expr(T operand, Comparator<T> operandComparator) {
+            this.op = Operator.IDENTITY;
+            this.operand = operand;
             this.operandComparator = operandComparator;
+            this.operands = Collections.emptyList();
         }
 
         @Override
         public boolean equals(Object obj) {
-            if (obj == null || !(obj instanceof Expr)) {
+            if (!(obj instanceof Expr)) {
                 return false;
             }
 
-            Expr that = (Expr) obj;
-            if (!(operator == that.operator && exprs.length == that.exprs.length
-                    && operandComparator.compare(operandRef, (T) that.operandRef) == 0)) {
+            Expr<T> that = (Expr<T>) obj;
+            if (!(op == that.op && operands.size() == that.operands.size()
+                    && operandComparator.compare(operand, that.operand) == 0)) {
                 return false;
             }
-            for (int i = 0; i < exprs.length; i++) {
-                if (!Objects.equals(exprs[i], that.exprs[i])) {
+            for (int i = 0; i < operands.size(); i++) {
+                if (!Objects.equals(operands.get(i), that.operands.get(i))) {
                     return false;
                 }
             }
@@ -207,9 +215,9 @@ public class TruthTable {
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + operator.hashCode();
-            result = prime * result + operandRef.hashCode();
-            for (Expr expr : exprs) {
+            result = prime * result + op.hashCode();
+            result = prime * result + operand.hashCode();
+            for (Expr<T> expr : operands) {
                 result = prime * result + expr.hashCode();
             }
             return result;
@@ -217,32 +225,15 @@ public class TruthTable {
 
         @Override
         public String toString() {
-            return "Expr{" + "operator=" + operator + ", exprs=" + Arrays.toString(exprs) + ", operandRef=" + operandRef
-                    + '}';
-        }
-    }
-
-    @Override
-    public String toString() {
-        return "TruthTable{" + "allOperands=" + allOperands + ", expr=" + expr + '}';
-    }
-
-    public static class TruthTableBuilder<T> extends ExprBuilder<T> {
-
-        public TruthTableBuilder(Comparator<T> operandComparator) {
-            super(operandComparator);
-        }
-
-        public TruthTable build() {
-            Expr expr = buildExpr();
-            return new TruthTable(new ArrayList<>(allOperandSet), expr);
+            String exprStr = StringUtils.join(operands, ", ", "[", "]");
+            return "Expr{op=" + op + ", operands=" + exprStr + ", operand=" + operand + '}';
         }
     }
 
     public static class ExprBuilder<T> {
-        Set<Expr> allOperandSet = new HashSet<>();
+        Set<Expr<T>> allOperandSet = new HashSet<>();
         Deque<Operator> operatorStack = new ArrayDeque<>();
-        Deque<List<Expr>> exprsStack = new ArrayDeque<>();
+        Deque<List<Expr<T>>> exprsStack = new ArrayDeque<>();
         Comparator<T> operandComparator;
 
         public ExprBuilder(Comparator<T> operandComparator) {
@@ -250,28 +241,27 @@ public class TruthTable {
             exprsStack.push(new LinkedList<>());
         }
 
-        public ExprBuilder compositeStart(Operator operator) {
+        public ExprBuilder<T> compositeStart(Operator operator) {
             operatorStack.push(operator);
             exprsStack.push(new LinkedList<>());
             return this;
         }
 
-        public ExprBuilder compositeEnd() {
-            Expr<T> composited = new Expr<>(operatorStack.pop(), exprsStack.pop().toArray(new Expr[0]),
-                    operandComparator);
-            exprsStack.peek().add(composited);
+        public ExprBuilder<T> compositeEnd() {
+            Expr<T> composited = new Expr<>(operatorStack.pop(), operandComparator, exprsStack.pop());
+            Objects.requireNonNull(exprsStack.peek()).add(composited);
             return this;
         }
 
-        public ExprBuilder addOperand(T operandRef) {
-            Expr<T> expr = new Expr<>(operandRef, operandComparator);
+        public ExprBuilder<T> addExpr(T operand) {
+            Expr<T> expr = new Expr<>(operand, operandComparator);
             allOperandSet.add(expr);
-            exprsStack.peek().add(expr);
+            Objects.requireNonNull(exprsStack.peek()).add(expr);
             return this;
         }
 
-        protected Expr buildExpr() {
-            return exprsStack.peek().get(0);
+        protected Expr<T> build() {
+            return Objects.requireNonNull(exprsStack.peek()).get(0);
         }
     }
 }

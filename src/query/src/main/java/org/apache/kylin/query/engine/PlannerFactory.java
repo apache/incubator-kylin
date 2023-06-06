@@ -252,8 +252,8 @@ public class PlannerFactory {
     }
 
     private ConverterRule selectJoinRuleByConfig() {
-        return kylinConfig.isQueryNonEquiJoinModelEnabled() && (!BackdoorToggles.getIsQueryFromAutoModeling()
-                || BackdoorToggles.getIsQueryNonEquiJoinModelEnabled() || KylinConfig.getInstanceFromEnv().isUTEnv())
+        return (kylinConfig.isQueryNonEquiJoinModelEnabled() && !BackdoorToggles.getIsQueryFromAutoModeling())
+                || (kylinConfig.isNonEquiJoinRecommendationEnabled() && BackdoorToggles.getIsQueryFromAutoModeling()) //
                         ? KapJoinRule.NON_EQUI_INSTANCE
                         : KapJoinRule.INSTANCE;
     }
@@ -282,12 +282,8 @@ public class PlannerFactory {
             String field = split[1];
             try {
                 func.apply((RelOptRule) Class.forName(clazz).getDeclaredField(field).get(null));
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            } catch (NoSuchFieldException e) {
-                throw new RuntimeException(e);
+            } catch (IllegalAccessException | ClassNotFoundException | NoSuchFieldException e) {
+                throw new IllegalStateException(e);
             }
         }
     }

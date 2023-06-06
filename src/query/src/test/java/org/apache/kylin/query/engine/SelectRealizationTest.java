@@ -65,7 +65,8 @@ class SelectRealizationTest {
     void testDerivedFromSameContext() throws SqlParseException {
         val kylinConfig = getTestConfig();
         val config = KECalciteConfig.fromKapConfig(kylinConfig);
-        val schemaFactory = new ProjectSchemaFactory("default", kylinConfig);
+        String prj = "default";
+        val schemaFactory = new ProjectSchemaFactory(prj, kylinConfig);
         val rootSchema = schemaFactory.createProjectRootSchema();
         String defaultSchemaName = schemaFactory.getDefaultSchema();
         val catalogReader = createCatalogReader(config, rootSchema, defaultSchemaName);
@@ -81,7 +82,8 @@ class SelectRealizationTest {
                         + "FROM \"SSB\".\"LINEORDER\" \"LINEORDER\"\n" + "GROUP BY 1.1000000000000001 ) \"t0\"\n"
                         + "ON LINEORDER.LO_ORDERDATE = t0.X_measure__0\n" + "GROUP BY 1.1000000000000001");
         RelNode node = queryOptimizer.optimize(relRoot).rel;
-        val olapContexts = QueryContextCutter.selectRealization(node, BackdoorToggles.getIsQueryFromAutoModeling());
+        val olapContexts = QueryContextCutter.selectRealization(prj, node,
+                BackdoorToggles.getIsQueryFromAutoModeling());
         Assertions.assertNotNull(olapContexts);
         Assertions.assertFalse(olapContexts.isEmpty());
     }

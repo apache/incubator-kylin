@@ -47,7 +47,7 @@ public class OlapContextTestUtil {
         QueryExec queryExec = new QueryExec(project, KylinConfig.getInstanceFromEnv());
         try {
             RelNode rel = queryExec.parseAndOptimize(sql);
-            QueryContextCutter.selectRealization(rel, reCutBanned);
+            QueryContextCutter.selectRealization(project, rel, reCutBanned);
         } catch (NoRealizationFoundException | NoStreamingRealizationFoundException e) {
             // When NoRealizationFoundException occurs, do nothing
             // because we only need to obtain OlapContexts.
@@ -61,7 +61,7 @@ public class OlapContextTestUtil {
         QueryExec queryExec = new QueryExec(project, KylinConfig.getInstanceFromEnv());
         try {
             RelNode rel = queryExec.parseAndOptimize(sql);
-            QueryContextCutter.selectRealization(rel, reCutBanned);
+            QueryContextCutter.selectRealization(project, rel, reCutBanned);
         } catch (NoRealizationFoundException e) {
             consumer.accept(e);
         }
@@ -76,7 +76,7 @@ public class OlapContextTestUtil {
         try {
             List<RelNode> relNodes = queryExec.postOptimize(rel);
             relNodes.forEach(relNode -> {
-                QueryContextCutter.selectRealization(relNode, reCutBanned);
+                QueryContextCutter.selectRealization(project, relNode, reCutBanned);
                 olapContexts.addAll(getOlapContexts());
             });
         } catch (NoRealizationFoundException e) {

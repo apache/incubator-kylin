@@ -40,4 +40,7 @@ public class ThreadUtil {
                 .collect(Collectors.toList()), "\n");
     }
 
+    public static void warnKylinStackTrace(String simpleErrorMsg) {
+        log.warn(simpleErrorMsg + getKylinStackTrace());
+    }
 }

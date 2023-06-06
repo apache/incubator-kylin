@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
@@ -37,8 +39,6 @@ import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.tool.constant.StringConstant;
 import org.apache.kylin.tool.util.ToolMainWrapper;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

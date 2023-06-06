@@ -34,15 +34,14 @@ public class QueryInterruptChecker {
     }
 
     /**
-     * @deprecated Use {@link this#checkQueryCanceledOrThreadInterrupted(String, String)} instead.
+     * At most cases, please use {@link this#checkQueryCanceledOrThreadInterrupted(String, String)} instead.
      * The semantic of this method is confused in some scenarios.
      */
-    @Deprecated
     public static void checkThreadInterrupted(String errorMsgLog, String stepInfo) {
         if (Thread.currentThread().isInterrupted()) {
             log.error("{} {}", QueryContext.current().getQueryId(), errorMsgLog);
             if (SlowQueryDetector.getRunningQueries().containsKey(Thread.currentThread())
-                && SlowQueryDetector.getRunningQueries().get(Thread.currentThread()).isStopByUser()) {
+                    && SlowQueryDetector.getRunningQueries().get(Thread.currentThread()).isStopByUser()) {
                 throw new UserStopQueryException("");
             }
 
@@ -67,31 +66,31 @@ public class QueryInterruptChecker {
      */
     public static void checkQueryCanceledOrThreadInterrupted(String cause, String step) throws InterruptedException {
         SlowQueryDetector.QueryEntry entry = SlowQueryDetector.getRunningQueries().getOrDefault(Thread.currentThread(),
-            null);
+                null);
         if (entry != null) {
             if (entry.isStopByUser() && entry.getPlannerCancelFlag().isCancelRequested()
-                && Thread.currentThread().isInterrupted()) {
+                    && Thread.currentThread().isInterrupted()) {
                 throw new UserStopQueryException(String.format("Manually stop the query %s. Caused: %s. Step: %s",
-                    entry.getQueryId(), cause, step));
+                        entry.getQueryId(), cause, step));
             }
 
             if (entry.getPlannerCancelFlag().isCancelRequested() && Thread.currentThread().isInterrupted()) {
                 QueryContext.current().getQueryTagInfo().setTimeout(true);
                 throw new KylinTimeoutException(String.format("Run out of time of the query %s. Caused: %s. Step: %s",
-                    entry.getQueryId(), cause, step));
+                        entry.getQueryId(), cause, step));
             }
 
             if (entry.isStopByUser() || entry.getPlannerCancelFlag().isCancelRequested()) {
                 throw new UserStopQueryException(String.format(
-                    "You are trying to cancel the query %s with inconsistent states:"
-                        + " [isStopByUser=%s, isCancelRequested=%s]! Caused: %s. Step: %s",
-                    entry.getQueryId(), entry.isStopByUser(), entry.getPlannerCancelFlag().isCancelRequested(),
-                    cause, step));
+                        "You are trying to cancel the query %s with inconsistent states:"
+                                + " [isStopByUser=%s, isCancelRequested=%s]! Caused: %s. Step: %s",
+                        entry.getQueryId(), entry.isStopByUser(), entry.getPlannerCancelFlag().isCancelRequested(),
+                        cause, step));
             }
         }
         if (Thread.currentThread().isInterrupted()) {
             throw new InterruptedException(String.format("Interrupted on thread %s. Caused: %s. Step: %s",
-                Thread.currentThread().getName(), cause, step));
+                    Thread.currentThread().getName(), cause, step));
         }
     }
 }
