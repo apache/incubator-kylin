@@ -16,10 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.kylin.rest.util;
+package org.apache.kylin.tool.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,20 +32,16 @@ import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.metadata.model.ColumnDesc;
 import org.apache.kylin.metadata.model.TableDesc;
 
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A tool to generate database and tables from metadata backups of customer
  */
+@Slf4j
 public class CreateTableFromJson {
 
     private static final String QUOTE = "`";
-    private static final Map<String, String> TYPE_MAP = Maps.newHashMap();
-
-    private static final Logger logger = LoggerFactory.getLogger(CreateTableFromJson.class);
+    private static final Map<String, String> TYPE_MAP = new HashMap<>();
 
     static {
         TYPE_MAP.put("integer", "int");
@@ -54,23 +53,23 @@ public class CreateTableFromJson {
         String pathDir = args[0];
         Map<String, List<String>> map = createDbAndTables(pathDir);
 
-        map.forEach((k, v) -> {
-            logger.info(k);
-            v.forEach(logger::info);
+        map.forEach((db, tables) -> {
+            for (String s : db.split("\n")) {
+                log.info(s);
+            }
+            tables.forEach(log::info);
         });
-
-        logger.info("\n\n\n\n\n");
     }
 
     // the path is /{metadata_backup_path}/{project_name}/table/
     private static Map<String, List<String>> createDbAndTables(String pathDir) throws IOException {
-        Map<String, List<String>> map = Maps.newHashMap();
+        Map<String, List<String>> map = new LinkedHashMap<>();
         File file = new File(pathDir).getAbsoluteFile();
         File[] files = file.listFiles();
 
         for (File f : Objects.requireNonNull(files)) {
             final TableDesc tableDesc = JsonUtil.readValue(f, TableDesc.class);
-            List<String> columnNameTypeList = Lists.newArrayList();
+            List<String> columnNameTypeList = new ArrayList<>();
             for (ColumnDesc column : tableDesc.getColumns()) {
                 String name = column.getName();
                 String type = convert(column.getDatatype());
@@ -79,7 +78,7 @@ public class CreateTableFromJson {
 
             String databaseSql = String.format(Locale.ROOT, "create database %s;%nuse %s;",
                     quote(tableDesc.getDatabase()), quote(tableDesc.getDatabase()));
-            map.putIfAbsent(databaseSql, Lists.newArrayList());
+            map.putIfAbsent(databaseSql, new ArrayList<>());
             String tableSql = createTableSql(tableDesc.getName(), columnNameTypeList);
             map.get(databaseSql).add(tableSql);
         }

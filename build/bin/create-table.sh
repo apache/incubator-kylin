@@ -16,7 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 if [ -z $KYLIN_HOME ];then
     export KYLIN_HOME=$(cd -P -- "$(dirname -- "$0")"/../ && pwd -P)
 fi

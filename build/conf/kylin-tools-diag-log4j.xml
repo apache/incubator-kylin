@@ -28,6 +28,9 @@
         <Console name="stdout" target="SYSTEM_OUT">
             <PatternLayout pattern="%X{traceId}%d{ISO8601} %-5p %X{request.project}[%t] %c{2} : %mask{%m}%n"/>
         </Console>
+        <File name="createTableSql" fileName="${env:KYLIN_HOME}/logs/create_table.sql">
+            <PatternLayout pattern="%msg%n"/>
+        </File>
     </Appenders>
     <Loggers>
         <Root level="DEBUG">
@@ -38,5 +41,8 @@
         <Logger name="org.springframework.security" level="INFO"/>
         <Logger name="io.kyligence" level="DEBUG"/>
         <Logger name="org.apache.kylin" level="DEBUG"/>
+        <Logger name="org.apache.kylin.tool.util.CreateTableFromJson" level="INFO">
+            <AppenderRef ref="createTableSql"/>
+        </Logger>
     </Loggers>
 </Configuration>
