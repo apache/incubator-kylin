@@ -38,6 +38,7 @@ public class FastRoutineTool extends RoutineTool {
             return;
         }
         initOptionValues(optionsHelper);
+
         List<String> projectsToCleanup = getProjectsToCleanup();
         try {
             if (isMetadataCleanup()) {
