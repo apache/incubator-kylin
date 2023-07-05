@@ -18,6 +18,10 @@
 
 package org.apache.kylin.engine.spark.job.stage.build
 
+import java.math.BigInteger
+import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.{Locale, Objects, Timer, TimerTask}
+
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.fs.Path
 import org.apache.kylin.common.util.HadoopUtil
@@ -32,8 +36,8 @@ import org.apache.kylin.engine.spark.job.{FiltersUtil, SegmentJob, TableMetaMana
 import org.apache.kylin.engine.spark.model.SegmentFlatTableDesc
 import org.apache.kylin.engine.spark.model.planner.{CuboIdToLayoutUtils, FlatTableToCostUtils}
 import org.apache.kylin.engine.spark.smarter.IndexDependencyParser
-import org.apache.kylin.engine.spark.utils.{LogEx, SparkConfHelper}
 import org.apache.kylin.engine.spark.utils.SparkDataSource._
+import org.apache.kylin.engine.spark.utils.{LogEx, SparkConfHelper}
 import org.apache.kylin.guava30.shaded.common.collect.Sets
 import org.apache.kylin.metadata.cube.cuboid.AdaptiveSpanningTree
 import org.apache.kylin.metadata.cube.cuboid.AdaptiveSpanningTree.AdaptiveTreeBuilder
@@ -47,9 +51,6 @@ import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.util.SparderTypeUtil
 import org.apache.spark.utils.ProxyThreadUtils
 
-import java.math.BigInteger
-import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.{Locale, Objects, Timer, TimerTask}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.parallel.ForkJoinTaskSupport
@@ -139,7 +140,7 @@ abstract class FlatTableAndDictBase(private val jobContext: SegmentJob,
       if (inferFiltersEnabled) {
         FiltersUtil.initFilters(tableDesc, lookupTableDSMap)
       }
-      val jointDS = joinFactTableWithLookupTables(fastFactTableDS, lookupTableDSMap, dataModel, sparkSession)
+      val jointDS = joinFactTableWithLookupTables(fastFactTableDS, lookupTableDSMap, dataModel)
       concatCCs(jointDS, factTableCCs)
     } else {
       concatCCs(fastFactTableDS, factTableCCs)
@@ -216,7 +217,7 @@ abstract class FlatTableAndDictBase(private val jobContext: SegmentJob,
         FiltersUtil.initFilters(tableDesc, lookupTables)
       }
 
-      val jointTable = joinFactTableWithLookupTables(factTable, lookupTables, dataModel, sparkSession)
+      val jointTable = joinFactTableWithLookupTables(factTable, lookupTables, dataModel)
       buildDictIfNeed(concatCCs(jointTable, factTableCCs),
         selectColumnsNotInTables(factTable, lookupTables.values.toSeq, dictCols),
         selectColumnsNotInTables(factTable, lookupTables.values.toSeq, encodeCols))
@@ -704,11 +705,16 @@ object FlatTableAndDictBase extends LogEx {
     newDS.select(selectedColumns: _*)
   }
 
-  def wrapAlias(originDS: Dataset[Row], alias: String): Dataset[Row] = {
-    val newFields = originDS.schema.fields.map(f =>
-      convertFromDot("`" + alias + "`" + "." + "`" + f.name + "`")).toSeq
+  def wrapAlias(originDS: Dataset[Row], alias: String, needLog: Boolean = true): Dataset[Row] = {
+    val newFields = originDS.schema.fields
+      .map(f => {
+        val aliasDotColName = "`" + alias + "`" + "." + "`" + f.name + "`"
+        convertFromDot(aliasDotColName)
+      }).toSeq
     val newDS = originDS.toDF(newFields: _*)
-    logInfo(s"Wrap ALIAS ${originDS.schema.treeString} TO ${newDS.schema.treeString}")
+    if (needLog) {
+      logInfo(s"Wrap ALIAS ${originDS.schema.treeString} TO ${newDS.schema.treeString}")
+    }
     newDS
   }
 
@@ -716,17 +722,17 @@ object FlatTableAndDictBase extends LogEx {
   def joinFactTableWithLookupTables(rootFactDataset: Dataset[Row],
                                     lookupTableDatasetMap: mutable.Map[JoinTableDesc, Dataset[Row]],
                                     model: NDataModel,
-                                    ss: SparkSession): Dataset[Row] = {
+                                    needLog: Boolean = true): Dataset[Row] = {
     lookupTableDatasetMap.foldLeft(rootFactDataset)(
       (joinedDataset: Dataset[Row], tuple: (JoinTableDesc, Dataset[Row])) =>
-        joinTableDataset(model.getRootFactTable.getTableDesc, tuple._1, joinedDataset, tuple._2, ss))
+        joinTableDataset(model.getRootFactTable.getTableDesc, tuple._1, joinedDataset, tuple._2, needLog))
   }
 
   def joinTableDataset(rootFactDesc: TableDesc,
                        lookupDesc: JoinTableDesc,
                        rootFactDataset: Dataset[Row],
                        lookupDataset: Dataset[Row],
-                       ss: SparkSession): Dataset[Row] = {
+                       needLog: Boolean = true): Dataset[Row] = {
     var afterJoin = rootFactDataset
     val join = lookupDesc.getJoin
     if (join != null && !StringUtils.isEmpty(join.getType)) {
@@ -738,34 +744,42 @@ object FlatTableAndDictBase extends LogEx {
           s"Invalid join condition of fact table: $rootFactDesc,fk: ${fk.mkString(",")}," +
             s" lookup table:$lookupDesc, pk: ${pk.mkString(",")}")
       }
-      val equiConditionColPairs = fk.zip(pk).map(joinKey =>
-        col(convertFromDot(joinKey._1.getBackTickIdentity))
-          .equalTo(col(convertFromDot(joinKey._2.getBackTickIdentity))))
-      logInfo(s"Lookup table schema ${lookupDataset.schema.treeString}")
+      if (needLog) {
+        logInfo(s"Lookup table schema ${lookupDataset.schema.treeString}")
+      }
 
-      if (join.getNonEquiJoinCondition != null) {
-        val condition: Column = getCondition(join, equiConditionColPairs)
-        logInfo(s"Root table ${rootFactDesc.getIdentity}, join table ${lookupDesc.getAlias}, non-equi condition: ${condition.toString()}")
-        afterJoin = afterJoin.join(lookupDataset, condition, joinType)
+      val condition = getCondition(join)
+      if (needLog) {
+        val nonEquiv = if (join.getNonEquiJoinCondition == null) "" else "non-equi "
+        logInfo(s"Root table ${rootFactDesc.getIdentity},"
+          + s" join table ${lookupDesc.getAlias},"
+          + s" ${nonEquiv} condition: ${condition.toString()}")
+      }
+
+      if (join.getNonEquiJoinCondition == null && inferFiltersEnabled) {
+        afterJoin = afterJoin.join(FiltersUtil.inferFilters(pk, lookupDataset), condition, joinType)
       } else {
-        val condition = equiConditionColPairs.reduce(_ && _)
-        logInfo(s"Root table ${rootFactDesc.getIdentity}, join table ${lookupDesc.getAlias}, condition: ${condition.toString()}")
-        if (inferFiltersEnabled) {
-          afterJoin = afterJoin.join(FiltersUtil.inferFilters(pk, lookupDataset), condition, joinType)
-        } else {
-          afterJoin = afterJoin.join(lookupDataset, condition, joinType)
-        }
+        afterJoin = afterJoin.join(lookupDataset, condition, joinType)
       }
     }
     afterJoin
   }
 
-  def getCondition(join: JoinDesc, equiConditionColPairs: Array[Column]): Column = {
-    var condition = NonEquiJoinConditionBuilder.convert(join.getNonEquiJoinCondition)
-    if (!equiConditionColPairs.isEmpty) {
-      condition = condition && equiConditionColPairs.reduce(_ && _)
+  def getCondition(join: JoinDesc): Column = {
+    val pk = join.getPrimaryKeyColumns
+    val fk = join.getForeignKeyColumns
+
+    val equalPairs = fk.zip(pk).map(joinKey => {
+      val fkIdentity = convertFromDot(joinKey._1.getBackTickIdentity)
+      val pkIdentity = convertFromDot(joinKey._2.getBackTickIdentity)
+      col(fkIdentity).equalTo(col(pkIdentity))
+    }).reduce(_ && _)
+
+    if (join.getNonEquiJoinCondition == null) {
+      equalPairs
+    } else {
+      NonEquiJoinConditionBuilder.convert(join.getNonEquiJoinCondition) && equalPairs
     }
-    condition
   }
 
   def changeSchemeToColumnId(ds: Dataset[Row], tableDesc: SegmentFlatTableDesc): Dataset[Row] = {

@@ -57,7 +57,7 @@ object ExpressionConverter {
     "input_file_name", "monotonically_increasing_id", "now", "spark_partition_id", "uuid"
   )
 
-  private val varArgsFunc = mutable.HashSet("months_between", "locate", "rtrim", "from_unixtime", "to_date", "to_timestamp")
+  private val varArgsFunc = mutable.HashSet("months_between", "locate", "rtrim", "from_unixtime", "to_date", "to_timestamp", "split")
 
   private val bitmapUDF = mutable.HashSet("intersect_count_by_col", "subtract_bitmap_value", "subtract_bitmap_uuid");
 

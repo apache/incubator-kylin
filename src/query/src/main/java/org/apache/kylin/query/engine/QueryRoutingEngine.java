@@ -40,6 +40,7 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.QueryContext;
 import org.apache.kylin.common.QueryTrace;
 import org.apache.kylin.common.debug.BackdoorToggles;
+import org.apache.kylin.common.exception.CalciteNotSupportException;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.exception.NewQueryRefuseException;
 import org.apache.kylin.common.exception.TargetSegmentNotFoundException;
@@ -47,6 +48,8 @@ import org.apache.kylin.common.persistence.transaction.TransactionException;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.persistence.transaction.UnitOfWorkParams;
 import org.apache.kylin.common.util.DBUtils;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.project.NProjectLoader;
 import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.query.NativeQueryRealization;
@@ -67,9 +70,6 @@ import org.apache.kylin.source.adhocquery.PushdownResult;
 import org.apache.spark.SparkException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.val;
 
@@ -133,39 +133,63 @@ public class QueryRoutingEngine {
                         setParam(queryExec, i, queryParams.getParams()[i]);
                     }
                 }
+
+                // execute query and get result from kylin layouts
                 return execute(correctedSql, queryExec);
             }, queryParams.getProject());
         } catch (TransactionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof SQLException && cause.getCause() instanceof KylinException) {
-                throw (SQLException) cause;
-            }
-            if (shouldPushdown(cause, queryParams)) {
-                return pushDownQuery((SQLException) cause, queryParams);
-            } else {
-                throw e;
-            }
+            return handleTransactionException(queryParams, e);
         } catch (SQLException e) {
-            if (e.getCause() instanceof KylinException) {
-                if (checkIfRetryQuery(e.getCause())) {
-                    NProjectLoader.removeCache();
-                    return queryWithSqlMassage(queryParams);
-                } else {
-                    if (e.getCause() instanceof NewQueryRefuseException && shouldPushdown(e, queryParams)) {
-                        return pushDownQuery(e, queryParams);
-                    } else {
-                        throw e;
-                    }
-                }
-            }
-            if (shouldPushdown(e, queryParams)) {
-                return pushDownQuery(e, queryParams);
-            } else {
-                throw e;
-            }
+            return handleSqlException(queryParams, e);
+        } catch (AssertionError e) {
+            return handleAssertionError(queryParams, e);
         } finally {
             QueryResultMasks.remove();
         }
+    }
+
+    private QueryResult handleTransactionException(QueryParams queryParams, TransactionException e)
+            throws SQLException {
+        Throwable cause = e.getCause();
+        if (cause instanceof SQLException && cause.getCause() instanceof KylinException) {
+            throw (SQLException) cause;
+        }
+        if (!(cause instanceof SQLException)) {
+            throw e;
+        }
+        if (shouldPushdown(cause, queryParams)) {
+            return pushDownQuery((SQLException) cause, queryParams);
+        } else {
+            throw e;
+        }
+    }
+
+    private QueryResult handleSqlException(QueryParams queryParams, SQLException e) throws Exception {
+        if (e.getCause() instanceof KylinException) {
+            if (checkIfRetryQuery(e.getCause())) {
+                NProjectLoader.removeCache();
+                return queryWithSqlMassage(queryParams);
+            } else {
+                if (e.getCause() instanceof NewQueryRefuseException && shouldPushdown(e, queryParams)) {
+                    return pushDownQuery(e, queryParams);
+                } else {
+                    throw e;
+                }
+            }
+        }
+        if (shouldPushdown(e, queryParams)) {
+            return pushDownQuery(e, queryParams);
+        }
+        throw e;
+    }
+
+    private QueryResult handleAssertionError(QueryParams queryParams, AssertionError e) throws SQLException {
+        // for example: split('abc', 'b') will jump into this AssertionError
+        if (e.getMessage().equals("OTHER")) {
+            SQLException ex = new SQLException(e.getMessage(), new CalciteNotSupportException());
+            return pushDownQuery(ex, queryParams);
+        }
+        throw e;
     }
 
     public boolean checkIfRetryQuery(Throwable cause) {

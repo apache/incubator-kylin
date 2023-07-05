@@ -90,8 +90,13 @@ public class SparkStringUDF implements NotConstant {
         throw new CalciteNotSupportException();
     }
 
-    public String[] SPLIT(@Parameter(name = "str1") String exp1, @Parameter(name = "str2") String exp2)
+    public String[] SPLIT(@Parameter(name = "str") Object str, @Parameter(name = "regex") Object regex)
             throws CalciteNotSupportException {
+        throw new CalciteNotSupportException();
+    }
+
+    public String[] SPLIT(@Parameter(name = "str") Object str, @Parameter(name = "regex") Object regex,
+            @Parameter(name = "limit") Object limit) throws CalciteNotSupportException {
         throw new CalciteNotSupportException();
     }
 

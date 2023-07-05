@@ -17,18 +17,26 @@
  */
 package org.apache.spark.sql
 
+import java.io.File
 import java.sql.Types
 
 import org.apache.calcite.rel.`type`.RelDataTypeSystem
 import org.apache.calcite.sql.`type`.SqlTypeFactoryImpl
+import org.apache.commons.io.FileUtils
+import org.apache.kylin.common.KylinConfig
+import org.apache.kylin.guava30.shaded.common.io.Files
 import org.apache.kylin.metadata.datatype.DataType
 import org.apache.kylin.query.schema.OLAPTable
 import org.apache.spark.sql.common.SparderBaseFunSuite
 import org.apache.spark.sql.types.{DataTypes, StructField}
 import org.apache.spark.sql.util.SparderTypeUtil
 
+import scala.collection.immutable
+
 class SparderTypeUtilTest extends SparderBaseFunSuite {
-  val dataTypes = List(DataType.getType("decimal(19,4)"),
+
+  val dataTypes: immutable.Seq[DataType] = List(
+    DataType.getType("decimal(19,4)"),
     DataType.getType("char(50)"),
     DataType.getType("varchar(1000)"),
     DataType.getType("date"),
@@ -40,9 +48,9 @@ class SparderTypeUtilTest extends SparderBaseFunSuite {
     DataType.getType("float"),
     DataType.getType("double"),
     DataType.getType("decimal(38,19)"),
-    DataType.getType("numeric(5,4)")
+    DataType.getType("numeric(5,4)"),
+    DataType.getType("ARRAY<STRING>")
   )
-
 
   test("Test decimal") {
     val dt = DataType.getType("decimal(19,4)")
@@ -51,7 +59,7 @@ class SparderTypeUtilTest extends SparderBaseFunSuite {
     assert(dataTp.sameType(dataType))
     val sparkTp = SparderTypeUtil.toSparkType(dt)
     assert(dataTp.sameType(sparkTp))
-    val sparkTpSum = SparderTypeUtil.toSparkType(dt, true)
+    val sparkTpSum = SparderTypeUtil.toSparkType(dt, isSum = true)
     assert(DataTypes.createDecimalType(29, 4).sameType(sparkTpSum))
   }
 
@@ -72,6 +80,7 @@ class SparderTypeUtilTest extends SparderBaseFunSuite {
   }
 
   test("Test convertSqlTypeToSparkType") {
+    kylinConfig
     val typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT)
     dataTypes.map(dt => {
       val relDataType = OLAPTable.createSqlType(typeFactory, dt, true)
@@ -79,7 +88,16 @@ class SparderTypeUtilTest extends SparderBaseFunSuite {
     })
   }
 
+  private def kylinConfig = {
+    val tmpHome = Files.createTempDir
+    System.setProperty("KYLIN_HOME", tmpHome.getAbsolutePath)
+    FileUtils.touch(new File(tmpHome.getAbsolutePath + "/kylin.properties"))
+    KylinConfig.setKylinConfigForLocalTest(tmpHome.getCanonicalPath)
+    KylinConfig.getInstanceFromEnv
+  }
+
   test("test convertSparkFieldToJavaField") {
+    kylinConfig
     val typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT)
     dataTypes.map(dt => {
       val relDataType = OLAPTable.createSqlType(typeFactory, dt, true)
@@ -93,6 +111,9 @@ class SparderTypeUtilTest extends SparderBaseFunSuite {
         assert(Types.DECIMAL == structField.getDataType)
         assert(relDataType.getPrecision == structField.getPrecision)
         assert(relDataType.getScale == structField.getScale)
+      } else if (dt.getName.startsWith("array")) {
+        assert(structField.getDataType == Types.OTHER)
+        assert(relDataType.getSqlTypeName.getJdbcOrdinal == Types.ARRAY)
       } else {
         assert(relDataType.getSqlTypeName.getJdbcOrdinal == structField.getDataType)
       }

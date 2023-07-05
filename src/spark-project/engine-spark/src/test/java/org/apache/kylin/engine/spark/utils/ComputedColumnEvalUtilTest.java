@@ -365,6 +365,8 @@ public class ComputedColumnEvalUtilTest extends NLocalWithSparkSessionTest {
 
         exprTypes.put("TEST_MEASURE.FLAG", "BOOLEAN");
         exprTypes.put("NOT TEST_MEASURE.FLAG", "BOOLEAN");
+        exprTypes.put("SPLIT(TEST_MEASURE.NAME1, '[ABC]')", "array<string>");
+        exprTypes.put("SPLIT(TEST_MEASURE.NAME1, '[ABC]', 2)", "array<string>");
 
         AtomicInteger ccId = new AtomicInteger(0);
         List<ComputedColumnDesc> newCCs = exprTypes.keySet().stream().map(expr -> {

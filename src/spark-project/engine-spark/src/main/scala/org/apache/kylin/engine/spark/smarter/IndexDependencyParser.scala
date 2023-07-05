@@ -24,6 +24,7 @@ import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.kylin.engine.spark.job.NSparkCubingUtil
 import org.apache.kylin.engine.spark.job.stage.build.FlatTableAndDictBase
+import org.apache.kylin.guava30.shaded.common.collect.{Lists, Maps, Sets}
 import org.apache.kylin.metadata.cube.model.LayoutEntity
 import org.apache.kylin.metadata.model._
 import org.apache.kylin.query.util.PushDownUtil
@@ -33,8 +34,6 @@ import org.apache.spark.sql.{Dataset, Row, SparderEnv, SparkSession}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-
-import org.apache.kylin.guava30.shaded.common.collect.{Lists, Maps, Sets}
 
 class IndexDependencyParser(val model: NDataModel) {
 
@@ -113,7 +112,7 @@ class IndexDependencyParser(val model: NDataModel) {
     model.getJoinTables.asScala.map((joinTable: JoinTableDesc) => {
       joinTableDFMap.put(joinTable, generateDatasetOnTable(ss, joinTable.getTableRef))
     })
-    val df = FlatTableAndDictBase.joinFactTableWithLookupTables(rootDF, joinTableDFMap, model, ss)
+    val df = FlatTableAndDictBase.joinFactTableWithLookupTables(rootDF, joinTableDFMap, model, needLog = false)
     val filterCondition = model.getFilterCondition
     if (StringUtils.isNotEmpty(filterCondition)) {
       val massagedCondition = PushDownUtil.massageExpression(model, model.getProject, filterCondition, null)
@@ -127,7 +126,7 @@ class IndexDependencyParser(val model: NDataModel) {
     val structType = SchemaProcessor.buildSchemaWithRawTable(tableCols)
     val alias = tableRef.getAlias
     val dataset = ss.createDataFrame(Lists.newArrayList[Row], structType).alias(alias)
-    FlatTableAndDictBase.wrapAlias(dataset, alias)
+    FlatTableAndDictBase.wrapAlias(dataset, alias, needLog = false)
   }
 
   private def initTableNames(): Unit = {

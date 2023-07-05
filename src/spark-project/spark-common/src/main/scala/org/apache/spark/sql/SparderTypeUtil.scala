@@ -24,7 +24,7 @@ import org.apache.calcite.rex.RexLiteral
 import org.apache.calcite.sql.`type`.SqlTypeName
 import org.apache.calcite.util.NlsString
 import org.apache.kylin.common.KylinConfig
-import org.apache.kylin.common.util.DateFormat
+import org.apache.kylin.common.util.{DateFormat, StringHelper}
 import org.apache.kylin.metadata.datatype.DataType
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.Column
@@ -43,7 +43,9 @@ import java.util.{GregorianCalendar, Locale, TimeZone}
 import scala.collection.{immutable, mutable}
 
 object SparderTypeUtil extends Logging {
-  val DATETIME_FAMILY = List("time", "date", "timestamp", "datetime")
+
+  private val DATETIME_FAMILY: immutable.Seq[String] = List("time", "date", "timestamp", "datetime")
+  private val COMMA: String = "___COMMA___"
 
   def isDateTimeFamilyType(dataType: String): Boolean = {
     DATETIME_FAMILY.contains(dataType.toLowerCase())
@@ -51,10 +53,6 @@ object SparderTypeUtil extends Logging {
 
   def isDateType(dataType: String): Boolean = {
     "date".equalsIgnoreCase(dataType)
-  }
-
-  def isDateTime(sqlTypeName: SqlTypeName): Boolean = {
-    SqlTypeName.DATETIME_TYPES.contains(sqlTypeName)
   }
 
   // scalastyle:off
@@ -81,6 +79,7 @@ object SparderTypeUtil extends Logging {
       case "bitmap" => LongType
       case "dim_dc" => LongType
       case "boolean" => BooleanType
+      case "array<string>" => ArrayType(StringType)
       case _ => throw new IllegalArgumentException
     }
   }
@@ -116,6 +115,7 @@ object SparderTypeUtil extends Logging {
       case tp if tp.startsWith("extendedcolumn") => BinaryType
       case tp if tp.startsWith("percentile") => BinaryType
       case tp if tp.startsWith("raw") => BinaryType
+      case "array<string>" => ArrayType(StringType)
       case "any" => StringType
       case _ => throw new IllegalArgumentException(dataTp.toString)
     }
@@ -142,6 +142,7 @@ object SparderTypeUtil extends Logging {
         case tp if tp.startsWith("varchar") => s.toString
         case tp if tp.startsWith("char") => s.toString
         case "boolean" => java.lang.Boolean.parseBoolean(s.toString)
+        case "array<string>" => s.toString.split(COMMA)
         case noSupport => throw new IllegalArgumentException(s"No supported data type: $noSupport")
       }
     }
@@ -161,6 +162,8 @@ object SparderTypeUtil extends Logging {
       case SqlTypeName.DATE => DateType
       case SqlTypeName.TIMESTAMP => TimestampType
       case SqlTypeName.BOOLEAN => BooleanType
+      case SqlTypeName.ARRAY if dt.getComponentType.getSqlTypeName == SqlTypeName.VARCHAR => ArrayType(StringType)
+      case SqlTypeName.OTHER if dt.getComponentType == null => ArrayType(StringType) // handle null
       case SqlTypeName.ANY => StringType
       case _ =>
         throw new IllegalArgumentException(s"unsupported SqlTypeName $dt")
@@ -179,14 +182,14 @@ object SparderTypeUtil extends Logging {
       case DateType => SqlTypeName.DATE.getName
       case TimestampType => SqlTypeName.TIMESTAMP.getName
       case BooleanType => SqlTypeName.BOOLEAN.getName
-      case decimalType: DecimalType =>
-        SqlTypeName.DECIMAL.getName + "(" + decimalType.precision + "," + decimalType.scale + ")"
+      case decimalType: DecimalType => decimalType.sql
+      case arrayType: ArrayType => arrayType.simpleString
       case _ =>
         throw new IllegalArgumentException(s"unsupported SqlTypeName $dt")
     }
   }
 
-  def getValueFromNlsString(s: NlsString): String = {
+  private def getValueFromNlsString(s: NlsString): String = {
     if (!KylinConfig.getInstanceFromEnv.isQueryEscapedLiteral) {
       val ret = new StringBuilder
       ret.append("'")
@@ -199,11 +202,11 @@ object SparderTypeUtil extends Logging {
     }
   }
 
-  def getValueFromRexLit(literal: RexLiteral) = {
+  def getValueFromRexLit(literal: RexLiteral): Any = {
     val ret = literal.getValue match {
       case s: NlsString =>
         getValueFromNlsString(s)
-      case g: GregorianCalendar =>
+      case _: GregorianCalendar =>
         if (literal.getTypeName.getName.equals("DATE")) {
           new Date(DateTimeUtils.stringToTimestamp(UTF8String.fromString(literal.toString), ZoneId.systemDefault()).get / 1000)
         } else {
@@ -250,7 +253,17 @@ object SparderTypeUtil extends Logging {
   }
 
   def convertToStringWithCalciteType(rawValue: Any, relType: RelDataType, wrapped: Boolean = false): String = {
-    val formatStringValue = (value: String) => if (wrapped) "\"" + value + "\"" else value
+    val formatStringValue = (value: String) => if (wrapped) StringHelper.doubleQuote(value) else value
+    val formatArray = (value: String) => {
+      if (value.startsWith("WrappedArray")) {
+        val s = value.stripPrefix("WrappedArray")
+        s.substring(1, s.length - 1)
+          .split(",").toStream.map(_.trim)
+          .mkString(COMMA)
+      } else {
+        StringHelper.doubleQuote(value)
+      }
+    }
 
     (rawValue, relType.getSqlTypeName) match {
       case (null, _) => null
@@ -270,6 +283,7 @@ object SparderTypeUtil extends Logging {
       case (value: java.sql.Timestamp, SqlTypeName.CHAR | SqlTypeName.VARCHAR) => formatStringValue(DateFormat.castTimestampToString(value.getTime))
       case (value: java.sql.Date, SqlTypeName.CHAR | SqlTypeName.VARCHAR) => formatStringValue(DateFormat.formatToDateStr(value.getTime))
       case (value, SqlTypeName.CHAR | SqlTypeName.VARCHAR) => formatStringValue(value.toString)
+      case (value: String, SqlTypeName.ARRAY) => formatArray(value)
       // cast type to align with relType
       case (value: Any, SqlTypeName.DECIMAL) =>
         new java.math.BigDecimal(value.toString)
@@ -297,13 +311,14 @@ object SparderTypeUtil extends Logging {
       case (dt: java.sql.Date, _) => DateFormat.formatToDateStr(dt.getTime)
       case (str: java.lang.String, _) => formatStringValue(str)
       case (value: mutable.WrappedArray.ofRef[AnyRef], _) =>
-        value.array.map(v => convertToStringWithCalciteType(v, relType, true)).mkString("[", ",", "]")
+        value.array.map(v => convertToStringWithCalciteType(v, relType, wrapped = true)).mkString("[", ",", "]")
       case (value: mutable.WrappedArray[Any], _) =>
-        value.array.map(v => convertToStringWithCalciteType(v, relType, true)).mkString("[", ",", "]")
+        value.array.map(v => convertToStringWithCalciteType(v, relType, wrapped = true)).mkString("[", ",", "]")
       case (value: immutable.Map[Any, Any], _) =>
-        value
-          .map(v => convertToStringWithCalciteType(v._1, relType, true) + ":" + convertToStringWithCalciteType(v._2, relType, true))
-          .mkString("{", ",", "}")
+        value.map(v =>
+          convertToStringWithCalciteType(v._1, relType, wrapped = true) + ":"
+            + convertToStringWithCalciteType(v._2, relType, wrapped = true)
+        ).mkString("{", ",", "}")
       case (value: Array[Byte], _) => new String(value)
       case (other, _) => other.toString
     }
@@ -336,14 +351,7 @@ object SparderTypeUtil extends Logging {
     } else {
       try {
         val a: Any = sqlTypeName match {
-          case SqlTypeName.DECIMAL =>
-            if (s.isInstanceOf[java.lang.Double] || s
-              .isInstanceOf[java.lang.Float] || s.toString.contains(".")) {
-              new java.math.BigDecimal(s.toString)
-                .setScale(rowType.getScale, BigDecimal.ROUND_HALF_EVEN)
-            } else {
-              new java.math.BigDecimal(s.toString)
-            }
+          case SqlTypeName.DECIMAL => transferDecimal(s, rowType)
           case SqlTypeName.CHAR => s.toString
           case SqlTypeName.VARCHAR => s.toString
           case SqlTypeName.INTEGER => s.toString.toInt
@@ -352,7 +360,7 @@ object SparderTypeUtil extends Logging {
           case SqlTypeName.BIGINT => s.toString.toLong
           case SqlTypeName.FLOAT => java.lang.Double.parseDouble(s.toString)
           case SqlTypeName.DOUBLE => java.lang.Double.parseDouble(s.toString)
-          case SqlTypeName.DATE => {
+          case SqlTypeName.DATE =>
             // time over here is with timezone.
             val string = s.toString
             if (string.contains("-")) {
@@ -372,9 +380,8 @@ object SparderTypeUtil extends Logging {
                 DateFormat.stringToMillis(string) / 1000
               }
             }
-          }
-          case SqlTypeName.TIMESTAMP | SqlTypeName.TIME => {
-            var ts = s.asInstanceOf[Timestamp].toString
+          case SqlTypeName.TIMESTAMP | SqlTypeName.TIME =>
+            val ts = s.asInstanceOf[Timestamp].toString
             if (toCalcite) {
               // current ts is local timezone ,org.apache.calcite.avatica.util.AbstractCursor.TimeFromNumberAccessor need to utc
               DateTimeUtils.stringToTimestamp(UTF8String.fromString(ts), TimeZone.getTimeZone("UTC").toZoneId).get / 1000
@@ -382,17 +389,26 @@ object SparderTypeUtil extends Logging {
               // ms to s
               s.asInstanceOf[Timestamp].getTime / 1000
             }
-          }
           case SqlTypeName.BOOLEAN => s;
           case _ => s.toString
         }
         a
       } catch {
-        case th: Throwable =>
-          logWarning(s"""convertStringToValue failed: {"v": "${s}", "cls": "${s.getClass}", "type": "$sqlTypeName"}""")
+        case _: Throwable =>
+          logWarning(s"""convertStringToValue failed: {"v": "$s", "cls": "${s.getClass}", "type": "$sqlTypeName"}""")
           // fixme aron never come to here, for coverage ignore.
           safetyConvertStringToValue(s, rowType, toCalcite)
       }
+    }
+  }
+
+  private def transferDecimal(s: Any, rowType: RelDataType) = {
+    if (s.isInstanceOf[JDouble] || s
+      .isInstanceOf[JFloat] || s.toString.contains(".")) {
+      new BigDecimal(s.toString)
+        .setScale(rowType.getScale, BigDecimal.ROUND_HALF_EVEN)
+    } else {
+      new BigDecimal(s.toString)
     }
   }
 
@@ -417,21 +433,15 @@ object SparderTypeUtil extends Logging {
       case "bitmap" => LongType
       case "dim_dc" => LongType
       case "boolean" => BooleanType
+      case "array<string>" => ArrayType(StringType)
       case noSupport => throw new IllegalArgumentException(s"No supported data type: $noSupport")
     }
   }
 
-  def safetyConvertStringToValue(s: Any, rowType: RelDataType, toCalcite: Boolean): Any = {
+  private def safetyConvertStringToValue(s: Any, rowType: RelDataType, toCalcite: Boolean): Any = {
     try {
       rowType.getSqlTypeName match {
-        case SqlTypeName.DECIMAL =>
-          if (s.isInstanceOf[java.lang.Double] || s
-            .isInstanceOf[java.lang.Float] || s.toString.contains(".")) {
-            new java.math.BigDecimal(s.toString)
-              .setScale(rowType.getScale, BigDecimal.ROUND_HALF_EVEN)
-          } else {
-            new java.math.BigDecimal(s.toString)
-          }
+        case SqlTypeName.DECIMAL => transferDecimal(s, rowType)
         case SqlTypeName.CHAR => s.toString
         case SqlTypeName.VARCHAR => s.toString
         case SqlTypeName.INTEGER => s.toString.toDouble.toInt
@@ -440,7 +450,7 @@ object SparderTypeUtil extends Logging {
         case SqlTypeName.BIGINT => s.toString.toDouble.toLong
         case SqlTypeName.FLOAT => java.lang.Float.parseFloat(s.toString)
         case SqlTypeName.DOUBLE => java.lang.Double.parseDouble(s.toString)
-        case SqlTypeName.DATE => {
+        case SqlTypeName.DATE =>
           // time over here is with timezone.
           val string = s.toString
           if (string.contains("-")) {
@@ -459,16 +469,14 @@ object SparderTypeUtil extends Logging {
               DateFormat.stringToMillis(string)
             }
           }
-        }
-        case SqlTypeName.TIMESTAMP | SqlTypeName.TIME => {
-          var ts = s.asInstanceOf[Timestamp].getTime
+        case SqlTypeName.TIMESTAMP | SqlTypeName.TIME =>
+          val ts = s.asInstanceOf[Timestamp].getTime
           if (toCalcite) {
             ts
           } else {
             // ms to s
             ts / 1000
           }
-        }
         case SqlTypeName.BOOLEAN => s;
         case _ => s.toString
       }
@@ -484,7 +492,7 @@ object SparderTypeUtil extends Logging {
     calciteTimestamp / 1000
   }
 
-  def toCalciteTimestamp(sparkTimestamp: Long): Long = {
+  private def toCalciteTimestamp(sparkTimestamp: Long): Long = {
     sparkTimestamp * 1000
   }
 
@@ -551,6 +559,11 @@ object SparderTypeUtil extends Logging {
       case StringType =>
         builder.setDataType(Types.VARCHAR)
         builder.setDataTypeName("VARCHAR")
+      // This is more better, but calcite RelNode digest seems not support.
+      //
+      // case arrayType: ArrayType =>
+      //   builder.setDataType(Types.ARRAY)
+      //   builder.setDataTypeName(arrayType.sql)
       case _ =>
         builder.setDataType(Types.OTHER)
         builder.setDataTypeName(field.dataType.sql)

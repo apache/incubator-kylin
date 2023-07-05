@@ -28,7 +28,7 @@ import org.apache.kylin.metadata.cube.cuboid.NLayoutCandidate
 import org.apache.kylin.metadata.cube.gridtable.NLayoutToGridTableMapping
 import org.apache.kylin.metadata.cube.model.{LayoutEntity, NDataSegment, NDataflow}
 import org.apache.kylin.metadata.model.{DeriveInfo, FunctionDesc, NTableMetadataManager, ParameterDesc, TblColRef}
-import org.apache.kylin.metadata.realization.{HybridRealization, IRealization}
+import org.apache.kylin.metadata.realization.HybridRealization
 import org.apache.kylin.metadata.tuple.TupleInfo
 import org.apache.kylin.query.implicits.sessionToQueryContext
 import org.apache.kylin.query.relnode.{KapRel, OLAPContext}
@@ -436,13 +436,10 @@ object TableScanPlan extends LogEx {
   def createLookupTable(rel: KapRel): DataFrame = {
     val start = System.currentTimeMillis()
 
-    val session = SparderEnv.getSparkSession
     val olapContext = rel.getContext
-    var instance: IRealization = null
-    if (olapContext.realization.isInstanceOf[NDataflow]) {
-      instance = olapContext.realization.asInstanceOf[NDataflow]
-    } else {
-      instance = olapContext.realization.asInstanceOf[HybridRealization]
+    val instance = olapContext.realization match {
+      case dataflow: NDataflow => dataflow
+      case _ => olapContext.realization.asInstanceOf[HybridRealization]
     }
 
     val tableMetadataManager = NTableMetadataManager.getInstance(instance.getConfig, instance.getProject)
@@ -450,9 +447,7 @@ object TableScanPlan extends LogEx {
     val snapshotResPath = tableMetadataManager.getTableDesc(lookupTableName).getLastSnapshotPath
     val config = instance.getConfig
     val dataFrameTableName = instance.getProject + "@" + lookupTableName
-    val lookupDf = SparderLookupManager.getOrCreate(dataFrameTableName,
-      snapshotResPath,
-      config)
+    val lookupDf = SparderLookupManager.getOrCreate(dataFrameTableName, snapshotResPath, config)
 
     val olapTable = olapContext.firstTableScan.getOlapTable
     val alisTableName = olapContext.firstTableScan.getBackupAlias

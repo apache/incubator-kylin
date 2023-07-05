@@ -23,9 +23,11 @@ import java.util.Locale
 import org.apache.commons.lang3.StringUtils
 import org.apache.kylin.engine.spark.builder.DFBuilderHelper._
 import org.apache.kylin.engine.spark.job.NSparkCubingUtil._
+import org.apache.kylin.engine.spark.job.stage.build.FlatTableAndDictBase
 import org.apache.kylin.engine.spark.job.{FlatTableHelper, TableMetaManager}
 import org.apache.kylin.engine.spark.utils.SparkDataSource._
 import org.apache.kylin.engine.spark.utils.{LogEx, LogUtils}
+import org.apache.kylin.guava30.shaded.common.collect.Sets
 import org.apache.kylin.metadata.cube.cuboid.NSpanningTree
 import org.apache.kylin.metadata.cube.model.{NCubeJoinedFlatTableDesc, NDataSegment}
 import org.apache.kylin.metadata.model._
@@ -36,8 +38,6 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.parallel.ForkJoinTaskSupport
 import scala.concurrent.forkjoin.ForkJoinPool
-
-import org.apache.kylin.guava30.shaded.common.collect.Sets
 
 
 @Deprecated
@@ -232,24 +232,14 @@ object CreateFlatTable extends LogEx {
           s"Invalid join condition of fact table: $rootFactDesc,fk: ${fk.mkString(",")}," +
             s" lookup table:$lookupDesc, pk: ${pk.mkString(",")}")
       }
-      val equiConditionColPairs = fk.zip(pk).map(joinKey =>
-        col(convertFromDot(joinKey._1.getBackTickIdentity))
-          .equalTo(col(convertFromDot(joinKey._2.getBackTickIdentity))))
       logInfo(s"Lookup table schema ${lookupDataset.schema.treeString}")
 
-      if (join.getNonEquiJoinCondition != null) {
-        var condition = NonEquiJoinConditionBuilder.convert(join.getNonEquiJoinCondition)
-        if (!equiConditionColPairs.isEmpty) {
-          condition = condition && equiConditionColPairs.reduce(_ && _)
-        }
-        logInfo(s"Root table ${rootFactDesc.getIdentity}, join table ${lookupDesc.getAlias}, non-equi condition: ${condition.toString()}")
-        afterJoin = afterJoin.join(lookupDataset, condition, joinType)
-      } else {
-        val condition = equiConditionColPairs.reduce(_ && _)
-        logInfo(s"Root table ${rootFactDesc.getIdentity}, join table ${lookupDesc.getAlias}, condition: ${condition.toString()}")
-        afterJoin = afterJoin.join(lookupDataset, condition, joinType)
-
-      }
+      val condition = FlatTableAndDictBase.getCondition(join)
+      val nonEquiv = if (join.getNonEquiJoinCondition == null) "" else "non-equi "
+      logInfo(s"Root table ${rootFactDesc.getIdentity},"
+        + s" join table ${lookupDesc.getAlias},"
+        + s" ${nonEquiv}condition: ${condition.toString()}")
+      afterJoin = afterJoin.join(lookupDataset, condition, joinType)
     }
     afterJoin
   }

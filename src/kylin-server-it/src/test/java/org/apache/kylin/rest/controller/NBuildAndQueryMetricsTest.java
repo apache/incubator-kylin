@@ -32,6 +32,9 @@ import org.apache.kylin.common.util.TempMetadataBuilder;
 import org.apache.kylin.engine.spark.ExecutableUtils;
 import org.apache.kylin.engine.spark.job.NSparkCubingJob;
 import org.apache.kylin.engine.spark.merger.AfterBuildResourceMerger;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.job.engine.JobEngineConfig;
 import org.apache.kylin.job.execution.ExecutableState;
 import org.apache.kylin.job.execution.NExecutableManager;
@@ -76,10 +79,6 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
 import lombok.val;
 import lombok.var;
@@ -181,7 +180,7 @@ public class NBuildAndQueryMetricsTest extends AbstractMVCIntegrationTestCase {
         projectManager.updateProject(projectInstance, projectInstanceUpdate.getName(),
                 projectInstanceUpdate.getDescription(), projectInstanceUpdate.getOverrideKylinProps());
 
-        Preconditions.checkArgument(projectInstance != null);
+        Preconditions.checkNotNull(projectInstance);
 
         for (String table : projectInstance.getTables()) {
             if (!"DEFAULT.TEST_KYLIN_FACT".equals(table) && !"DEFAULT.TEST_ACCOUNT".equals(table)) {
@@ -251,6 +250,12 @@ public class NBuildAndQueryMetricsTest extends AbstractMVCIntegrationTestCase {
     @Test
     public void testMetricsScanForPushDown() throws Exception {
         String sql = "select account_id from test_account limit 30";
+        assertMetric(sql, 30);
+    }
+
+    @Test
+    public void testSplitFunction() throws Exception {
+        String sql = "select split(account_id, '-')[0] from test_account limit 30";
         assertMetric(sql, 30);
     }
 

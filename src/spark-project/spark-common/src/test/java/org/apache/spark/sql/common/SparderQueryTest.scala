@@ -17,25 +17,20 @@
  */
 package org.apache.spark.sql.common
 
-import org.apache.kylin.common.{KapConfig, QueryContext}
-
 import java.sql.Types
-import java.util.{List, TimeZone}
+import java.util.TimeZone
+
 import org.apache.kylin.metadata.query.StructField
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.util.sideBySide
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.util.SparderTypeUtil
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-
-import java.util
+import org.apache.spark.sql.{DataFrame, Row}
 
 object SparderQueryTest extends Logging {
 
   def same(sparkDF: DataFrame,
-                     kylinAnswer: DataFrame,
-                     checkOrder: Boolean = false): Boolean = {
+           kylinAnswer: DataFrame,
+           checkOrder: Boolean = false): Boolean = {
     checkAnswerBySeq(castDataType(sparkDF, kylinAnswer), kylinAnswer.collect(), checkOrder) match {
       case Some(errorMessage) =>
         logInfo(errorMessage)
@@ -54,15 +49,15 @@ object SparderQueryTest extends Logging {
   }
 
   /**
-    * Runs the plan and makes sure the answer matches the expected result.
-    * If there was exception during the execution or the contents of the DataFrame does not
-    * match the expected result, an error message will be returned. Otherwise, a [[None]] will
-    * be returned.
-    *
-    * @param sparkDF     the [[org.apache.spark.sql.DataFrame]] to be executed
-    * @param kylinAnswer the expected result in a [[Seq]] of [[org.apache.spark.sql.Row]]s.
-    * @param checkToRDD  whether to verify deserialization to an RDD. This runs the query twice.
-    */
+   * Runs the plan and makes sure the answer matches the expected result.
+   * If there was exception during the execution or the contents of the DataFrame does not
+   * match the expected result, an error message will be returned. Otherwise, a [[None]] will
+   * be returned.
+   *
+   * @param sparkDF     the [[org.apache.spark.sql.DataFrame]] to be executed
+   * @param kylinAnswer the expected result in a [[Seq]] of [[org.apache.spark.sql.Row]]s.
+   * @param checkToRDD  whether to verify deserialization to an RDD. This runs the query twice.
+   */
   def checkAnswerBySeq(sparkDF: DataFrame,
                        kylinAnswer: Seq[Row],
                        checkOrder: Boolean = false,
@@ -90,7 +85,7 @@ object SparderQueryTest extends Logging {
          |Timezone: ${TimeZone.getDefault}
          |Timezone Env: ${sys.env.getOrElse("TZ", "")}
          |
-        |${sparkDF.queryExecution}
+         |${sparkDF.queryExecution}
          |== Results ==
          |$results
        """.stripMargin
@@ -145,15 +140,15 @@ object SparderQueryTest extends Logging {
 
 
   /**
-    * Runs the plan and makes sure the answer is within absTol of the expected result.
-    *
-    * @param actualAnswer   the actual result in a [[Row]].
-    * @param expectedAnswer the expected result in a[[Row]].
-    * @param absTol         the absolute tolerance between actual and expected answers.
-    */
+   * Runs the plan and makes sure the answer is within absTol of the expected result.
+   *
+   * @param actualAnswer   the actual result in a [[Row]].
+   * @param expectedAnswer the expected result in a[[Row]].
+   * @param absTol         the absolute tolerance between actual and expected answers.
+   */
   protected def checkAggregatesWithTol(actualAnswer: Row,
                                        expectedAnswer: Row,
-                                       absTol: Double) = {
+                                       absTol: Double): Unit = {
     require(actualAnswer.length == expectedAnswer.length,
       s"actual answer length ${actualAnswer.length} != " +
         s"expected answer length ${expectedAnswer.length}")
@@ -170,17 +165,6 @@ object SparderQueryTest extends Logging {
     }
   }
 
-  def checkAsyncResultData(dataFrame: DataFrame,
-                           sparkSession: SparkSession): Unit = {
-    val path = KapConfig.getInstanceFromEnv.getAsyncResultBaseDir(null) + "/" +
-      QueryContext.current.getQueryId
-    val rows = sparkSession.read
-      .format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat")
-      .load(path)
-    val maybeString = checkAnswer(dataFrame, rows)
-
-  }
-
   private def isCharType(dataType: Integer): Boolean = {
     if (dataType == Types.CHAR || dataType == Types.VARCHAR) {
       return true
@@ -190,7 +174,7 @@ object SparderQueryTest extends Logging {
 
   private def isIntType(structField: StructField): Boolean = {
     val intList = scala.collection.immutable.List(Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIGINT)
-    val dataType = structField.getDataType();
+    val dataType = structField.getDataType
     if (intList.contains(dataType)) {
       return true
     }
@@ -199,19 +183,23 @@ object SparderQueryTest extends Logging {
 
   private def isBinaryType(structField: StructField): Boolean = {
     val intList = scala.collection.immutable.List(Types.BINARY, Types.VARBINARY, Types.LONGVARBINARY)
-    val dataType = structField.getDataType();
+    val dataType = structField.getDataType;
     if (intList.contains(dataType)) {
       return true
     }
     false
   }
 
+  private def isArrayType(field: StructField): Boolean = {
+    field.getDataTypeName == "ARRAY<STRING>" || field.getDataTypeName == "ARRAY"
+  }
+
   def isSameDataType(cubeStructField: StructField, sparkStructField: StructField): Boolean = {
-    if (cubeStructField.getDataType() == sparkStructField.getDataType()) {
+    if (cubeStructField.getDataType == sparkStructField.getDataType) {
       return true
     }
     // calcite dataTypeName = "ANY"
-    if (cubeStructField.getDataType() == 2000) {
+    if (cubeStructField.getDataType == 2000) {
       return true
     }
     if (isCharType(cubeStructField.getDataType()) && isCharType(sparkStructField.getDataType())) {
@@ -221,6 +209,9 @@ object SparderQueryTest extends Logging {
       return true
     }
     if (isBinaryType(cubeStructField) && isBinaryType(sparkStructField)) {
+      return true
+    }
+    if (isArrayType(cubeStructField) && isArrayType(sparkStructField)) {
       return true
     }
     false
