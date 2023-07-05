@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -53,6 +55,7 @@ import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableMap;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.metadata.cube.model.NDataflow;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
 import org.apache.kylin.metadata.cube.model.NIndexPlanManager;
 import org.apache.kylin.metadata.favorite.QueryHistoryIdOffset;
@@ -70,6 +73,7 @@ import org.apache.kylin.metadata.query.QueryStatistics;
 import org.apache.kylin.metadata.query.RDBMSQueryHistoryDAO;
 import org.apache.kylin.rest.exception.ForbiddenException;
 import org.apache.kylin.rest.response.NDataModelResponse;
+import org.apache.kylin.rest.response.QueryHistoryFiltersResponse;
 import org.apache.kylin.rest.response.QueryStatisticsResponse;
 import org.apache.kylin.rest.util.AclEvaluate;
 import org.slf4j.Logger;
@@ -165,9 +169,9 @@ public class QueryHistoryService extends BasicService implements AsyncTaskQueryH
             return ImmutableMap.of("total_scan_count", 0L, "source_result_count", 0L, "total_scan_bytes", 0L);
         }
 
-        return ImmutableMap.of("total_scan_count", queryHistories.get(0).getTotalScanCount(),
-                "source_result_count", queryHistories.get(0).getQueryHistoryInfo().getSourceResultCount(),
-                "total_scan_bytes", queryHistories.get(0).getTotalScanBytes());
+        return ImmutableMap.of("total_scan_count", queryHistories.get(0).getTotalScanCount(), "source_result_count",
+                queryHistories.get(0).getQueryHistoryInfo().getSourceResultCount(), "total_scan_bytes",
+                queryHistories.get(0).getTotalScanBytes());
     }
 
     private void processRequestParams(QueryHistoryRequest request) {
@@ -264,31 +268,27 @@ public class QueryHistoryService extends BasicService implements AsyncTaskQueryH
         return queryHistories.stream().map(QueryHistory::getQuerySubmitter).collect(Collectors.toList());
     }
 
-    public List<String> getQueryHistoryModels(QueryHistoryRequest request, int size) {
+    public QueryHistoryFiltersResponse getQueryHistoryModels(QueryHistoryRequest request, int size) {
         QueryHistoryDAO queryHistoryDAO = getQueryHistoryDao();
-        request.setUsername(SecurityContextHolder.getContext().getAuthentication().getName());
-        if (aclEvaluate.hasProjectAdminPermission(
-                NProjectManager.getInstance(KylinConfig.getInstanceFromEnv()).getProject(request.getProject()))) {
-            request.setAdmin(true);
-        }
-        List<QueryStatistics> queryStatistics = queryHistoryDAO.getQueryHistoriesModelIds(request, size);
+        List<QueryStatistics> queryStatistics = queryHistoryDAO.getQueryHistoriesModelIds(request);
+        val dataFlowManager = NDataflowManager.getInstance(KylinConfig.getInstanceFromEnv(), request.getProject());
+        Stream<String> engineStream = queryStatistics.stream().map(QueryStatistics::getEngineType);
+        List<NDataflow> models = dataFlowManager.listAllDataflows();
+        Stream<String> modelStream = models.stream()
+                .sorted(Comparator.comparing(NDataflow::getQueryHitCount, Comparator.reverseOrder()))
+                .map(NDataflow::getModel).map(NDataModel::getAlias);
+        List<String> engineList = filterByName(engineStream, request.getFilterModelName());
+        List<String> modelList = filterByName(modelStream, request.getFilterModelName());
+        Integer count = engineList.size() + modelList.size();
+        return new QueryHistoryFiltersResponse(count, models.size(), engineList,
+                modelList.stream().limit(size).collect(Collectors.toList()));
+    }
 
-        val dataflowManager = NDataflowManager.getInstance(KylinConfig.getInstanceFromEnv(), request.getProject());
-        val modelAliasMap = dataflowManager.listUnderliningDataModels().stream()
-                .collect(Collectors.toMap(RootPersistentEntity::getUuid, NDataModel::getAlias));
-
-        return queryStatistics.stream().map(query -> {
-            // engineType && modelId are both saved into queryStatistics
-            if (!StringUtils.isEmpty(query.getEngineType())) {
-                return query.getEngineType();
-            } else if (!StringUtils.isEmpty(query.getModel()) && modelAliasMap.containsKey(query.getModel())) {
-                return modelAliasMap.get(query.getModel());
-            } else {
-                return null;
-            }
-        }).filter(alias -> !StringUtils.isEmpty(alias) && (StringUtils.isEmpty(request.getFilterModelName())
-                || alias.toLowerCase(Locale.ROOT).contains(request.getFilterModelName().toLowerCase(Locale.ROOT))))
-                .limit(size).collect(Collectors.toList());
+    private List<String> filterByName(Stream<String> stream, String name) {
+        return stream
+                .filter(alias -> !StringUtils.isEmpty(alias) && (StringUtils.isEmpty(name)
+                        || alias.toLowerCase(Locale.ROOT).contains(name.toLowerCase(Locale.ROOT))))
+                .collect(Collectors.toList());
     }
 
     private boolean haveSpaces(String text) {

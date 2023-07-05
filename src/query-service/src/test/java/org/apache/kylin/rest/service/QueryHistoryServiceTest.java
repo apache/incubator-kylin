@@ -43,6 +43,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
 import org.apache.kylin.common.util.ProcessUtils;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
 import org.apache.kylin.metadata.cube.model.NIndexPlanManager;
 import org.apache.kylin.metadata.model.NDataModelManager;
@@ -56,6 +57,7 @@ import org.apache.kylin.metadata.query.QueryStatistics;
 import org.apache.kylin.metadata.query.RDBMSQueryHistoryDAO;
 import org.apache.kylin.metadata.query.RDBMSQueryHistoryDaoTest;
 import org.apache.kylin.rest.constant.Constant;
+import org.apache.kylin.rest.response.QueryHistoryFiltersResponse;
 import org.apache.kylin.rest.response.QueryStatisticsResponse;
 import org.apache.kylin.rest.util.AclEvaluate;
 import org.apache.kylin.rest.util.AclUtil;
@@ -71,8 +73,6 @@ import org.mockito.stubbing.Answer;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.val;
 import lombok.var;
@@ -717,15 +717,23 @@ public class QueryHistoryServiceTest extends NLocalFileMetadataTestCase {
 
         RDBMSQueryHistoryDAO queryHistoryDAO = Mockito.mock(RDBMSQueryHistoryDAO.class);
         Mockito.doReturn(Lists.newArrayList(queryStatistics, queryStatistics1, queryStatistics2, queryStatistics3))
-                .when(queryHistoryDAO).getQueryHistoriesModelIds(Mockito.any(), Mockito.anyInt());
+                .when(queryHistoryDAO).getQueryHistoriesModelIds(Mockito.any());
         Mockito.doReturn(queryHistoryDAO).when(queryHistoryService).getQueryHistoryDao();
 
-        List<String> models = queryHistoryService.getQueryHistoryModels(request, 10);
-        Assert.assertEquals(3, models.size());
-        Assert.assertEquals("HIVE", models.get(0));
-        Assert.assertEquals("CONSTANTS", models.get(1));
-        Assert.assertEquals("ut_inner_join_cube_partial", models.get(2));
+        QueryHistoryFiltersResponse response = queryHistoryService.getQueryHistoryModels(request, 10);
+        assertEquals(10, (int) response.getSearchCount());
+        Assert.assertEquals(8, (int) response.getTotalModelCount());
+        Assert.assertEquals(10, response.getEngines().size() + response.getModels().size());
+        Assert.assertEquals("HIVE", response.getEngines().get(0));
+        Assert.assertEquals("CONSTANTS", response.getEngines().get(1));
+        Assert.assertEquals("nmodel_basic", response.getModels().get(2));
 
+        request.setFilterModelName("nmodel");
+        QueryHistoryFiltersResponse response1 = queryHistoryService.getQueryHistoryModels(request, 2);
+        Assert.assertEquals(8, (int) response.getTotalModelCount());
+        assertEquals(3, (int) response1.getSearchCount());
+        Assert.assertEquals(2, response1.getEngines().size() + response1.getModels().size());
+        Assert.assertEquals("nmodel_basic", response1.getModels().get(1));
     }
 
     @Test

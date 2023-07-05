@@ -214,7 +214,7 @@ public class JdbcQueryHistoryStore {
         }
     }
 
-    public List<QueryStatistics> queryQueryHistoriesModelIds(QueryHistoryRequest request, int size) {
+    public List<QueryStatistics> queryQueryHistoriesModelIds(QueryHistoryRequest request) {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             QueryStatisticsMapper mapper = session.getMapper(QueryStatisticsMapper.class);
             SelectStatementProvider statementProvider1 = selectDistinct(queryHistoryTable.engineType)
@@ -222,16 +222,7 @@ public class JdbcQueryHistoryStore {
                     .where(queryHistoryTable.engineType, isNotEqualTo("NATIVE")) //
                     .and(queryHistoryTable.projectName, isEqualTo(request.getProject())) //
                     .build().render(RenderingStrategies.MYBATIS3);
-            List<QueryStatistics> engineTypes = mapper.selectMany(statementProvider1);
-
-            SelectStatementProvider statementProvider2 = selectDistinct(queryHistoryRealizationTable.model)
-                    .from(queryHistoryRealizationTable) //
-                    .where(queryHistoryRealizationTable.projectName, isEqualTo(request.getProject())) //
-                    .limit(size) //
-                    .build().render(RenderingStrategies.MYBATIS3);
-            List<QueryStatistics> modelIds = mapper.selectMany(statementProvider2);
-            engineTypes.addAll(modelIds);
-            return engineTypes;
+            return mapper.selectMany(statementProvider1);
         }
     }
 

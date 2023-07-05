@@ -18,12 +18,12 @@
 
 package org.apache.kylin.rest.controller;
 
+import static org.apache.kylin.common.constant.HttpConstant.HTTP_VND_APACHE_KYLIN_JSON;
+import static org.apache.kylin.common.constant.HttpConstant.HTTP_VND_APACHE_KYLIN_V4_PUBLIC_JSON;
 import static org.apache.kylin.common.exception.ServerErrorCode.FAILED_DOWNLOAD_FILE;
 import static org.apache.kylin.common.exception.ServerErrorCode.INVALID_NAME;
 import static org.apache.kylin.common.exception.ServerErrorCode.PERMISSION_DENIED;
 import static org.apache.kylin.common.exception.ServerErrorCode.REDIS_CLEAR_ERROR;
-import static org.apache.kylin.common.constant.HttpConstant.HTTP_VND_APACHE_KYLIN_JSON;
-import static org.apache.kylin.common.constant.HttpConstant.HTTP_VND_APACHE_KYLIN_V4_PUBLIC_JSON;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -53,31 +53,34 @@ import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.exception.KylinTimeoutException;
 import org.apache.kylin.common.exception.QueryErrorCode;
 import org.apache.kylin.common.msg.MsgPicker;
+import org.apache.kylin.common.persistence.transaction.StopQueryBroadcastEventNotifier;
+import org.apache.kylin.common.scheduler.EventBusFactory;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.metadata.query.QueryHistoryRequest;
+import org.apache.kylin.metadata.query.util.QueryHisTransformStandardUtil;
 import org.apache.kylin.metadata.querymeta.SelectedColumnMeta;
 import org.apache.kylin.metadata.querymeta.TableMetaWithType;
+import org.apache.kylin.query.plugin.asyncprofiler.AsyncProfiling;
+import org.apache.kylin.rest.cluster.ClusterManager;
 import org.apache.kylin.rest.exception.ForbiddenException;
 import org.apache.kylin.rest.exception.InternalErrorException;
 import org.apache.kylin.rest.model.Query;
 import org.apache.kylin.rest.request.PrepareSqlRequest;
+import org.apache.kylin.rest.request.SQLFormatRequest;
 import org.apache.kylin.rest.request.SQLRequest;
 import org.apache.kylin.rest.request.SaveSqlRequest;
 import org.apache.kylin.rest.response.DataResult;
 import org.apache.kylin.rest.response.EnvelopeResponse;
+import org.apache.kylin.rest.response.QueryHistoryFiltersResponse;
+import org.apache.kylin.rest.response.QueryStatisticsResponse;
 import org.apache.kylin.rest.response.SQLResponse;
 import org.apache.kylin.rest.response.ServerExtInfoResponse;
-import org.apache.kylin.rest.service.QueryService;
-import org.apache.kylin.rest.util.AclEvaluate;
-import org.apache.kylin.common.persistence.transaction.StopQueryBroadcastEventNotifier;
-import org.apache.kylin.common.scheduler.EventBusFactory;
-import org.apache.kylin.metadata.query.QueryHistoryRequest;
-import org.apache.kylin.metadata.query.util.QueryHisTransformStandardUtil;
-import org.apache.kylin.query.plugin.asyncprofiler.AsyncProfiling;
-import org.apache.kylin.rest.cluster.ClusterManager;
-import org.apache.kylin.rest.request.SQLFormatRequest;
-import org.apache.kylin.rest.response.QueryStatisticsResponse;
 import org.apache.kylin.rest.response.ServerInfoResponse;
 import org.apache.kylin.rest.service.QueryCacheManager;
 import org.apache.kylin.rest.service.QueryHistoryService;
+import org.apache.kylin.rest.service.QueryService;
+import org.apache.kylin.rest.util.AclEvaluate;
 import org.apache.kylin.util.DataRangeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,9 +102,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.io.ICsvListWriter;
 import org.supercsv.prefs.CsvPreference;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 
 import io.swagger.annotations.ApiOperation;
 import lombok.val;
@@ -414,15 +414,16 @@ public class NQueryController extends NBasicController {
     @ApiOperation(value = "getQueryHistoryModels", tags = { "QE" }, notes = "Update Param: project, model_name")
     @GetMapping(value = "/query_history_models")
     @ResponseBody
-    public EnvelopeResponse<List<String>> getQueryHistoryModels(@RequestParam(value = "project") String project,
+    public EnvelopeResponse<QueryHistoryFiltersResponse> getQueryHistoryModels(
+            @RequestParam(value = "project") String project,
             @RequestParam(value = "model_name", required = false) String modelAlias,
             @RequestParam(value = "page_size", required = false, defaultValue = "100") Integer size) {
         checkProjectName(project);
         QueryHistoryRequest request = new QueryHistoryRequest();
         request.setProject(project);
         request.setFilterModelName(modelAlias);
-        List<String> modelNames = queryHistoryService.getQueryHistoryModels(request, size);
-        return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, modelNames, "");
+        return new EnvelopeResponse<>(KylinException.CODE_SUCCESS,
+                queryHistoryService.getQueryHistoryModels(request, size), "");
     }
 
     @ApiOperation(value = "queryHistoryTiredStorageMetrics", tags = {"QE"}, notes = "Update Param: project, query_id")

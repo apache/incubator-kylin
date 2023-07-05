@@ -184,8 +184,8 @@ public class RDBMSQueryHistoryDAO implements QueryHistoryDAO {
         return jdbcQueryHisStore.queryQueryHistoriesSubmitters(request, size);
     }
 
-    public List<QueryStatistics> getQueryHistoriesModelIds(QueryHistoryRequest request, int size) {
-        return jdbcQueryHisStore.queryQueryHistoriesModelIds(request, size);
+    public List<QueryStatistics> getQueryHistoriesModelIds(QueryHistoryRequest request) {
+        return jdbcQueryHisStore.queryQueryHistoriesModelIds(request);
     }
 
     public QueryStatistics getQueryCountAndAvgDuration(long startTime, long endTime, String project) {

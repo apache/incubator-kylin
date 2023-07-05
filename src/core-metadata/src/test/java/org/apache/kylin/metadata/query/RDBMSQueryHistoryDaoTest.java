@@ -722,11 +722,10 @@ public class RDBMSQueryHistoryDaoTest extends NLocalFileMetadataTestCase {
         queryHistoryRequest.setAdmin(true);
         queryHistoryRequest.setUsername(ADMIN);
         queryHistoryRequest.setProject(PROJECT);
-        List<QueryStatistics> modelList = queryHistoryDAO.getQueryHistoriesModelIds(queryHistoryRequest, 5);
-        Assert.assertEquals(3, modelList.size());
+        List<QueryStatistics> modelList = queryHistoryDAO.getQueryHistoriesModelIds(queryHistoryRequest);
+        Assert.assertEquals(2, modelList.size());
         Assert.assertEquals("RDBMS", modelList.get(0).getEngineType());
         Assert.assertEquals("HIVE", modelList.get(1).getEngineType());
-        Assert.assertEquals("82fa7671-a935-45f5-8779-85703601f49a.json", modelList.get(2).getModel());
     }
 
     @Test

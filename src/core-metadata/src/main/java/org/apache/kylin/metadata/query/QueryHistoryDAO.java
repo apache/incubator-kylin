@@ -63,7 +63,7 @@ public interface QueryHistoryDAO {
 
     List<QueryHistory> getQueryHistoriesSubmitters(QueryHistoryRequest request, int size);
 
-    List<QueryStatistics> getQueryHistoriesModelIds(QueryHistoryRequest request, int size);
+    List<QueryStatistics> getQueryHistoriesModelIds(QueryHistoryRequest request);
 
     String getRealizationMetricMeasurement();
 

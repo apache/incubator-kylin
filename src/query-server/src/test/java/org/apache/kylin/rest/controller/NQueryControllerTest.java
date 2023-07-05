@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,6 +37,8 @@ import org.apache.kylin.common.exception.QueryErrorCode;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.metadata.query.NativeQueryRealization;
 import org.apache.kylin.metadata.query.QueryHistory;
 import org.apache.kylin.metadata.query.QueryHistoryInfo;
@@ -46,6 +49,7 @@ import org.apache.kylin.rest.model.Query;
 import org.apache.kylin.rest.request.PrepareSqlRequest;
 import org.apache.kylin.rest.request.SQLRequest;
 import org.apache.kylin.rest.request.SaveSqlRequest;
+import org.apache.kylin.rest.response.QueryHistoryFiltersResponse;
 import org.apache.kylin.rest.response.ServerInfoResponse;
 import org.apache.kylin.rest.service.QueryCacheManager;
 import org.apache.kylin.rest.service.QueryHistoryService;
@@ -66,9 +70,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 
 import redis.clients.jedis.exceptions.JedisException;
 
@@ -581,15 +582,20 @@ public class NQueryControllerTest extends NLocalFileMetadataTestCase {
         final List<String> models = Lists.newArrayList();
         models.add("MODEL1");
         models.add("MODEL2");
+        Map<String, List<String>> result = Maps.newHashMap();
+        result.put("MODEL", models);
 
-        Mockito.when(queryHistoryService.getQueryHistoryModels(request, 3)).thenReturn(models);
+        Mockito.when(queryHistoryService.getQueryHistoryModels(request, 3))
+                .thenReturn(new QueryHistoryFiltersResponse(10, 15, Collections.EMPTY_LIST, models));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/query/query_history_models")
                 .contentType(MediaType.APPLICATION_JSON).param("project", PROJECT).param("model_name", "MODEL")
                 .param("page_size", "3").accept(MediaType.parseMediaType(HTTP_VND_APACHE_KYLIN_JSON)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.length()").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data[0]").value("MODEL1"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data[1]").value("MODEL2"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.total_model_count").value(15))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.search_count").value(10))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.engines.length()").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.models[0]").value("MODEL1"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data.models[1]").value("MODEL2"));
         Mockito.verify(nQueryController).getQueryHistoryModels(PROJECT, request.getFilterModelName(), 3);
     }
 
