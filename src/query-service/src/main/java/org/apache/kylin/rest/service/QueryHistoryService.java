@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.kylin.common.KylinConfig;
@@ -240,6 +241,13 @@ public class QueryHistoryService extends BasicService implements AsyncTaskQueryH
 
             request.setFilterModelIds(modelNames.stream().filter(modelAliasMap::containsKey).map(modelAliasMap::get)
                     .collect(Collectors.toList()));
+        }
+
+        if (realizations != null && realizations.contains("modelName")
+                && !CollectionUtils.isEmpty(request.getExcludeRealization())) {
+            List<String> excludeModelNames = Lists.newArrayList(request.getExcludeRealization());
+            request.setExcludeFilterModelIds(excludeModelNames.stream().filter(modelAliasMap::containsKey)
+                    .map(modelAliasMap::get).collect(Collectors.toList()));
         }
     }
 

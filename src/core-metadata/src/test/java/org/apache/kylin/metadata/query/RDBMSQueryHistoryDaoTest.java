@@ -783,6 +783,43 @@ public class RDBMSQueryHistoryDaoTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
+    public void testGetQueryHistoriesFilterExcludeRealization() throws Exception {
+        QueryMetrics queryMetrics1 = createQueryMetrics(1580311512000L, 1L, true, PROJECT, true);
+        queryMetrics1.setSubmitter(ADMIN);
+        queryMetrics1.setEngineType("RDBMS");
+        QueryMetrics queryMetrics2 = createQueryMetrics(1580397912000L, 2L, false, PROJECT, true);
+        queryMetrics2.setSubmitter(NORMAL_USER);
+        queryMetrics2.setEngineType("HIVE");
+
+        QueryMetrics queryMetrics3 = createQueryMetrics(1580484312000L, 3L, true, PROJECT, true);
+        queryMetrics3.setSubmitter(NORMAL_USER);
+
+        QueryMetrics queryMetrics4 = createQueryMetrics(1895930712000L, 1L, false, PROJECT, true);
+        queryMetrics4.setSubmitter(NORMAL_USER);
+        queryMetrics4.setEngineType("CONSTANTS");
+        queryHistoryDAO.insert(queryMetrics1);
+        queryHistoryDAO.insert(queryMetrics2);
+        queryHistoryDAO.insert(queryMetrics3);
+        queryHistoryDAO.insert(queryMetrics4);
+
+        QueryHistoryRequest queryHistoryRequest = new QueryHistoryRequest();
+        queryHistoryRequest.setProject(PROJECT);
+        queryHistoryRequest.setAdmin(true);
+        queryHistoryRequest.setUsername(ADMIN);
+        queryHistoryRequest.setRealizations(Lists.newArrayList("RDBMS", "HIVE", "CONSTANTS", "modelName"));
+        queryHistoryRequest.setExcludeRealization(Lists.newArrayList("ut_inner_join_cube_partial"));
+        queryHistoryRequest.setExcludeFilterModelIds(Lists.newArrayList("82fa7671-a935-45f5-8779-85703601f49a.json"));
+        List<QueryHistory> queryHistoryList = queryHistoryDAO.getQueryHistoriesByConditions(queryHistoryRequest, 10, 0);
+        Assert.assertEquals(3, queryHistoryList.size());
+
+        queryHistoryRequest.setExcludeRealization(null);
+        queryHistoryRequest.setExcludeFilterModelIds(null);
+        List<QueryHistory> queryHistoryList2 = queryHistoryDAO.getQueryHistoriesByConditions(queryHistoryRequest, 10,
+                0);
+        Assert.assertEquals(4, queryHistoryList2.size());
+    }
+
+    @Test
     public void testGetQueryDailyStatistic() {
         // 2022-05-13 10:00:00
         queryHistoryDAO.insert(createQueryMetrics(1652407200000L, 1000L, true, PROJECT, true));

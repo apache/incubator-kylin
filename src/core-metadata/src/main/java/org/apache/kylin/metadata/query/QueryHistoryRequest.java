@@ -52,6 +52,8 @@ public class QueryHistoryRequest {
     private List<String> queryStatus;
 
     List<String> realizations;
+    List<String> excludeRealization;
+    private List<String> excludeFilterModelIds;
 
     public QueryHistoryRequest(String project, String startTimeFrom, String startTimeTo) {
         this.project = project;

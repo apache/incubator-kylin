@@ -29,6 +29,7 @@ import static org.mybatis.dynamic.sql.SqlBuilder.isLessThanOrEqualTo;
 import static org.mybatis.dynamic.sql.SqlBuilder.isLike;
 import static org.mybatis.dynamic.sql.SqlBuilder.isLikeCaseInsensitive;
 import static org.mybatis.dynamic.sql.SqlBuilder.isNotEqualTo;
+import static org.mybatis.dynamic.sql.SqlBuilder.isNotIn;
 import static org.mybatis.dynamic.sql.SqlBuilder.max;
 import static org.mybatis.dynamic.sql.SqlBuilder.or;
 import static org.mybatis.dynamic.sql.SqlBuilder.select;
@@ -50,6 +51,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.jdbc.ScriptRunner;
 import org.apache.ibatis.session.ExecutorType;
@@ -743,9 +745,18 @@ public class JdbcQueryHistoryStore {
                 filterSql = filterSql.and(queryHistoryTable.indexHit, isEqualTo(false));
             }
         } else if (selectAllModels) {
-            // Process CONSTANTS, HIVE, RDBMS and all model
-            filterSql = filterSql.and(queryHistoryTable.engineType, isIn(realizations),
-                    or(queryHistoryTable.indexHit, isEqualTo(true)));
+            if (!CollectionUtils.isEmpty(request.getExcludeFilterModelIds())) {
+                // Process CONSTANTS, HIVE, RDBMS and not in model1, model2, model3...
+                filterSql = filterSql.and(queryHistoryTable.engineType, isIn(realizations),
+                        or(queryHistoryTable.queryId,
+                                isIn(selectDistinct(queryHistoryRealizationTable.queryId)
+                                        .from(queryHistoryRealizationTable).where(queryHistoryRealizationTable.model,
+                                                isNotIn(request.getExcludeFilterModelIds())))));
+            } else {
+                // Process CONSTANTS, HIVE, RDBMS and all model
+                filterSql = filterSql.and(queryHistoryTable.engineType, isIn(realizations),
+                        or(queryHistoryTable.indexHit, isEqualTo(true)));
+            }
         } else if (request.getFilterModelIds() != null && !request.getFilterModelIds().isEmpty()) {
             // Process CONSTANTS, HIVE, RDBMS and model1, model2, model3...
             filterSql = filterSql.and(queryHistoryTable.engineType, isIn(realizations),
