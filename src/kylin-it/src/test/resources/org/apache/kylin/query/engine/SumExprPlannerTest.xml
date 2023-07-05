@@ -81,6 +81,69 @@ KapOLAPToEnumerableConverter
                         KapTableScan(table=[[DEFAULT, TEST_COUNTRY]], ctx=[], fields=[[0, 1, 2, 3]])
 ]]>
         </Resource>
+        <Resource name="query00-if.planBefore">
+            <![CDATA[
+KapOLAPToEnumerableConverter
+  KapProjectRel(COL1=[$2], COL2=[$3], COL3=[$0], COL4=[$4], COL5=[$5], COL6=[*(3, $4)], COL7=[$6], COL8=[$7], COL9=[$1], COL91=[CASE(=($8, 0), 0, AND(<>($4, 0), =($8, 0)), 0, *($4, $8))], ctx=[])
+    KapAggregateRel(group-set=[[0, 1]], groups=[null], COL1=[COUNT()], COL2=[SUM($2)], COL4=[SUM($3)], COL5=[COUNT($3)], COL7=[SUM($4)], COL8=[SUM($5)], agg#6=[SUM($6)], ctx=[])
+      KapProjectRel(COL3=[$7], COL9=[$44], $f2=[IF(<=($44, 2012-12-31), *($8, 4), 1)], PRICE=[$8], $f4=[*($8, 3)], $f5=[/($8, 2)], ITEM_COUNT=[$9], ctx=[])
+        KapFilterRel(condition=[=($3, 'FP-GTC')], ctx=[])
+          KapJoinRel(condition=[=($207, $213)], joinType=[inner], ctx=[])
+            KapJoinRel(condition=[=($202, $209)], joinType=[inner], ctx=[])
+              KapJoinRel(condition=[=($40, $204)], joinType=[inner], ctx=[])
+                KapJoinRel(condition=[=($7, $199)], joinType=[inner], ctx=[])
+                  KapJoinRel(condition=[=($6, $190)], joinType=[inner], ctx=[])
+                    KapJoinRel(condition=[=($5, $180)], joinType=[inner], ctx=[])
+                      KapJoinRel(condition=[AND(=($4, $144), =($5, $146))], joinType=[inner], ctx=[])
+                        KapJoinRel(condition=[=($2, $44)], joinType=[inner], ctx=[])
+                          KapJoinRel(condition=[=($1, $39)], joinType=[inner], ctx=[])
+                            KapTableScan(table=[[DEFAULT, TEST_KYLIN_FACT]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38]])
+                            KapTableScan(table=[[DEFAULT, TEST_ORDER]], ctx=[], fields=[[0, 1, 2, 3, 4]])
+                          KapTableScan(table=[[EDW, TEST_CAL_DT]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]])
+                        KapTableScan(table=[[DEFAULT, TEST_CATEGORY_GROUPINGS]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]])
+                      KapTableScan(table=[[EDW, TEST_SITES]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])
+                    KapTableScan(table=[[EDW, TEST_SELLER_TYPE_DIM]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+                  KapTableScan(table=[[DEFAULT, TEST_ACCOUNT]], ctx=[], fields=[[0, 1, 2, 3, 4]])
+                KapTableScan(table=[[DEFAULT, TEST_ACCOUNT]], ctx=[], fields=[[0, 1, 2, 3, 4]])
+              KapTableScan(table=[[DEFAULT, TEST_COUNTRY]], ctx=[], fields=[[0, 1, 2, 3]])
+            KapTableScan(table=[[DEFAULT, TEST_COUNTRY]], ctx=[], fields=[[0, 1, 2, 3]])
+]]>
+        </Resource>
+        <Resource name="query00-if.planAfter">
+            <![CDATA[
+KapOLAPToEnumerableConverter
+  KapProjectRel(COL1=[$2], COL2=[$3], COL3=[$0], COL4=[$4], COL5=[$5], COL6=[*(3, $4)], COL7=[$6], COL8=[$7], COL9=[$1], COL91=[CASE(=($8, 0), 0, AND(<>($4, 0), =($8, 0)), 0, *($4, $8))], ctx=[])
+    KapAggregateRel(group-set=[[0, 1]], groups=[null], AGG$0=[$SUM0($2)], AGG$1=[SUM($3)], AGG$2=[SUM($4)], AGG$3=[$SUM0($5)], AGG$4=[SUM($6)], AGG$5=[SUM($7)], AGG$6=[SUM($8)], ctx=[])
+      KapProjectRel(SELLER_ID=[$0], CAL_DT0=[$1], COL1=[$3], $f3=[CASE(<=($2, 2012-12-31), $9, $10)], COL4=[$4], COL5=[$5], COL7=[$6], COL8=[$7], $f8=[$8], ctx=[])
+        KapAggregateRel(group-set=[[0, 1, 2]], groups=[null], AGG$0=[SUM($3)], AGG$1=[SUM($4)], AGG$2=[SUM($5)], AGG$3=[SUM($6)], AGG$4=[SUM($7)], AGG$5=[SUM($8)], AGG$6=[SUM($9)], AGG$7=[SUM($10)], ctx=[])
+          KapProjectRel(SELLER_ID=[$0], CAL_DT0=[$1], CAL_DT00=[$2], COL1=[$3], COL4=[$4], COL5=[$5], $f6=[*($6, 3)], $f7=[/($7, 2)], $f8=[$8], $f9=[*($9, 4)], SUM_CASE$0$1=[$10], ctx=[])
+            KapAggregateRel(group-set=[[0, 1, 2]], groups=[null], TOP_AGG$0=[$SUM0($3)], TOP_AGG$1=[SUM($4)], TOP_AGG$2=[$SUM0($5)], TOP_AGG$3=[SUM($6)], TOP_AGG$4=[SUM($7)], TOP_AGG$5=[SUM($8)], TOP_AGG$6=[SUM($9)], TOP_AGG$7=[SUM($10)], ctx=[])
+              KapProjectRel(SELLER_ID=[$0], CAL_DT0=[$1], CAL_DT00=[$2], COL1=[$3], COL4=[$4], COL5=[$5], SUM_OP$0=[$6], SUM_OP$1=[$7], $f8=[$8], SUM_OP$2=[$9], $f10=[*(1, $10)], ctx=[])
+                KapAggregateRel(group-set=[[0, 1, 2]], groups=[null], COL1=[COUNT()], COL4=[SUM($3)], COL5=[COUNT($4)], SUM_OP$0=[SUM($5)], SUM_OP$1=[SUM($6)], agg#5=[SUM($7)], SUM_OP$2=[SUM($8)], SUM_CONST$7=[COUNT()], ctx=[])
+                  KapProjectRel(SELLER_ID=[$7], CAL_DT0=[$44], CAL_DT00=[$44], PRICE=[$8], PRICE0=[$8], PRICE01=[$8], PRICE012=[$8], ITEM_COUNT=[$9], PRICE0123=[$8], ctx=[])
+                    KapFilterRel(condition=[=($3, 'FP-GTC')], ctx=[])
+                      KapJoinRel(condition=[=($207, $213)], joinType=[inner], ctx=[])
+                        KapJoinRel(condition=[=($202, $209)], joinType=[inner], ctx=[])
+                          KapJoinRel(condition=[=($40, $204)], joinType=[inner], ctx=[])
+                            KapJoinRel(condition=[=($7, $199)], joinType=[inner], ctx=[])
+                              KapJoinRel(condition=[=($6, $190)], joinType=[inner], ctx=[])
+                                KapJoinRel(condition=[=($5, $180)], joinType=[inner], ctx=[])
+                                  KapJoinRel(condition=[AND(=($4, $144), =($5, $146))], joinType=[inner], ctx=[])
+                                    KapJoinRel(condition=[=($2, $44)], joinType=[inner], ctx=[])
+                                      KapJoinRel(condition=[=($1, $39)], joinType=[inner], ctx=[])
+                                        KapTableScan(table=[[DEFAULT, TEST_KYLIN_FACT]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38]])
+                                        KapTableScan(table=[[DEFAULT, TEST_ORDER]], ctx=[], fields=[[0, 1, 2, 3, 4]])
+                                      KapTableScan(table=[[EDW, TEST_CAL_DT]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]])
+                                    KapTableScan(table=[[DEFAULT, TEST_CATEGORY_GROUPINGS]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]])
+                                  KapTableScan(table=[[EDW, TEST_SITES]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])
+                                KapTableScan(table=[[EDW, TEST_SELLER_TYPE_DIM]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8]])
+                              KapTableScan(table=[[DEFAULT, TEST_ACCOUNT]], ctx=[], fields=[[0, 1, 2, 3, 4]])
+                            KapTableScan(table=[[DEFAULT, TEST_ACCOUNT]], ctx=[], fields=[[0, 1, 2, 3, 4]])
+                          KapTableScan(table=[[DEFAULT, TEST_COUNTRY]], ctx=[], fields=[[0, 1, 2, 3]])
+                        KapTableScan(table=[[DEFAULT, TEST_COUNTRY]], ctx=[], fields=[[0, 1, 2, 3]])
+]]>
+
+        </Resource>
         <Resource name="query01.planBefore">
             <![CDATA[
 KapOLAPToEnumerableConverter

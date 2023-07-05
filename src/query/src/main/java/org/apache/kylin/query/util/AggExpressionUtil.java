@@ -48,6 +48,9 @@ import org.apache.kylin.query.exception.SumExprUnSupportException;
 
 import com.google.common.collect.ImmutableList;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class AggExpressionUtil {
 
     private AggExpressionUtil() {
@@ -79,6 +82,8 @@ public class AggExpressionUtil {
         return hasAggInput(input);
     }
 
+    @Getter
+    @Setter
     public static class AggExpression {
         // original info
         private AggregateCall agg;
@@ -114,38 +119,6 @@ public class AggExpressionUtil {
             return agg;
         }
 
-        public RelDataType getType() {
-            return type;
-        }
-
-        public void setType(RelDataType type) {
-            this.type = type;
-        }
-
-        public void setExpression(RexNode expression) {
-            this.expression = expression;
-        }
-
-        public RexNode getExpression() {
-            return expression;
-        }
-
-        public void setSumCase() {
-            this.isSumCase = true;
-        }
-
-        public boolean isSumCase() {
-            return isSumCase;
-        }
-
-        public boolean isCountDistinctCase() {
-            return isCountDistinctCase;
-        }
-
-        public void setCountDistinctCase(boolean countDistinctCase) {
-            isCountDistinctCase = countDistinctCase;
-        }
-
         public void setConditionsList(List<RexNode> conditionsList) {
             this.conditions = conditionsList;
             this.bottomProjConditionsInput = RelOptUtil.InputFinder.bits(conditions, null).toArray();
@@ -153,73 +126,15 @@ public class AggExpressionUtil {
             this.topProjConditionsInput = newArray(bottomProjConditionsInput.length);
         }
 
-        public List<RexNode> getConditions() {
-            return conditions;
-        }
-
-        public int[] getBottomProjConditionsInput() {
-            return bottomProjConditionsInput;
-        }
-
-        public int[] getBottomAggConditionsInput() {
-            return bottomAggConditionsInput;
-        }
-
-        public int[] getTopProjConditionsInput() {
-            return topProjConditionsInput;
-        }
-
         public void setValuesList(List<RexNode> valuesList) {
             this.valuesList = valuesList;
             this.bottomAggValuesInput = newArray(valuesList.size());
             this.topProjValuesInput = newArray(valuesList.size());
         }
-
-        public List<RexNode> getValuesList() {
-            return valuesList;
-        }
-
-        public int[] getBottomAggValuesInput() {
-            return bottomAggValuesInput;
-        }
-
-        public int[] getTopProjValuesInput() {
-            return topProjValuesInput;
-        }
-
-        public void setCount() {
-            this.isCount = true;
-        }
-
-        public boolean isCount() {
-            return isCount;
-        }
-
-        public int[] getBottomProjInput() {
-            return bottomProjInput;
-        }
-
-        public int[] getBottomAggInput() {
-            return bottomAggInput;
-        }
-
-        public int[] getTopProjInput() {
-            return topProjInput;
-        }
-
-        public int[] getTopAggInput() {
-            return topAggInput;
-        }
-
-        public void setSumConst() {
-            this.isSumConst = true;
-        }
-
-        public boolean isSumConst() {
-            return isSumConst;
-        }
     }
 
+    @Getter
+    @Setter
     public static class GroupExpression {
         private RexNode expression;
 
@@ -229,75 +144,26 @@ public class AggExpressionUtil {
         private int[] bottomAggInput;
         private int[] topProjInput;
         private int[] topAggInput;
-
-        public RexNode getExpression() {
-            return expression;
-        }
-
-        public void setExpression(RexNode expression) {
-            this.expression = expression;
-        }
-
-        public boolean isLiteral() {
-            return isLiteral;
-        }
-
-        public void setLiteral() {
-            isLiteral = true;
-        }
-
-        public int[] getBottomProjInput() {
-            return bottomProjInput;
-        }
-
-        public void setBottomProjInput(int[] bottomProjInput) {
-            this.bottomProjInput = bottomProjInput;
-        }
-
-        public int[] getBottomAggInput() {
-            return bottomAggInput;
-        }
-
-        public void setBottomAggInput(int[] bottomAggInput) {
-            this.bottomAggInput = bottomAggInput;
-        }
-
-        public int[] getTopProjInput() {
-            return topProjInput;
-        }
-
-        public void setTopProjInput(int[] topProjInput) {
-            this.topProjInput = topProjInput;
-        }
-
-        public int[] getTopAggInput() {
-            return topAggInput;
-        }
-
-        public void setTopAggInput(int[] topAggInput) {
-            this.topAggInput = topAggInput;
-        }
     }
 
-    public static boolean supportAggregateFunction(AggregateCall call) {
-        if (call.isDistinct())
-            return false;
-        SqlKind kind = call.getAggregation().getKind();
-
-        return SqlKind.SUM == kind || SqlKind.SUM0 == kind || SqlKind.COUNT == kind || SqlKind.MAX == kind
-                || SqlKind.MIN == kind;
+    public static boolean hasSumCaseWhen(AggregateCall call, RexNode exp) {
+        return isSum(call.getAggregation().getKind()) && (isCaseWhenCondition(exp) || isIfCondition(exp));
     }
 
-    public static boolean hasSumCaseWhen(AggregateCall call, RexNode expression) {
-        if (isSum(call.getAggregation().getKind())) {
-            return SqlKind.CASE == expression.getKind();
+    public static boolean hasCountDistinctCaseWhen(AggregateCall call, RexNode exp) {
+        boolean isCountDistinct = call.getAggregation().getKind() == SqlKind.COUNT && call.isDistinct();
+        return isCountDistinct && (isCaseWhenCondition(exp) || isIfCondition(exp));
+    }
+
+    private static boolean isIfCondition(RexNode exp) {
+        if (exp instanceof RexCall) {
+            return ((RexCall) exp).getOperator().isName("IF");
         }
         return false;
     }
 
-    public static boolean hasCountDistinctCaseWhen(AggregateCall call, RexNode expression) {
-        return call.getAggregation().getKind() == SqlKind.COUNT && call.isDistinct()
-                && expression.getKind() == SqlKind.CASE;
+    private static boolean isCaseWhenCondition(RexNode expression) {
+        return expression.isA(SqlKind.CASE);
     }
 
     public static boolean isSum(SqlKind kind) {
@@ -312,7 +178,7 @@ public class AggExpressionUtil {
             AggExpression aggExpression = new AggExpression(call);
             aggExpressions.add(aggExpression);
             if (SqlKind.COUNT == call.getAggregation().getKind()) {
-                aggExpression.setCount();
+                aggExpression.setCount(true);
             }
             if (call.getArgList().isEmpty()) {
                 // COUNT(*)
@@ -327,7 +193,7 @@ public class AggExpressionUtil {
             int[] sourceInput = RelOptUtil.InputFinder.bits(expression).toArray();
             aggExpression.setExpression(expression);
             if (hasSumCaseWhen(call, expression)) {
-                aggExpression.setSumCase();
+                aggExpression.setSumCase(true);
                 List<RexNode> conditions = extractCaseWhenConditions(expression);
                 aggExpression.setConditionsList(conditions);
                 List<RexNode> valuesList = extractCaseThenElseValues(expression);
@@ -349,7 +215,7 @@ public class AggExpressionUtil {
                 aggExpression.topProjInput = newArray(1);
                 aggExpression.topAggInput = newArray(1);
             } else if (isSum(call.getAggregation().getKind()) && sourceInput.length == 0) {
-                aggExpression.setSumConst();
+                aggExpression.setSumConst(true);
                 aggExpression.bottomProjInput = newArray(0);
                 aggExpression.bottomAggInput = newArray(1);
                 aggExpression.topProjInput = newArray(1);
@@ -365,7 +231,7 @@ public class AggExpressionUtil {
     }
 
     private static List<RexNode> extractCaseWhenConditions(RexNode caseWhenExpr) {
-        assertCondition(caseWhenExpr instanceof RexCall, caseWhenExpr + " is not a case-when expression");
+        checkConditionExpr(caseWhenExpr);
         RexCall caseWhenCall = (RexCall) caseWhenExpr;
 
         List<RexNode> conditions = Lists.newArrayList();
@@ -378,9 +244,9 @@ public class AggExpressionUtil {
         return conditions;
     }
 
-    private static List<RexNode> extractCaseThenElseValues(RexNode caseWhenExpr) {
-        assertCondition(caseWhenExpr instanceof RexCall, caseWhenExpr + " is not a case-when expression");
-        RexCall caseWhenCall = (RexCall) caseWhenExpr;
+    private static List<RexNode> extractCaseThenElseValues(RexNode conditionExpr) {
+        checkConditionExpr(conditionExpr);
+        RexCall caseWhenCall = (RexCall) conditionExpr;
 
         List<RexNode> values = Lists.newArrayList();
         int operandsCnt = caseWhenCall.getOperands().size();
@@ -390,14 +256,14 @@ public class AggExpressionUtil {
             values.add(thenRexNode);
         }
 
-        RexNode elseRexNode = ((RexCall) caseWhenExpr).getOperands().get(operandsCnt - 1);
+        RexNode elseRexNode = ((RexCall) conditionExpr).getOperands().get(operandsCnt - 1);
         values.add(elseRexNode);
         return values;
     }
 
     public static class CollectRexVisitor extends RexVisitorImpl<RexCall> {
-        private Set<RexInputRef> rexInputRefs = Sets.newHashSet();
-        private Set<RexLiteral> rexLiterals = Sets.newHashSet();
+        private final Set<RexInputRef> rexInputRefs = Sets.newHashSet();
+        private final Set<RexLiteral> rexLiterals = Sets.newHashSet();
 
         CollectRexVisitor(boolean deep) {
             super(deep);
@@ -430,7 +296,7 @@ public class AggExpressionUtil {
             projectExpr.accept(visitor);
             GroupExpression groupExpr = new GroupExpression();
             if (visitor.isRexLiteral()) {
-                groupExpr.setLiteral();
+                groupExpr.setLiteral(true);
             }
             int[] sourceInput = RelOptUtil.InputFinder.bits(projectExpr).toArray();
             groupExpr.expression = projectExpr;
@@ -464,28 +330,13 @@ public class AggExpressionUtil {
         return Optional.of(ImmutableList.copyOf(groupSets));
     }
 
-    public static class InputRefCapacity extends RexVisitorImpl<RexCall> {
-
-        Set<RexInputRef> rexInputRefs = Sets.newHashSet();
-
-        protected InputRefCapacity(boolean deep) {
-            super(deep);
-        }
-
-        @Override
-        public RexCall visitInputRef(RexInputRef inputRef) {
-            rexInputRefs.add(inputRef);
-            return null;
-        }
-
-        public List<RexInputRef> getRexInputRef() {
-            return Lists.newArrayList(rexInputRefs);
-        }
-    }
-
     public static void assertCondition(boolean condition, String errorMsg) {
         if (!condition)
             throw new SumExprUnSupportException(errorMsg);
+    }
+
+    private static void checkConditionExpr(RexNode conditionExpr) {
+        assertCondition(conditionExpr instanceof RexCall, conditionExpr + " is not a case-when or if expression");
     }
 
     public static int[] generateAdjustments(int[] src, int[] dst) {
