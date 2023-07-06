@@ -27,4 +27,5 @@ public class LogConstant {
     public static final String METADATA_CATEGORY = "metadata";
     public static final String QUERY_CATEGORY = "query";
     public static final String BUILD_CATEGORY = "build";
+    public static final String SMART_CATEGORY = "smart";
 }

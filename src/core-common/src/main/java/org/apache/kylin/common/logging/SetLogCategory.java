@@ -18,19 +18,35 @@
 package org.apache.kylin.common.logging;
 
 import java.io.Closeable;
+import java.util.Deque;
+import java.util.LinkedList;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.ThreadContext;
+import org.springframework.util.CollectionUtils;
 
 public class SetLogCategory implements Closeable {
 
-    private static final String KEY = "logCategory";
+    private static final String LOG_CATEGORY = "logCategory";
+    private static final ThreadLocal<Deque<String>> categoryThreadLocal = ThreadLocal.withInitial(LinkedList::new);
 
+    // when category exist, and use new category to logger message, will push oldSetLogCategory
     public SetLogCategory(String category) {
-        ThreadContext.put(KEY, category);
+        String oldCategory = ThreadContext.get(LOG_CATEGORY);
+        ThreadContext.put(LOG_CATEGORY, category);
+        if (StringUtils.isNotBlank(oldCategory)) {
+            categoryThreadLocal.get().offerFirst(oldCategory);
+        }
     }
 
     @Override
     public void close() {
-        ThreadContext.remove(KEY);
+        ThreadContext.remove(LOG_CATEGORY);
+        if (!CollectionUtils.isEmpty(categoryThreadLocal.get())) {
+            String oldCategory = categoryThreadLocal.get().pollFirst();
+            if (StringUtils.isNotBlank(oldCategory)) {
+                ThreadContext.put(LOG_CATEGORY, oldCategory);
+            }
+        }
     }
 }

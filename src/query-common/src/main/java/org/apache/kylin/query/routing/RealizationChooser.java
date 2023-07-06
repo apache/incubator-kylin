@@ -58,6 +58,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.QueryContext;
+import org.apache.kylin.common.constant.LogConstant;
 import org.apache.kylin.common.exception.KylinTimeoutException;
 import org.apache.kylin.common.exception.ServerErrorCode;
 import org.apache.kylin.common.logging.SetLogCategory;
@@ -175,7 +176,7 @@ public class RealizationChooser {
         String queryId = QueryContext.current().getQueryId();
         try (KylinConfig.SetAndUnsetThreadLocalConfig ignored0 = KylinConfig.setAndUnsetThreadLocalConfig(kylinConfig);
                 SetThreadName ignored1 = new SetThreadName(Thread.currentThread().getName() + " QueryId %s", queryId);
-                SetLogCategory ignored2 = new SetLogCategory("query")) {
+                SetLogCategory ignored2 = new SetLogCategory(LogConstant.QUERY_CATEGORY)) {
 
             String project = ctx.olapSchema.getProjectName();
             NTableMetadataManager.getInstance(kylinConfig, project);

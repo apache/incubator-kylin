@@ -18,6 +18,7 @@
 package org.apache.kylin.job.runners;
 
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.common.constant.LogConstant;
 import org.apache.kylin.common.logging.SetLogCategory;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.job.execution.ExecutableContext;
@@ -81,7 +82,7 @@ public abstract class AbstractDefaultSchedulerRunner implements Runnable {
 
     @Override
     public void run() {
-        try (SetLogCategory ignored = new SetLogCategory("schedule")) {
+        try (SetLogCategory ignored = new SetLogCategory(LogConstant.SCHEDULE_CATEGORY)) {
             if (checkEpochIdFailed()) {
                 return;
             }

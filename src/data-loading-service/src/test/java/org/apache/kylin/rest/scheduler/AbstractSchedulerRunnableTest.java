@@ -20,6 +20,7 @@ package org.apache.kylin.rest.scheduler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.apache.kylin.common.constant.LogConstant;
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +34,7 @@ class AbstractSchedulerRunnableTest {
             @Override
             protected void execute() {
                 val logCategory = ThreadContext.get("logCategory");
-                assertEquals("schedule", logCategory);
+                assertEquals(LogConstant.SCHEDULE_CATEGORY, logCategory);
             }
         };
         abstractSchedulerRunnable.run();

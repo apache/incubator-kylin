@@ -18,6 +18,7 @@
 package org.apache.kylin.job.runners;
 
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.common.constant.LogConstant;
 import org.apache.kylin.common.logging.SetLogCategory;
 import org.apache.kylin.common.util.SetThreadName;
 import org.apache.kylin.job.exception.ExecuteException;
@@ -49,7 +50,7 @@ public class JobRunner extends AbstractDefaultSchedulerRunner {
         //only the first 8 chars of the job uuid
         val jobIdSimple = executable.getId().substring(0, 8);
         try (SetThreadName ignored = new SetThreadName("JobWorker(project:%s,jobid:%s)", project, jobIdSimple);
-                SetLogCategory logCategory = new SetLogCategory("schedule")) {
+                SetLogCategory ignore = new SetLogCategory(LogConstant.BUILD_CATEGORY)) {
             context.addRunningJobThread(executable);
             executable.execute(context);
             // trigger the next step asap

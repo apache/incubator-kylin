@@ -20,6 +20,7 @@ package org.apache.kylin.job.execution;
 
 import java.util.Map;
 
+import org.apache.kylin.common.constant.LogConstant;
 import org.apache.kylin.common.logging.SetLogCategory;
 import org.apache.kylin.common.util.SetThreadName;
 
@@ -48,7 +49,7 @@ public class ExecutableThread extends Thread {
         val jobIdSimple = dagExecutable.getId().split("-")[0];
         val project = dagExecutable.getProject();
         try (SetThreadName ignored = new SetThreadName("JobWorker(project:%s,jobid:%s)", project, jobIdSimple);
-                SetLogCategory logCategory = new SetLogCategory("schedule")) {
+                SetLogCategory ignore = new SetLogCategory(LogConstant.SCHEDULE_CATEGORY)) {
             context.addRunningJob(executable);
             context.addRunningJobThread(executable);
             dagExecutable.executeDagExecutable(dagExecutablesMap, executable, context);

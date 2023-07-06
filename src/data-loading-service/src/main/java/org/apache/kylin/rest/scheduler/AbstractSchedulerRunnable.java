@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.common.constant.LogConstant;
 import org.apache.kylin.common.logging.SetLogCategory;
 import org.springframework.web.client.RestTemplate;
 
@@ -46,7 +47,7 @@ public abstract class AbstractSchedulerRunnable implements Runnable {
 
     @Override
     public void run() {
-        try (SetLogCategory ignored = new SetLogCategory("schedule")) {
+        try (SetLogCategory ignored = new SetLogCategory(LogConstant.SCHEDULE_CATEGORY)) {
             execute();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
