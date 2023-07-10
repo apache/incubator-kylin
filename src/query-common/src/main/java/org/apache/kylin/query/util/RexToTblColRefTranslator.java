@@ -287,6 +287,8 @@ public class RexToTblColRefTranslator {
 
         private final Map<String, SqlNode> rexToSqlMap;
 
+        private static final Set<String> REGISTERED_UDFS = registerUdfs();
+
         public OLAPRexSqlStandardConvertletTable(RexCall call, Map<String, SqlNode> rexToSqlMap) {
             super();
             this.rexToSqlMap = rexToSqlMap;
@@ -303,18 +305,7 @@ public class RexToTblColRefTranslator {
         }
 
         private void registerUdfOperator(RexCall call) {
-            Set<String> udfs = Sets.newHashSet();
-            KylinConfig.getInstanceFromEnv().getUDFs().forEach((key, value) -> {
-                try {
-                    val methods = Class.forName(value).getMethods();
-                    for (Method method : methods) {
-                        udfs.add(method.getName().toLowerCase(Locale.ROOT));
-                    }
-                } catch (Exception e) {
-                    log.error("registerUdfOperator not found method for :", e);
-                }
-            });
-            if (udfs.contains(call.getOperator().toString().toLowerCase(Locale.ROOT))) {
+            if (REGISTERED_UDFS.contains(call.getOperator().toString().toLowerCase(Locale.ROOT))) {
                 SqlOperator operator = call.getOperator();
                 this.registerEquivOp(operator);
             }
@@ -336,6 +327,22 @@ public class RexToTblColRefTranslator {
             if (get(call) == null) {
                 registerEquivOp(call.getOperator());
             }
+        }
+
+        private static Set<String> registerUdfs() {
+            Set<String> udfs = Sets.newHashSet();
+            KylinConfig.getInstanceFromEnv().getUDFs().forEach((key, value) -> {
+                try {
+                    val methods = Class.forName(value).getMethods();
+                    for (Method method : methods) {
+                        udfs.add(method.getName().toLowerCase(Locale.ROOT));
+                    }
+                } catch (Exception e) {
+                    log.error("registerUdfOperator not found method for :", e);
+                }
+            });
+            
+            return udfs;
         }
 
         private Map<TimeUnit, SqlDatePartFunction> initTimeUnitFunctionMap() {
