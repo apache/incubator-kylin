@@ -163,6 +163,14 @@ public class NSparkCubingJobTest extends NLocalWithSparkSessionTest {
         getLookTables(df).forEach(table -> Assert.assertNotNull(table.getLastSnapshotPath()));
     }
 
+    @Test
+    public void testCalculateTableTotalRows() {
+        NTableMetadataManager tableMetadataManager = NTableMetadataManager.getInstance(config, getProject());
+        TableDesc tableDesc = tableMetadataManager.getTableDesc("DEFAULT.TEST_ORDER");
+        long totalRows = new SnapshotBuilder().calculateTableTotalRows(null, tableDesc, ss);
+        Assert.assertEquals(5000, totalRows);
+    }
+
     private Set<TableDesc> getLookTables(NDataflow df) {
         return df.getModel().getLookupTables().stream().map(TableRef::getTableDesc).collect(Collectors.toSet());
     }

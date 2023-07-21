@@ -62,4 +62,15 @@ public class JdbcSourceInput implements NSparkCubingEngine.NSparkCubingSource {
         StructType sparkSchema = dataset.schema();
         return dataset.select(SparderTypeUtil.alignDataTypeAndName(sparkSchema, kylinSchema));
     }
+
+    @Override
+    public Long getSourceDataCount(TableDesc table, SparkSession ss, Map<String, String> parameters) {
+        String sql = String.format(Locale.ROOT, "select count(*) from %s", table.getIdentity());
+        KylinConfig config = table.getConfig();
+        ISourceConnector connector = (ISourceConnector) ClassUtil.newInstance(config.getJdbcSourceConnector());
+        parameters.put("table", table.getIdentity());
+        log.info("Use source connector: {}, sql: {} ", connector.getClass().getCanonicalName(), sql);
+        Dataset<Row> dataset = connector.getCountData(config, ss, sql, parameters);
+        return dataset.first().getLong(0);
+    }
 }

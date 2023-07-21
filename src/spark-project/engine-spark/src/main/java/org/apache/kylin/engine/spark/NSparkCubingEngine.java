@@ -50,6 +50,10 @@ public class NSparkCubingEngine implements NCubingEngine {
          * @return the Dataset<Row>, its schema consists of table column's name, for example, [column1,column2,column3]
          */
         Dataset<Row> getSourceData(TableDesc table, SparkSession ss, Map<String, String> parameters);
+
+        default Long getSourceDataCount(TableDesc table, SparkSession ss, Map<String, String> parameters) {
+            return getSourceData(table, ss, parameters).count();
+        }
     }
 
     public interface NSparkCubingStorage {

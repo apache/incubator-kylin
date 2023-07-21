@@ -199,8 +199,11 @@ class SnapshotBuilder(var jobId: String) extends Logging with Serializable {
       case e: Throwable => logWarning(s"Calculate table ${tableDesc.getIdentity}'s total rows exception", e)
     }
     logInfo(s"Calculate table ${tableDesc.getIdentity}'s total rows from source data")
-    val sourceData = getSourceData(ss, tableDesc)
-    val totalRows = sourceData.count()
+    val params = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv)
+      .getProject(tableDesc.getProject).getLegalOverrideKylinProps
+    val totalRows = SourceFactory
+      .createEngineAdapter(tableDesc, classOf[NSparkCubingEngine.NSparkCubingSource])
+      .getSourceDataCount(tableDesc, ss, params)
     logInfo(s"Table ${tableDesc.getIdentity}'s total rows is ${totalRows}'")
     totalRows
   }

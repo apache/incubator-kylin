@@ -29,6 +29,7 @@ import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,5 +63,28 @@ public class JdbcSourceInputTest extends JdbcTestBase {
                 .adaptToBuildEngine(NSparkCubingEngine.NSparkCubingSource.class);
         Dataset<Row> sourceData = cubingSource.getSourceData(tableDesc, ss, Maps.newHashMap());
         System.out.println(sourceData.schema());
+    }
+
+    @Test
+    public void testGetSourceDataCount() {
+        NTableMetadataManager tableMgr = NTableMetadataManager.getInstance(getTestConfig(), "ssb");
+        TableDesc tableDesc = tableMgr.getTableDesc("SSB.CUSTOMER");
+        ISource source = SourceFactory.getSource(new ISourceAware() {
+            @Override
+            public int getSourceType() {
+                return ISourceAware.ID_JDBC;
+            }
+
+            @Override
+            public KylinConfig getConfig() {
+                return getTestConfig();
+            }
+        });
+        NSparkCubingEngine.NSparkCubingSource cubingSource = source
+                .adaptToBuildEngine(NSparkCubingEngine.NSparkCubingSource.class);
+        Assert.assertTrue(cubingSource instanceof JdbcSourceInput);
+        Long countData = cubingSource.getSourceDataCount(tableDesc, ss, Maps.newHashMap());
+        Long expectedCount = cubingSource.getSourceData(tableDesc, ss, Maps.newHashMap()).count();
+        Assert.assertEquals(expectedCount, countData);
     }
 }

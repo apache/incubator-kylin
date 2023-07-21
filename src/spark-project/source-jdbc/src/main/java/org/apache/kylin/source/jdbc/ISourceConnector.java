@@ -27,4 +27,7 @@ import org.apache.spark.sql.SparkSession;
 public interface ISourceConnector {
     Dataset<Row> getSourceData(KylinConfig kylinConfig, SparkSession sparkSession, String sql,
             Map<String, String> params);
+
+    Dataset<Row> getCountData(KylinConfig kylinConfig, SparkSession sparkSession, String sql,
+                               Map<String, String> params);
 }
