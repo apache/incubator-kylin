@@ -77,13 +77,15 @@ public class SQLRequest implements Serializable, ProjectInsensitiveRequest, Vali
     @Size(max = 256)
     private String user_defined_tag;
 
+    private String normalizedSql;
+
     protected volatile Object cacheKey = null;
 
     public Object getCacheKey() {
         if (cacheKey != null)
             return cacheKey;
 
-        cacheKey = Lists.newArrayList(sql.replaceAll("[ ]", " "), //
+        cacheKey = Lists.newArrayList(normalizedSql, //
                 project, //
                 offset, //
                 limit, //
