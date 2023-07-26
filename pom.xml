@@ -218,6 +218,7 @@
         <spring.boot.version>2.7.12</spring.boot.version>
         <spring-boot-admin.version>2.6.10</spring-boot-admin.version>
         <spring-session.version>2.6.1-kylin-r4</spring-session.version>
+        <spring.framework.security.config.version>5.7.10</spring.framework.security.config.version>
         <spring.framework.security.extensions.version>1.0.10.RELEASE</spring.framework.security.extensions.version>
         <spring-webmvc.version>5.3.26</spring-webmvc.version>
         <opensaml.version>2.6.6</opensaml.version>
@@ -1359,7 +1360,7 @@
                     </exclusion>
                     <exclusion>
                         <groupId>com.twitter</groupId>
-                         <artifactId>parquet-hadoop-bundle</artifactId>
+                        <artifactId>parquet-hadoop-bundle</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.apache.parquet</groupId>
@@ -2411,6 +2412,11 @@
             </dependency>
 
             <!-- Spring Security -->
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-config</artifactId>
+                <version>${spring.framework.security.config.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.security.extensions</groupId>
                 <artifactId>spring-security-saml2-core</artifactId>
