@@ -34,6 +34,8 @@ import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.common.exception.KylinRuntimeException;
+import org.apache.kylin.common.exception.KylinTimeoutException;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableMap;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
@@ -47,8 +49,10 @@ import org.apache.kylin.metadata.model.MultiPartitionKeyMappingImpl;
 import org.apache.kylin.metadata.model.NDataModel;
 import org.apache.kylin.metadata.model.TblColRef;
 import org.apache.kylin.metadata.realization.CapabilityResult;
+import org.apache.kylin.query.exception.UserStopQueryException;
 import org.apache.kylin.query.relnode.OLAPContext;
 import org.apache.kylin.query.relnode.OLAPTableScan;
+import org.apache.kylin.query.util.QueryInterruptChecker;
 import org.apache.kylin.query.util.RexUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -156,6 +160,10 @@ public class PartitionPruningRule extends PruningRule {
         List<TblColRef> partitionColRefs = model.getMultiPartitionDesc().getColumnRefs();
         for (MultiPartitionDesc.PartitionInfo partition : model.getMultiPartitionDesc().getPartitions()) {
             try {
+                QueryInterruptChecker.checkQueryCanceledOrThreadInterrupted(
+                    "Interrupted during pruning partitions!",
+                    "pruning partitions");
+
                 RexNode partitionRex = partitionToRexCall(partitionColRefs, partition.getValues(), rexBuilder,
                         olapContext.allTableScans);
                 RexNode mappingColRex = multiPartitionKeyMappingToRex(rexBuilder, partition.getValues(),
@@ -175,6 +183,13 @@ public class PartitionPruningRule extends PruningRule {
                     segPartitionMap.forEach((dataSegment, partitionIds) -> partitionIds.remove(partition.getId()));
                     continue;
                 }
+            } catch (InterruptedException ie) {
+                log.error(String.format("Interrupted on pruning partitions from %s!", partition.toString()), ie);
+                Thread.currentThread().interrupt();
+                throw new KylinRuntimeException(ie);
+            } catch (UserStopQueryException | KylinTimeoutException e) {
+                log.error(String.format("Stop pruning partitions from %s!", partition.toString()), e);
+                throw e;
             } catch (Exception ex) {
                 log.warn("Multi-partition pruning error: ", ex);
             }

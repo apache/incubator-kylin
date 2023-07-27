@@ -47,6 +47,8 @@ import org.apache.calcite.util.NlsString;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.common.exception.KylinRuntimeException;
+import org.apache.kylin.common.exception.KylinTimeoutException;
 import org.apache.kylin.common.util.DateFormat;
 import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableSet;
@@ -66,7 +68,9 @@ import org.apache.kylin.metadata.model.TblColRef;
 import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.realization.CapabilityResult;
 import org.apache.kylin.metadata.realization.IRealization;
+import org.apache.kylin.query.exception.UserStopQueryException;
 import org.apache.kylin.query.relnode.OLAPContext;
+import org.apache.kylin.query.util.QueryInterruptChecker;
 import org.apache.kylin.query.util.RexUtils;
 
 import lombok.val;
@@ -187,29 +191,44 @@ public class SegmentPruningRule extends PruningRule {
         Segments<NDataSegment> selectedSegments = new Segments<>();
         PartitionDesc partitionCol = getPartitionDesc(dataflow, olapContext);
         RexBuilder rexBuilder = olapContext.firstTableScan.getCluster().getRexBuilder();
+
         for (NDataSegment dataSegment : dataflow.getQueryableSegments()) {
             try {
+                QueryInterruptChecker.checkQueryCanceledOrThreadInterrupted(
+                    "Interrupted during pruning segments by partition filter!",
+                    "pruning segments by partition filter");
+
+                // To improve this simplification after fixed https://olapio.atlassian.net/browse/KE-42295
+                // evaluate segment range [startTime, endTime)
                 val segmentRanges = transformSegment2RexCall(dataSegment, partitionCol.getPartitionDateFormat(),
-                        rexBuilder, partitionColInputRef, partitionCol.getPartitionDateColumnRef().getType(),
-                        dataflow.isStreaming());
+                    rexBuilder, partitionColInputRef, partitionCol.getPartitionDateColumnRef().getType(),
+                    dataflow.isStreaming());
                 // compare with segment start
                 val segmentStartPredicate = RelOptPredicateList.of(rexBuilder,
-                        Lists.newArrayList(segmentRanges.getFirst()));
+                    Lists.newArrayList(segmentRanges.getFirst()));
                 var simplifiedWithPredicate = rexSimplify.withPredicates(segmentStartPredicate)
-                        .simplify(simplifiedSqlFilter);
+                    .simplify(simplifiedSqlFilter);
                 if (simplifiedWithPredicate.isAlwaysFalse()) {
                     continue;
                 }
                 // compare with segment end
                 val segmentEndPredicate = RelOptPredicateList.of(rexBuilder,
-                        Lists.newArrayList(segmentRanges.getSecond()));
+                    Lists.newArrayList(segmentRanges.getSecond()));
                 simplifiedWithPredicate = rexSimplify.withPredicates(segmentEndPredicate)
-                        .simplify(simplifiedWithPredicate);
+                    .simplify(simplifiedWithPredicate);
                 if (!simplifiedWithPredicate.isAlwaysFalse()) {
                     selectedSegments.add(dataSegment);
                 }
+
+            } catch (InterruptedException ie) {
+                log.error(String.format("Interrupted on pruning segments from %s!", dataSegment.toString()), ie);
+                Thread.currentThread().interrupt();
+                throw new KylinRuntimeException(ie);
+            } catch (UserStopQueryException | KylinTimeoutException e) {
+                log.error(String.format("Stop pruning segments from %s!", dataSegment.toString()), e);
+                throw e;
             } catch (Exception ex) {
-                log.warn("Segment pruning error: ", ex);
+                log.warn(String.format("To skip the exception on pruning segment %s!", dataSegment.toString()), ex);
                 selectedSegments.add(dataSegment);
             }
         }

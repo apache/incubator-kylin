@@ -18,13 +18,21 @@
 
 package org.apache.kylin.query.routing;
 
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.rex.RexExecutorImpl;
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.hadoop.util.Shell;
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.common.QueryContext;
+import org.apache.kylin.common.exception.KylinRuntimeException;
+import org.apache.kylin.common.exception.KylinTimeoutException;
 import org.apache.kylin.common.util.RandomUtil;
 import org.apache.kylin.common.util.TempMetadataBuilder;
 import org.apache.kylin.engine.spark.NLocalWithSparkSessionTest;
@@ -33,11 +41,17 @@ import org.apache.kylin.job.impl.threadpool.NDefaultScheduler;
 import org.apache.kylin.metadata.cube.model.NDataSegment;
 import org.apache.kylin.metadata.cube.model.NDataflow;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
+import org.apache.kylin.metadata.cube.model.NDataflowUpdate;
 import org.apache.kylin.metadata.datatype.DataType;
+import org.apache.kylin.metadata.model.SegmentRange;
+import org.apache.kylin.metadata.model.SegmentStatusEnum;
+import org.apache.kylin.metadata.model.Segments;
 import org.apache.kylin.query.engine.QueryExec;
 import org.apache.kylin.query.engine.TypeSystem;
 import org.apache.kylin.query.engine.meta.SimpleDataContext;
+import org.apache.kylin.query.exception.UserStopQueryException;
 import org.apache.kylin.query.relnode.OLAPContext;
+import org.apache.kylin.query.util.SlowQueryDetector;
 import org.apache.kylin.util.OlapContextTestUtil;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparderEnv;
@@ -51,6 +65,8 @@ import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import lombok.val;
+
+import static org.awaitility.Awaitility.await;
 
 public class SegmentPruningRuleTest extends NLocalWithSparkSessionTest {
 
@@ -213,6 +229,267 @@ public class SegmentPruningRuleTest extends NLocalWithSparkSessionTest {
         DataType dateType = new DataType("date", 0, 0);
         ReflectionTestUtils.invokeMethod(SegmentPruningRule.class, "checkAndReformatDateType", "yyyy-MM-dd HH:mm:ss",
                 Long.parseLong("1633928400000"), dateType);
+    }
+
+    @Test
+    public void testCancelAndInterruptPruning() throws SqlParseException {
+        val dataflowId = "3718b614-5191-2254-77e9-f4c5ca64e312";
+        KylinConfig kylinConfig = getTestConfig();
+
+        String sql = "SELECT * FROM TEST_DB.DATE_TIMESTAMP_TABLE WHERE id = '121' AND (\n"
+                + "(TIMESTAMP_10 >= '2021-11-03')\n" + "AND (TIMESTAMP_10 <= '2021-11-04')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-03')\n" + "AND (TIMESTAMP_10 <= '2021-11-05')\n" + ")\n" + "OR (\n" + "(\n"
+                + "TIMESTAMP_10 >= '2021-11-03'\n" + ")\n" + "AND (TIMESTAMP_10 <= '2021-11-06')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-04')\n" + "AND (TIMESTAMP_10 <= '2021-11-04')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-04')\n" + "AND (TIMESTAMP_10 <= '2021-11-05')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-04')\n" + "AND (TIMESTAMP_10 <= '2021-11-06')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-07')\n" + "AND (TIMESTAMP_10 <= '2021-11-07')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-07')\n" + "AND (TIMESTAMP_10 <= '2021-11-08')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-07')\n" + "AND (TIMESTAMP_10 <= '2021-11-12')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-17')\n" + "AND (TIMESTAMP_10 <= '2021-11-17')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-17')\n" + "AND (TIMESTAMP_10 <= '2021-11-18')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-17')\n" + "AND (TIMESTAMP_10 <= '2021-11-19')\n" + ")\n" + "OR (\n"
+                + "(TIMESTAMP_10 >= '2021-11-17')\n" + "AND (TIMESTAMP_10 <= '2021-11-17')\n" + ")";
+
+        String project = getProject();
+        NDataflowManager dataflowManager = NDataflowManager.getInstance(kylinConfig, project);
+        List<OLAPContext> olapContexts = OlapContextTestUtil.getOlapContexts(getProject(), sql);
+        OLAPContext context = olapContexts.get(0);
+
+        // append new segments
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(2021, Calendar.DECEMBER, 6);
+
+        final int newSegmentCount = 100_000;
+        NDataSegment[] newSegments = new NDataSegment[newSegmentCount];
+        for (int i = 0; i < newSegmentCount; i++) {
+            long startTime = calendar.getTimeInMillis();
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+            long endTime = calendar.getTimeInMillis();
+            NDataSegment newSegment = new NDataSegment(null,
+                    new SegmentRange.TimePartitionedSegmentRange(startTime, endTime));
+            newSegment.setStatus(SegmentStatusEnum.READY);
+            newSegments[i] = newSegment;
+        }
+
+        NDataflowUpdate update = new NDataflowUpdate(dataflowId);
+        update.setToAddSegs(newSegments);
+        dataflowManager.updateDataflowWithoutIndex(update);
+
+        NDataflow dataflow = dataflowManager.getDataflow(dataflowId);
+
+        CalciteSchema rootSchema = new QueryExec(project, kylinConfig).getRootSchema();
+        SimpleDataContext dataContext = new SimpleDataContext(rootSchema.plus(), TypeSystem.javaTypeFactory(),
+                kylinConfig);
+        context.firstTableScan.getCluster().getPlanner().setExecutor(new RexExecutorImpl(dataContext));
+        Map<String, String> map = RealizationChooser.matchJoins(dataflow.getModel(), context, false, false);
+        context.fixModel(dataflow.getModel(), map);
+
+        Assert.assertTrue("Unexpected size " + dataflow.getQueryableSegments().size(),
+                dataflow.getQueryableSegments().size() > newSegmentCount);
+
+        testCancelQuery(dataflow, context);
+        testCancelQuery(dataflow, context, queryEntry -> queryEntry.getPlannerCancelFlag().requestCancel());
+        testCancelQuery(dataflow, context, queryEntry -> queryEntry.setStopByUser(true));
+        testCancelAsyncQuery(dataflow, context);
+        testInterrupt(dataflow, context);
+        testTimeout(dataflow, context);
+    }
+
+    private void testCancelQuery(NDataflow dataflow, OLAPContext context) {
+        AtomicReference<Exception> exp = new AtomicReference<>(null);
+        AtomicReference<Segments<NDataSegment>> res = new AtomicReference<>(null);
+        AtomicReference<SlowQueryDetector> slowQueryDetector = new AtomicReference<>(null);
+        AtomicReference<SlowQueryDetector.QueryEntry> queryEntry = new AtomicReference<>(null);
+
+        Thread t = new Thread(() -> {
+            try {
+                slowQueryDetector.set(new SlowQueryDetector(100, 10_000));
+                slowQueryDetector.get().queryStart("pruning");
+                queryEntry.set(SlowQueryDetector.getRunningQueries().get(Thread.currentThread()));
+                res.set(new SegmentPruningRule().pruneSegments(dataflow, context));
+            } catch (Exception e) {
+                exp.set(e);
+            } finally {
+                slowQueryDetector.get().queryEnd();
+            }
+        });
+        t.start();
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(60, TimeUnit.SECONDS)
+                .until(() -> queryEntry.get() != null);
+
+        slowQueryDetector.get().stopQuery("pruning");
+
+        Assert.assertFalse(queryEntry.get().isAsyncQuery());
+        Assert.assertTrue(queryEntry.get().isStopByUser()
+                && queryEntry.get().getPlannerCancelFlag().isCancelRequested());
+
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            // ignored
+        }
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() -> exp.get() != null);
+
+        Assert.assertNull(res.get());
+        Assert.assertTrue("Unexpected exception " + exp.get().getMessage(),
+                exp.get() instanceof UserStopQueryException);
+    }
+
+    private void testCancelQuery(NDataflow dataflow, OLAPContext context,
+            Consumer<SlowQueryDetector.QueryEntry> updater) {
+
+        AtomicReference<Exception> exp = new AtomicReference<>(null);
+        AtomicReference<Segments<NDataSegment>> res = new AtomicReference<>(null);
+        AtomicReference<SlowQueryDetector> slowQueryDetector = new AtomicReference<>(null);
+        AtomicReference<SlowQueryDetector.QueryEntry> queryEntry = new AtomicReference<>(null);
+
+        Thread t = new Thread(() -> {
+            try {
+                slowQueryDetector.set(new SlowQueryDetector(100, 10_000));
+                slowQueryDetector.get().queryStart("pruning");
+                queryEntry.set(SlowQueryDetector.getRunningQueries().get(Thread.currentThread()));
+                res.set(new SegmentPruningRule().pruneSegments(dataflow, context));
+            } catch (Exception e) {
+                exp.set(e);
+            } finally {
+                slowQueryDetector.get().queryEnd();
+            }
+        });
+        t.start();
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(60, TimeUnit.SECONDS)
+                .until(() -> queryEntry.get() != null);
+
+        Assert.assertTrue(t.isAlive());
+
+        updater.accept(queryEntry.get());
+
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            // ignored
+        }
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() -> exp.get() != null);
+
+        Assert.assertNull(res.get());
+        Assert.assertTrue("Unexpected exception " + exp.get().getMessage(),
+                exp.get() instanceof UserStopQueryException);
+        Assert.assertTrue(exp.get().getMessage().contains("inconsistent states"));
+    }
+
+    private void testCancelAsyncQuery(NDataflow dataflow, OLAPContext context) {
+        AtomicReference<Exception> exp = new AtomicReference<>(null);
+        AtomicReference<Segments<NDataSegment>> res = new AtomicReference<>(null);
+        AtomicReference<SlowQueryDetector> slowQueryDetector = new AtomicReference<>(null);
+        AtomicReference<SlowQueryDetector.QueryEntry> queryEntry = new AtomicReference<>(null);
+
+        Thread t = new Thread(() -> {
+            try {
+                QueryContext.current().getQueryTagInfo().setAsyncQuery(true);
+                slowQueryDetector.set(new SlowQueryDetector(100, 10_000));
+                slowQueryDetector.get().queryStart("pruning");
+                queryEntry.set(SlowQueryDetector.getRunningQueries().get(Thread.currentThread()));
+                res.set(new SegmentPruningRule().pruneSegments(dataflow, context));
+            } catch (Exception e) {
+                exp.set(e);
+            } finally {
+                slowQueryDetector.get().queryEnd();
+            }
+        });
+        t.start();
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(60, TimeUnit.SECONDS)
+                .until(() -> queryEntry.get() != null);
+
+        String queryId = queryEntry.get().getQueryId();
+        slowQueryDetector.get().stopQuery(queryId);
+
+        Assert.assertTrue(queryEntry.get().isAsyncQuery());
+        Assert.assertTrue(queryEntry.get().isStopByUser()
+                && queryEntry.get().getPlannerCancelFlag().isCancelRequested());
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            // ignored
+        }
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() -> exp.get() != null);
+
+        Assert.assertNull(res.get());
+        Assert.assertTrue("Unexpected exception " + exp.get().getMessage(),
+                exp.get() instanceof UserStopQueryException);
+    }
+
+    private void testInterrupt(NDataflow dataflow, OLAPContext context) {
+        AtomicReference<Exception> exp = new AtomicReference<>(null);
+        AtomicReference<Segments<NDataSegment>> res = new AtomicReference<>(null);
+
+        Thread t = new Thread(() -> {
+            try {
+                res.set(new SegmentPruningRule().pruneSegments(dataflow, context));
+            } catch (Exception e) {
+                exp.set(e);
+            }
+        });
+        t.start();
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(6, TimeUnit.SECONDS).until(t::isAlive);
+
+        t.interrupt();
+
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            // ignored
+        }
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() -> exp.get() != null);
+
+        Assert.assertNull(res.get());
+        Assert.assertTrue("Unexpected exception " + exp.get().getMessage(), exp.get() instanceof KylinRuntimeException);
+        Assert.assertTrue(exp.get().getCause() instanceof InterruptedException);
+    }
+
+    private void testTimeout(NDataflow dataflow, OLAPContext context) {
+        AtomicReference<Exception> exp = new AtomicReference<>(null);
+        AtomicReference<Segments<NDataSegment>> res = new AtomicReference<>(null);
+        AtomicReference<SlowQueryDetector> slowQueryDetector = new AtomicReference<>(null);
+        AtomicReference<SlowQueryDetector.QueryEntry> queryEntry = new AtomicReference<>(null);
+
+        Thread t = new Thread(() -> {
+            try {
+                QueryContext.current().getQueryTagInfo().setAsyncQuery(false);
+                slowQueryDetector.set(new SlowQueryDetector(10, 100));
+                slowQueryDetector.get().queryStart("pruning");
+                queryEntry.set(SlowQueryDetector.getRunningQueries().get(Thread.currentThread()));
+                res.set(new SegmentPruningRule().pruneSegments(dataflow, context));
+            } catch (Exception e) {
+                exp.set(e);
+            } finally {
+                slowQueryDetector.get().queryEnd();
+            }
+        });
+        t.start();
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(60, TimeUnit.SECONDS).until(() -> queryEntry.get() != null);
+
+        Assert.assertTrue(queryEntry.get().setInterruptIfTimeout());
+
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            // ignored
+        }
+
+        Assert.assertTrue(!t.isAlive() && queryEntry.get().getPlannerCancelFlag().isCancelRequested());
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() -> exp.get() != null);
+
+        Assert.assertNull(res.get());
+        Assert.assertTrue("Unexpected exception " + exp.get().getMessage(), exp.get() instanceof KylinTimeoutException);
     }
 
     @Test

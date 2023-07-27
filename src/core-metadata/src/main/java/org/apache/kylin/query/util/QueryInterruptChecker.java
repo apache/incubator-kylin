@@ -20,6 +20,7 @@ package org.apache.kylin.query.util;
 
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.QueryContext;
+import org.apache.kylin.common.exception.KylinRuntimeException;
 import org.apache.kylin.common.exception.KylinTimeoutException;
 import org.apache.kylin.query.exception.UserStopQueryException;
 
@@ -32,15 +33,65 @@ public class QueryInterruptChecker {
         // This is Utils.
     }
 
+    /**
+     * @deprecated Use {@link this#checkQueryCanceledOrThreadInterrupted(String, String)} instead.
+     * The semantic of this method is confused in some scenarios.
+     */
+    @Deprecated
     public static void checkThreadInterrupted(String errorMsgLog, String stepInfo) {
         if (Thread.currentThread().isInterrupted()) {
             log.error("{} {}", QueryContext.current().getQueryId(), errorMsgLog);
-            if (SlowQueryDetector.getRunningQueries().get(Thread.currentThread()).isStopByUser()) {
+            if (SlowQueryDetector.getRunningQueries().containsKey(Thread.currentThread())
+                && SlowQueryDetector.getRunningQueries().get(Thread.currentThread()).isStopByUser()) {
                 throw new UserStopQueryException("");
             }
+
             QueryContext.current().getQueryTagInfo().setTimeout(true);
             throw new KylinTimeoutException("The query exceeds the set time limit of "
                     + KylinConfig.getInstanceFromEnv().getQueryTimeoutSeconds() + "s. " + stepInfo);
+        }
+    }
+
+    /**
+     * Within the global context, STOP is same to CANCEL, therefore to stop a query is equal to
+     * cancel a query.
+     * There are some possible reasons to cancel the query recorded in the current thread context.
+     * {@link UserStopQueryException} is for stopping the query from the request, see
+     * {@link SlowQueryDetector#stopQuery(String)}.
+     * {@link KylinTimeoutException} is for run out of the timeout of the query, see
+     * {@link SlowQueryDetector::checkTimeout()}.
+     * {@link KylinRuntimeException} is risking inconsistent states to stop the query.
+     * {@link InterruptedException} is for other interruptions.
+     * @param cause the reason of canceling the current query or interrupt the working thread
+     * @param step the processing point
+     */
+    public static void checkQueryCanceledOrThreadInterrupted(String cause, String step) throws InterruptedException {
+        SlowQueryDetector.QueryEntry entry = SlowQueryDetector.getRunningQueries().getOrDefault(Thread.currentThread(),
+            null);
+        if (entry != null) {
+            if (entry.isStopByUser() && entry.getPlannerCancelFlag().isCancelRequested()
+                && Thread.currentThread().isInterrupted()) {
+                throw new UserStopQueryException(String.format("Manually stop the query %s. Caused: %s. Step: %s",
+                    entry.getQueryId(), cause, step));
+            }
+
+            if (entry.getPlannerCancelFlag().isCancelRequested() && Thread.currentThread().isInterrupted()) {
+                QueryContext.current().getQueryTagInfo().setTimeout(true);
+                throw new KylinTimeoutException(String.format("Run out of time of the query %s. Caused: %s. Step: %s",
+                    entry.getQueryId(), cause, step));
+            }
+
+            if (entry.isStopByUser() || entry.getPlannerCancelFlag().isCancelRequested()) {
+                throw new UserStopQueryException(String.format(
+                    "You are trying to cancel the query %s with inconsistent states:"
+                        + " [isStopByUser=%s, isCancelRequested=%s]! Caused: %s. Step: %s",
+                    entry.getQueryId(), entry.isStopByUser(), entry.getPlannerCancelFlag().isCancelRequested(),
+                    cause, step));
+            }
+        }
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException(String.format("Interrupted on thread %s. Caused: %s. Step: %s",
+                Thread.currentThread().getName(), cause, step));
         }
     }
 }
