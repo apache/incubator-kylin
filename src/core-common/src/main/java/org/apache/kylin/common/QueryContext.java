@@ -109,6 +109,10 @@ public class QueryContext implements Closeable {
 
     @Getter
     @Setter
+    private boolean isForModeling;
+
+    @Getter
+    @Setter
     private ForceToTieredStorage forcedToTieredStorage;
     /**
      * mark table index use second storage, key is layout id

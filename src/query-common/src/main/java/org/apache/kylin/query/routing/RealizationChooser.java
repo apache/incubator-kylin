@@ -255,7 +255,9 @@ public class RealizationChooser {
             buildDimensionsAndMetrics(context, dimensions, metrics);
             buildStorageContext(context, dimensions, metrics, candidate);
             buildSecondStorageEnabled(context.getSQLDigest());
-            fixContextForTableIndexAnswerNonRawQuery(context);
+            if (!QueryContext.current().isForModeling()) {
+                fixContextForTableIndexAnswerNonRawQuery(context);
+            }
         }
     }
 
