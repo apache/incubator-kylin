@@ -151,7 +151,7 @@ public class ImportModelContext implements AutoCloseable {
 
         List<TableDesc> tables = importTableMetadataManager.listAllTables();
         for (TableDesc tableDesc : tables) {
-            TableDesc newTable = targetTableMetadataManager.copyForWrite(tableDesc);
+            TableDesc newTable = targetTableMetadataManager.copy(tableDesc);
             TableDesc originalTable = targetTableMetadataManager.getTableDesc(newTable.getIdentity());
             newTable.setLastModified(System.currentTimeMillis());
             if (Objects.isNull(originalTable)) {

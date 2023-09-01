@@ -23,6 +23,8 @@ import java.io.IOException;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.util.JsonUtil;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.eventbus.Subscribe;
 import org.apache.kylin.job.manager.JobManager;
 import org.apache.kylin.job.model.JobParam;
 import org.apache.kylin.metadata.cube.model.NDataSegment;
@@ -41,9 +43,6 @@ import org.apache.kylin.metadata.recommendation.ref.OptRecManagerV2;
 import org.apache.kylin.metadata.sourceusage.SourceUsageManager;
 import org.springframework.util.CollectionUtils;
 
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-
-import org.apache.kylin.guava30.shaded.common.eventbus.Subscribe;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
 
@@ -94,9 +93,10 @@ public class ModelBrokenListener {
                 dfUpdate.setToRemoveSegs(dataflow.getSegments().toArray(new NDataSegment[0]));
             }
             dataflowManager.updateDataflow(dfUpdate);
-            model.setHandledAfterBroken(true);
-            model.setRecommendationsCount(0);
-            modelManager.updateDataBrokenModelDesc(model);
+            NDataModel copy = modelManager.copyForWrite(model);
+            copy.setHandledAfterBroken(true);
+            copy.setRecommendationsCount(0);
+            modelManager.updateDataBrokenModelDesc(copy);
 
             OptRecManagerV2 optRecManagerV2 = OptRecManagerV2.getInstance(project);
             optRecManagerV2.discardAll(model.getId());

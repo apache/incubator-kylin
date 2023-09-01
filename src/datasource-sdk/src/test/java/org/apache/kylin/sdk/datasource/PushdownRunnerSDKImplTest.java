@@ -20,25 +20,21 @@ package org.apache.kylin.sdk.datasource;
 import java.util.List;
 
 import org.apache.kylin.common.QueryContext;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.project.NProjectManager;
-import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.metadata.querymeta.SelectedColumnMeta;
 import org.apache.kylin.sdk.datasource.framework.JdbcConnectorTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-
 public class PushdownRunnerSDKImplTest extends JdbcConnectorTest {
     @Test
     public void testExecuteQuery() throws Exception {
         NProjectManager npr = NProjectManager.getInstance(getTestConfig());
-        ProjectInstance projectInstance = npr.getProject("default");
-        projectInstance.setDefaultDatabase("SSB");
-        npr.updateProject(projectInstance);
+        npr.updateProject("default", copyForWrite -> copyForWrite.setDefaultDatabase("SSB"));
 
         PushDownRunnerSDKImpl pushDownRunnerSDK = new PushDownRunnerSDKImpl();
-        pushDownRunnerSDK.init(getTestConfig(), projectInstance.getName());
+        pushDownRunnerSDK.init(getTestConfig(), "default");
         List<List<String>> returnRows = Lists.newArrayList();
         List<SelectedColumnMeta> returnColumnMeta = Lists.newArrayList();
         String sql = "select count(*) from LINEORDER";

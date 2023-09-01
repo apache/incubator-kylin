@@ -19,13 +19,13 @@
 package org.apache.kylin.rest.service;
 
 import static org.apache.kylin.common.constant.Constants.HIDDEN_VALUE;
+import static org.apache.kylin.common.constant.Constants.KYLIN_JOB_MAX_CONCURRENT_JOBS;
 import static org.apache.kylin.common.constant.Constants.KYLIN_SOURCE_JDBC_CONNECTION_URL_KEY;
 import static org.apache.kylin.common.constant.Constants.KYLIN_SOURCE_JDBC_DRIVER_KEY;
 import static org.apache.kylin.common.constant.Constants.KYLIN_SOURCE_JDBC_PASS_KEY;
 import static org.apache.kylin.common.constant.Constants.KYLIN_SOURCE_JDBC_SOURCE_ENABLE_KEY;
 import static org.apache.kylin.common.constant.Constants.KYLIN_SOURCE_JDBC_SOURCE_NAME_KEY;
 import static org.apache.kylin.common.constant.Constants.KYLIN_SOURCE_JDBC_USER_KEY;
-import static org.apache.kylin.common.constant.Constants.KYLIN_JOB_MAX_CONCURRENT_JOBS;
 import static org.apache.kylin.common.constant.NonCustomProjectLevelConfig.DATASOURCE_TYPE;
 import static org.apache.kylin.common.exception.ServerErrorCode.DATABASE_NOT_EXIST;
 import static org.apache.kylin.common.exception.ServerErrorCode.DUPLICATE_PROJECT_NAME;
@@ -970,8 +970,7 @@ public class ProjectService extends BasicService {
             if (uppderDB.equals(projectInstance.getDefaultDatabase())) {
                 return;
             }
-            projectInstance.setDefaultDatabase(uppderDB);
-            prjManager.updateProject(projectInstance);
+            prjManager.updateProject(project, copyForWrite -> copyForWrite.setDefaultDatabase(uppderDB));
         } else {
             throw new KylinException(DATABASE_NOT_EXIST,
                     String.format(Locale.ROOT, MsgPicker.getMsg().getDatabaseNotExist(), defaultDatabase));

@@ -32,6 +32,7 @@ import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.msg.Message;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.persistence.ResourceStore;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.apache.kylin.rest.util.AclPermissionUtil;
 import org.apache.kylin.rest.util.SpringContext;
@@ -49,8 +50,6 @@ import org.springframework.security.acls.model.Permission;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 
 import lombok.val;
 
@@ -165,7 +164,7 @@ public class AclManager {
                 parentAcl = readAclById(record.getParentDomainObjectInfo());
 
             // Caution: Using a copied object before doing init, otherwise the original one will be polluted
-            AclRecord recordCopy = crud.copyForWrite(record);
+            AclRecord recordCopy = crud.copyBySerialization(record);
             recordCopy.init(parentAcl, aclPermissionFactory, permissionGrantingStrategy);
 
             aclMaps.put(oid, new MutableAclRecord(recordCopy));
@@ -178,7 +177,7 @@ public class AclManager {
         if (aclRecord != null) {
             throw new AlreadyExistsException(String.format(Locale.ROOT, "ACL of %s exists!", objectIdentity));
         }
-        AclRecord record = newAclRecord(objectIdentity);
+        AclRecord record = copyForWrite(newAclRecord(objectIdentity));
         crud.save(record);
         logger.debug("ACL of {} created successfully.", objectIdentity);
 
@@ -199,11 +198,13 @@ public class AclManager {
         logger.debug("ACL of {} deleted successfully.", objectIdentity);
     }
 
+    /**
+     * @deprecated Use updateAcl(MutableAclRecord acl, AclRecordUpdater updater) instead.
+     */
+    @Deprecated
     public MutableAcl updateAcl(MutableAcl mutableAcl) {
-        AclRecord record = ((MutableAclRecord) mutableAcl).getAclRecord();
-        crud.save(record);
-        logger.debug("ACL of {} updated successfully.", mutableAcl.getObjectIdentity());
-        return mutableAcl;
+        return updateAcl((MutableAclRecord) mutableAcl,
+                ((MutableAclRecord) mutableAcl).getAclRecord()::copyPropertiesTo);
     }
 
     // a NULL permission means to delete the ace
@@ -248,6 +249,7 @@ public class AclManager {
         val copyForWrite = crud.copyForWrite(acl.getAclRecord());
         updater.update(copyForWrite);
         crud.save(copyForWrite);
+        logger.debug("ACL of {} updated successfully.", copyForWrite.getObjectIdentity());
         return readAcl(acl.getObjectIdentity()); // here we are done
     }
 

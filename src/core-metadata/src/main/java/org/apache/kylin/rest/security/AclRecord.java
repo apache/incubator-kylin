@@ -301,6 +301,6 @@ public class AclRecord extends RootPersistentEntity implements Acl, OwnershipAcl
 
     @Override
     public String getResourcePath() {
-        return ResourceStore.ACL_ROOT + "/" + uuid;
+        return ResourceStore.ACL_ROOT + "/" + resourceName();
     }
 }

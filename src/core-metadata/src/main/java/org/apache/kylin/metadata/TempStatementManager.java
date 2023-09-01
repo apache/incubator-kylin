@@ -74,6 +74,10 @@ public class TempStatementManager {
     public TempStatementEntity getTempStatEntity(String sessionId, String statementId) {
         return crud.get(TempStatementEntity.resourceName(sessionId, statementId));
     }
+    
+    private TempStatementEntity copyForWrite(TempStatementEntity entity) {
+        return crud.copyForWrite(entity);
+    }
 
     public void updateTempStatement(String statementId, String statement) throws IOException {
         updateTempStatement(TempStatementEntity.DEFAULT_SESSION_ID, statementId, statement);
@@ -86,13 +90,13 @@ public class TempStatementManager {
     }
 
     private TempStatementEntity prepareToOverwrite(TempStatementEntity entity, TempStatementEntity origin) {
+        TempStatementEntity copy = copyForWrite(entity);
         if (origin == null) {
             // create
-            entity.updateRandomUuid();
+            copy.updateRandomUuid();
         } else {
             // update
-            entity.setUuid(origin.getUuid());
-            entity.setLastModified(origin.getLastModified());
+            copy.setStatement(entity.getStatement());
         }
         return entity;
     }

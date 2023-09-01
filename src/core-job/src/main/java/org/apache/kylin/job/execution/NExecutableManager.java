@@ -199,10 +199,11 @@ public class NExecutableManager {
     }
 
     public void addJob(ExecutablePO executablePO) {
-        addJobOutput(executablePO);
-        executableDao.addJob(executablePO);
+        ExecutablePO copy = executableDao.copyForWrite(executablePO);
+        addJobOutput(copy);
+        executableDao.addJob(copy);
 
-        String jobType = executablePO.getJobType() == null ? "" : executablePO.getJobType().name();
+        String jobType = copy.getJobType() == null ? "" : copy.getJobType().name();
         // dispatch job-created message out
         if (KylinConfig.getInstanceFromEnv().isUTEnv()) {
             EventBusFactory.getInstance().postAsync(new JobReadyNotifier(project));
@@ -1410,7 +1411,11 @@ public class NExecutableManager {
         val thread = scheduler.getContext().getRunningJobThread(executable);
         if (thread != null) {
             logger.info("Interrupt Job [{}] thread and remove in ExecutableContext", executable.getDisplayName());
-            thread.interrupt();
+            // workaround for https://olapio.atlassian.net/browse/KE-41836
+            if (Arrays.stream(thread.getStackTrace())
+                    .noneMatch(stack -> stack.getClassName().contains("FetcherRunner"))) {
+                thread.interrupt();
+            }
         }
     }
 

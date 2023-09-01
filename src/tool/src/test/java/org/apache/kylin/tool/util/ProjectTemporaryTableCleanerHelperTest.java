@@ -79,13 +79,14 @@ public class ProjectTemporaryTableCleanerHelperTest extends NLocalFileMetadataTe
     public void testGetJobTransactionalTable() throws IOException {
         String project = "default";
         String jobId = "job-5c5851ef8544";
+        FileSystem fs = HadoopUtil.getWorkingFileSystem();
         {
-            Set<String> tables = tableCleanerHelper.getJobTransactionalTable(project, jobId);
+            Set<String> tables = tableCleanerHelper.getJobTransactionalTable(project, jobId, fs);
             Assert.assertTrue(tables.isEmpty());
         }
         {
             createHDFSFile(project, jobId);
-            Set<String> tables = tableCleanerHelper.getJobTransactionalTable(project, jobId);
+            Set<String> tables = tableCleanerHelper.getJobTransactionalTable(project, jobId, fs);
             Assert.assertFalse(tables.isEmpty());
         }
     }

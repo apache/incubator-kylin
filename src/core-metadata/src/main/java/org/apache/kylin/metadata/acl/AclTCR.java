@@ -38,6 +38,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
+import org.apache.kylin.metadata.MetadataConstants;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -57,9 +58,13 @@ public class AclTCR extends RootPersistentEntity {
     //wrap read only aclTCR
 
     private String resourceName;
+    private String project;
+    private boolean principal;
 
-    public void init(String resourceName) {
+    public void init(String resourceName, String project, boolean principal) {
         this.resourceName = resourceName;
+        this.project = project;
+        this.principal = principal;
     }
 
     @JsonProperty
@@ -68,6 +73,16 @@ public class AclTCR extends RootPersistentEntity {
     @Override
     public String resourceName() {
         return resourceName;
+    }
+
+    @Override
+    public String getResourcePath() {
+        return "/" + project + "/acl/" + (principal ? "user/" : "group/") + resourceName()
+                + MetadataConstants.FILE_SURFIX;
+    }
+
+    public boolean isPrincipal() {
+        return principal;
     }
 
     public Table getTable() {

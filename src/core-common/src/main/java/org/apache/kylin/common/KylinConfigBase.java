@@ -700,6 +700,31 @@ public abstract class KylinConfigBase implements Serializable {
         return getOptional("kylin.env.ip-address");
     }
 
+    public String getTransactionLockManager() {
+        return getOptional("kylin.env.transaction-lock-manager",
+                "org.apache.kylin.common.persistence.transaction.TransactionOptimisticLockManager");
+    }
+
+    public String getLockManager() {
+        return getOptional("kylin.env.lock-manager", "org.apache.kylin.common.persistence.lock.MemoryLockManager");
+    }
+
+    public long getLockTimeoutSeconds() {
+        return Long.parseLong(getOptional("kylin.env.lock-timeout", "60"));
+    }
+
+    public long getLockCheckIntervalSeconds() {
+        return Long.parseLong(getOptional("kylin.env.dead-lock-check-interval", "3"));
+    }
+
+    public long getMaxSecondsForDeadLockRetry() {
+        return Long.parseLong(getOptional("kylin.env.max-seconds-for-dead-lock-retry", "600"));
+    }
+
+    public int getLockRemoveMaxSize() {
+        return Integer.parseInt(getOptional("kylin.env.lock-remove-max-size", "200"));
+    }
+
     public String getServerAddress() {
         // Caution: config 'kylin.server.address' is essential in yarn cluster mode.
         // The value may be the address of loadbalancer

@@ -24,8 +24,9 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.JsonSerializer;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.Serializer;
-import org.apache.kylin.metadata.MetadataConstants;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.metadata.MetadataConstants;
+import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,12 +40,14 @@ public class QueryHistoryIdOffsetManager {
     private final KylinConfig kylinConfig;
     private ResourceStore resourceStore;
     private String resourceRoot;
+    private String project;
 
     private QueryHistoryIdOffsetManager(KylinConfig kylinConfig, String project) {
         if (!UnitOfWork.isAlreadyInTransaction())
             logger.info("Initializing QueryHistoryIdOffsetManager with KylinConfig Id: {} for project {}",
                     System.identityHashCode(kylinConfig), project);
         this.kylinConfig = kylinConfig;
+        this.project = project;
         resourceStore = ResourceStore.getKylinMetaStore(this.kylinConfig);
         this.resourceRoot = "/" + project + ResourceStore.QUERY_HISTORY_ID_OFFSET;
     }
@@ -62,8 +65,26 @@ public class QueryHistoryIdOffsetManager {
         return this.resourceRoot + "/" + uuid + MetadataConstants.FILE_SURFIX;
     }
 
-    public void save(QueryHistoryIdOffset idOffset) {
+    public QueryHistoryIdOffset copyForWrite(QueryHistoryIdOffset idOffset) {
+        if (idOffset.getProject() == null) {
+            idOffset.setProject(project);
+        }
+        return CachedCrudAssist.copyForWrite(idOffset, QUERY_HISTORY_ID_OFFSET_SERIALIZER, null, resourceStore);
+    }
+    
+    private void save(QueryHistoryIdOffset idOffset) {
         resourceStore.checkAndPutResource(path(idOffset.getUuid()), idOffset, QUERY_HISTORY_ID_OFFSET_SERIALIZER);
+    }
+    
+    public void updateOffset(QueryHistoryIdOffsetUpdater updater) {
+        QueryHistoryIdOffset cached = get();
+        QueryHistoryIdOffset copy = copyForWrite(cached);
+        updater.modify(copy);
+        save(copy);
+    }
+    
+    public interface QueryHistoryIdOffsetUpdater {
+        void modify(QueryHistoryIdOffset offset);
     }
 
     public QueryHistoryIdOffset get() {

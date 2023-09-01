@@ -145,6 +145,10 @@ public class ComputedColumnDesc implements Serializable {
         return ComputedColumnDesc.CC_PREFIX + columnName;
     }
 
+    public String getIdentityCcName() {
+        return tableIdentity + "." + columnName;
+    }
+
     private String handleLegacyCC(String expr, String rootFact, Set<String> aliasSet) {
         try {
             String ret = CalciteParser.insertAliasInExpr(expr, rootFact);

@@ -29,6 +29,7 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.constant.Constant;
 import org.apache.kylin.common.hystrix.NCircuitBreaker;
 import org.apache.kylin.common.persistence.ResourceStore;
+import org.apache.kylin.common.persistence.lock.TransactionDeadLockHandler;
 import org.apache.kylin.common.persistence.metadata.EpochStore;
 import org.apache.kylin.common.persistence.metadata.JdbcAuditLogStore;
 import org.apache.kylin.common.persistence.transaction.EventListenerRegistry;
@@ -135,6 +136,7 @@ public class AppInitializer {
             EventBusFactory.getInstance().register(new StreamingJobListener(), true);
 
             SparkJobFactoryUtils.initJobFactory();
+            TransactionDeadLockHandler.getInstance().start();
         } else {
             val auditLogStore = new JdbcAuditLogStore(kylinConfig);
             val epochStore = EpochStore.getEpochStore(kylinConfig);

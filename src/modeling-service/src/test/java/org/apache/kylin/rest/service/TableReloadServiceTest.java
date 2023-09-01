@@ -639,7 +639,7 @@ public class TableReloadServiceTest extends CSVSourceTestCase {
         UnitOfWork.doInTransactionWithRetry(() -> {
             modelService.repairBrokenModel(PROJECT, createModelRequest(copyModel));
             return null;
-        }, PROJECT, 1);
+        }, PROJECT);
         val modelManager = NDataModelManager.getInstance(KylinConfig.getInstanceFromEnv(), PROJECT);
         val reModel = modelManager.getDataModelDescByAlias("nmodel_basic_inner");
         Assert.assertNotNull(reModel);
@@ -701,7 +701,7 @@ public class TableReloadServiceTest extends CSVSourceTestCase {
         UnitOfWork.doInTransactionWithRetry(() -> {
             modelService.repairBrokenModel(PROJECT, createModelRequest(copyModel));
             return null;
-        }, PROJECT, 1);
+        }, PROJECT);
         val modelManager = NDataModelManager.getInstance(KylinConfig.getInstanceFromEnv(), PROJECT);
         val reModel = modelManager.getDataModelDescByAlias("nmodel_basic_inner");
         Assert.assertNotNull(reModel);
@@ -751,7 +751,7 @@ public class TableReloadServiceTest extends CSVSourceTestCase {
         UnitOfWork.doInTransactionWithRetry(() -> {
             modelService.repairBrokenModel(PROJECT, createModelRequest(copyModel));
             return null;
-        }, PROJECT, 1);
+        }, PROJECT);
         val modelManager = NDataModelManager.getInstance(KylinConfig.getInstanceFromEnv(), PROJECT);
         val reModel = modelManager.getDataModelDescByAlias("nmodel_basic_inner");
         Assert.assertNotNull(reModel);
@@ -812,7 +812,7 @@ public class TableReloadServiceTest extends CSVSourceTestCase {
         UnitOfWork.doInTransactionWithRetry(() -> {
             modelService.repairBrokenModel(PROJECT, createModelRequest(copyModel));
             return null;
-        }, PROJECT, 1);
+        }, PROJECT);
 
         indexPlan = NIndexPlanManager.getInstance(getTestConfig(), PROJECT).getIndexPlan(originModel.getUuid());
         Assert.assertEquals(1, indexPlan.getRuleBasedIndex().getAggregationGroups().size());

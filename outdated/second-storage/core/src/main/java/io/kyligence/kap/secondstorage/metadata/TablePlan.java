@@ -146,6 +146,11 @@ public class TablePlan extends RootPersistentEntity
     }
 
     @Override
+    public String getResourcePath() {
+        return manager.getResourcePath(resourceName());
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof TablePlan)) return false;

@@ -43,11 +43,13 @@ import org.apache.kylin.common.persistence.StringEntity;
 import org.apache.kylin.common.persistence.UnitMessages;
 import org.apache.kylin.common.persistence.event.Event;
 import org.apache.kylin.common.persistence.event.ResourceCreateOrUpdateEvent;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
 import org.apache.kylin.common.persistence.metadata.jdbc.AuditLogRowMapper;
 import org.apache.kylin.common.persistence.transaction.AuditLogReplayWorker;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.persistence.transaction.UnitOfWorkParams;
 import org.apache.kylin.common.util.RandomUtil;
+import org.apache.kylin.guava30.shaded.common.io.ByteSource;
 import org.apache.kylin.junit.JdbcInfo;
 import org.apache.kylin.junit.annotation.JdbcMetadataInfo;
 import org.apache.kylin.junit.annotation.MetadataInfo;
@@ -62,7 +64,6 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import org.apache.kylin.guava30.shaded.common.io.ByteSource;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
 
@@ -78,6 +79,10 @@ class JdbcAuditLogStoreTest {
     void testUpdateResourceWithLog(JdbcInfo info) throws Exception {
         UnitOfWork.doInTransactionWithRetry(() -> {
             val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/p1/abc", null, false);
+            MemoryLockUtils.lockAndRecord("/p1/abc2", null, false);
+            MemoryLockUtils.lockAndRecord("/p1/abc3", null, false);
+            MemoryLockUtils.lockAndRecord("/p1/abc4", null, false);
             store.checkAndPutResource("/p1/abc", ByteSource.wrap("abc".getBytes(charset)), -1);
             store.checkAndPutResource("/p1/abc2", ByteSource.wrap("abc".getBytes(charset)), -1);
             store.checkAndPutResource("/p1/abc3", ByteSource.wrap("abc".getBytes(charset)), -1);
@@ -476,6 +481,7 @@ class JdbcAuditLogStoreTest {
     public void testGet() throws IOException {
         UnitOfWork.doInTransactionWithRetry(() -> {
             val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/p1/123", null, false);
             store.checkAndPutResource("/p1/123", ByteSource.wrap("123".getBytes(charset)), -1);
             return 0;
         }, "p1");

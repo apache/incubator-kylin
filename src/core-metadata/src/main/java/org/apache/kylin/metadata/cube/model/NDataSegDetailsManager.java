@@ -31,12 +31,12 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.JsonSerializer;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.Serializer;
-import org.apache.kylin.metadata.MetadataConstants;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.metadata.MetadataConstants;
+import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 
 import lombok.val;
 
@@ -65,6 +65,7 @@ class NDataSegDetailsManager {
 
     private KylinConfig kylinConfig;
     private String project;
+    private ResourceStore resourceStore;
 
     private NDataSegDetailsManager(KylinConfig config, String project) {
         if (!UnitOfWork.isAlreadyInTransaction())
@@ -72,6 +73,7 @@ class NDataSegDetailsManager {
                     System.identityHashCode(config), project);
         this.kylinConfig = config;
         this.project = project;
+        this.resourceStore = ResourceStore.getKylinMetaStore(this.kylinConfig);
     }
 
     public KylinConfig getConfig() {
@@ -79,9 +81,18 @@ class NDataSegDetailsManager {
     }
 
     private ResourceStore getStore() {
-        return ResourceStore.getKylinMetaStore(this.kylinConfig);
+        return resourceStore;
     }
 
+    private NDataSegDetails initEntity(NDataSegDetails dataSegDetails, String resourceName) {
+        dataSegDetails.setProject(project);
+        return dataSegDetails;
+    }
+
+    public NDataSegDetails copyForWrite(NDataSegDetails details) {
+        return CachedCrudAssist.copyForWrite(details, DATA_SEG_LAYOUT_INSTANCES_SERIALIZER,  this::initEntity, resourceStore);
+    }
+    
     NDataSegDetails getForSegment(NDataflow df, String segId) {
         NDataSegDetails instances = getStore().getResource(getResourcePathForSegment(df.getUuid(), segId),
                 DATA_SEG_LAYOUT_INSTANCES_SERIALIZER);
@@ -127,20 +138,21 @@ class NDataSegDetailsManager {
             NDataSegDetails details = getForSegment(df, segId);
             if (details == null)
                 details = NDataSegDetails.newSegDetails(df, segId);
+            NDataSegDetails copy = copyForWrite(details);
 
             if (toUpsert.containsKey(segId)) {
                 for (NDataLayout c : toUpsert.get(segId)) {
-                    c.setSegDetails(details);
-                    details.addLayout(c);
+                    c.setSegDetails(copy);
+                    copy.addLayout(c);
                 }
             }
             if (toRemove.containsKey(segId)) {
                 for (NDataLayout c : toRemove.get(segId)) {
-                    details.removeLayout(c);
+                    copy.removeLayout(c);
                 }
             }
 
-            upsertForSegmentQuietly(details);
+            upsertForSegmentQuietly(copy);
         }
 
         if (update.getToRemoveSegs() != null) {
@@ -163,11 +175,22 @@ class NDataSegDetailsManager {
         }
     }
 
-    NDataSegDetails upsertForSegment(NDataSegDetails details) {
+    private NDataSegDetails upsertForSegment(NDataSegDetails details) {
         Preconditions.checkNotNull(details, "NDataSegDetails cannot be null.");
 
         getStore().checkAndPutResource(details.getResourcePath(), details, DATA_SEG_LAYOUT_INSTANCES_SERIALIZER);
         return details;
+    }
+
+    public NDataSegDetails updateDetails(NDataSegment seg, NDataSegDetailsUpdater updater) {
+        NDataSegDetails details = copyForWrite(getForSegment(seg));
+        updater.modify(details);
+        upsertForSegment(details);
+        return getForSegment(seg);
+    }
+    
+    interface NDataSegDetailsUpdater {
+        void modify(NDataSegDetails copyForWrite);
     }
 
     private void removeForSegmentQuietly(NDataflow df, String segId) {

@@ -34,9 +34,11 @@ import org.apache.commons.collections.ListUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.KylinConfigExt;
 import org.apache.kylin.common.util.JsonUtil;
-import org.apache.kylin.metadata.model.MeasureDesc;
-import org.apache.kylin.metadata.model.TblColRef;
-import org.apache.kylin.metadata.project.ProjectInstance;
+import org.apache.kylin.guava30.shaded.common.collect.BiMap;
+import org.apache.kylin.guava30.shaded.common.collect.Iterables;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.junit.annotation.MetadataInfo;
 import org.apache.kylin.metadata.cube.cuboid.NAggregationGroup;
 import org.apache.kylin.metadata.cube.model.IndexEntity;
@@ -44,17 +46,13 @@ import org.apache.kylin.metadata.cube.model.IndexPlan;
 import org.apache.kylin.metadata.cube.model.LayoutEntity;
 import org.apache.kylin.metadata.cube.model.NIndexPlanManager;
 import org.apache.kylin.metadata.cube.model.RuleBasedIndex;
+import org.apache.kylin.metadata.model.MeasureDesc;
 import org.apache.kylin.metadata.model.NDataModel;
+import org.apache.kylin.metadata.model.TblColRef;
 import org.apache.kylin.metadata.project.NProjectManager;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import org.apache.kylin.guava30.shaded.common.collect.BiMap;
-import org.apache.kylin.guava30.shaded.common.collect.Iterables;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
 import lombok.val;
 import lombok.var;
@@ -314,12 +312,11 @@ public class IndexPlanTest {
         // test effect on index plan when project is updated
         {
             NProjectManager pm = NProjectManager.getInstance(getTestConfig());
-            ProjectInstance p = pm.getProject(projectDefault);
-            ProjectInstance newP = pm.copyForWrite(p);
-            LinkedHashMap<String, String> overrideCopy = new LinkedHashMap<>(newP.getOverrideKylinProps());
-            overrideCopy.put("testkey", "testvalue1");
-            newP.setOverrideKylinProps(overrideCopy);
-            pm.updateProject(newP);
+            pm.updateProject(projectDefault, copyForWrite -> {
+                LinkedHashMap<String, String> overrideCopy = new LinkedHashMap<>(copyForWrite.getOverrideKylinProps());
+                overrideCopy.put("testkey", "testvalue1");
+                copyForWrite.setOverrideKylinProps(overrideCopy);
+            });
 
             Assert.assertEquals("testvalue1",
                     ((KylinConfigExt) indexPlan.getConfig()).getExtendedOverrides().get("testkey"));
@@ -327,12 +324,11 @@ public class IndexPlanTest {
 
         {
             NProjectManager pm = NProjectManager.getInstance(getTestConfig());
-            ProjectInstance p = pm.getProject(projectDefault);
-            ProjectInstance newP = pm.copyForWrite(p);
-            LinkedHashMap<String, String> overrideCopy = new LinkedHashMap<>(newP.getOverrideKylinProps());
-            overrideCopy.put("testkey", "testvalue2");
-            newP.setOverrideKylinProps(overrideCopy);
-            pm.updateProject(newP);
+            pm.updateProject(projectDefault, copyForWrite -> {
+                LinkedHashMap<String, String> overrideCopy = new LinkedHashMap<>(copyForWrite.getOverrideKylinProps());
+                overrideCopy.put("testkey", "testvalue2");
+                copyForWrite.setOverrideKylinProps(overrideCopy);
+            });
 
             Assert.assertEquals("testvalue2",
                     ((KylinConfigExt) indexPlan.getConfig()).getExtendedOverrides().get("testkey"));
@@ -364,12 +360,11 @@ public class IndexPlanTest {
         {
             //test ProjectInstance trim k-v
             NProjectManager pm = NProjectManager.getInstance(getTestConfig());
-            ProjectInstance p = pm.getProject(projectDefault);
-            ProjectInstance newP = pm.copyForWrite(p);
-            LinkedHashMap<String, String> overrideCopy = new LinkedHashMap<>(newP.getOverrideKylinProps());
-            overrideCopy.put(" testkey ", " testvalue2 ");
-            newP.setOverrideKylinProps(overrideCopy);
-            pm.updateProject(newP);
+            pm.updateProject(projectDefault, copyForWrite -> {
+                LinkedHashMap<String, String> overrideCopy = new LinkedHashMap<>(copyForWrite.getOverrideKylinProps());
+                overrideCopy.put(" testkey ", " testvalue2 ");
+                copyForWrite.setOverrideKylinProps(overrideCopy);
+            });
 
             Assert.assertEquals("testvalue2",
                     ((KylinConfigExt) indexPlan.getConfig()).getExtendedOverrides().get("testkey"));

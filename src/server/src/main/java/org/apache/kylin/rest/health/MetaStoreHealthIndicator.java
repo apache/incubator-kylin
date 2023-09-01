@@ -108,7 +108,7 @@ public class MetaStoreHealthIndicator implements HealthIndicator, ApplicationLis
     @VisibleForTesting
     public Health allNodeCheck() {
         return UnitOfWork.doInTransactionWithRetry(UnitOfWorkParams.<Health> builder().skipAuditLog(true)
-                .unitName(UNIT_NAME).maxRetry(MAX_RETRY).processor(() -> {
+                .unitName(UNIT_NAME).tempLockName(UNIT_NAME).maxRetry(MAX_RETRY).processor(() -> {
                     ResourceStore store;
                     try {
                         store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
@@ -126,6 +126,7 @@ public class MetaStoreHealthIndicator implements HealthIndicator, ApplicationLis
                     logger.trace(op);
                     start = System.currentTimeMillis();
                     try {
+
                         store.checkAndPutResource(resourcePath, new StringEntity(uuid), StringEntity.serializer);
                         checkTime(start, op);
                     } catch (Exception e) {

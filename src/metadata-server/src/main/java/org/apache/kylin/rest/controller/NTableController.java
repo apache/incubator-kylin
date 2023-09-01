@@ -89,9 +89,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.ApiOperation;
 import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 
 @Controller
 @RequestMapping(value = "/api/tables", produces = { HTTP_VND_APACHE_KYLIN_JSON })
+@Slf4j
 public class NTableController extends NBasicController {
 
     private static final String TABLE = "table";
@@ -231,7 +233,8 @@ public class NTableController extends NBasicController {
 
         LoadTableResponse loadTableResponse = tableExtService.loadTablesWithShortCircuit(tableLoadRequest);
 
-        if (!loadTableResponse.getNeedRealSampling().isEmpty() && Boolean.TRUE.equals(tableLoadRequest.getNeedSampling())) {
+        if (!loadTableResponse.getNeedRealSampling().isEmpty()
+                && Boolean.TRUE.equals(tableLoadRequest.getNeedSampling())) {
             TableSamplingService.checkSamplingRows(tableLoadRequest.getSamplingRows());
             tableSamplingService.sampling(loadTableResponse.getNeedRealSampling(), tableLoadRequest.getProject(),
                     tableLoadRequest.getSamplingRows(), tableLoadRequest.getPriority(), tableLoadRequest.getYarnQueue(),

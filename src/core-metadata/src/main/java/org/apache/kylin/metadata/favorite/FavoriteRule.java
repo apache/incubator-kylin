@@ -23,14 +23,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.kylin.common.annotation.Clarification;
+import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
 import org.apache.kylin.common.util.RandomUtil;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.metadata.MetadataConstants;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -74,6 +77,9 @@ public class FavoriteRule extends RootPersistentEntity {
     private String name;
     @JsonProperty("enabled")
     private boolean enabled;
+
+    @JsonIgnore
+    private String project;
 
     public static List<FavoriteRule> getAllDefaultRule() {
         return FAVORITE_RULE_NAMES.stream().map(ruleName -> getDefaultRuleIfNull(null, ruleName))
@@ -123,6 +129,11 @@ public class FavoriteRule extends RootPersistentEntity {
         default:
             return null;
         }
+    }
+    
+    @Override
+    public String getResourcePath() {
+        return "/" + project + ResourceStore.QUERY_FILTER_RULE_RESOURCE_ROOT + "/" + resourceName() + MetadataConstants.FILE_SURFIX;
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)

@@ -31,12 +31,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
 public class NKylinUserManager {
 
@@ -74,6 +73,10 @@ public class NKylinUserManager {
         return crud.copyForWrite(user);
     }
 
+    public ManagedUser copy(ManagedUser user) {
+        return crud.copyBySerialization(user);
+    }
+
     public KylinConfig getConfig() {
         return config;
     }
@@ -107,14 +110,28 @@ public class NKylinUserManager {
         return users;
     }
 
-    public void update(ManagedUser user) {
-        ManagedUser exist = crud.get(user.getUsername());
+    public void createUser(ManagedUser user) {
         ManagedUser copy = copyForWrite(user);
-        if (exist != null) {
-            copy.setLastModified(exist.getLastModified());
-            copy.setMvcc(exist.getMvcc());
-        }
         crud.save(copy);
+    }
+
+    public void updateUser(String userName, UserUpdater updater) {
+        ManagedUser cached = get(userName);
+        ManagedUser copy = copyForWrite(cached);
+        updater.modify(copy);
+        crud.save(copy);
+    }
+
+    /**
+     * @deprecated Use updateUser(String userName, UserUpdater updater)
+     */
+    @Deprecated
+    public void update(ManagedUser user) {
+        if (exists(user.getUsername())) {
+            updateUser(user.getUsername(), user::copyPropertiesTo);
+        } else {
+            createUser(user);
+        }
     }
 
     public void delete(String username) {
@@ -131,5 +148,9 @@ public class NKylinUserManager {
             return Sets.newHashSet();
 
         return user.getAuthorities().stream().map(SimpleGrantedAuthority::getAuthority).collect(Collectors.toSet());
+    }
+
+    public interface UserUpdater {
+        void modify(ManagedUser copy);
     }
 }

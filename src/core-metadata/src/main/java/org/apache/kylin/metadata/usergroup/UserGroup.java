@@ -25,6 +25,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+import static org.apache.kylin.common.persistence.ResourceStore.USER_GROUP_ROOT;
+
 @SuppressWarnings("serial")
 @Getter
 @Setter
@@ -43,5 +45,10 @@ public class UserGroup extends RootPersistentEntity {
     @Override
     public String resourceName() {
         return groupName;
+    }
+
+    @Override
+    public String getResourcePath() {
+        return USER_GROUP_ROOT + "/" + resourceName();
     }
 }

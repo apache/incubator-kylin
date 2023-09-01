@@ -132,6 +132,10 @@ public class ModelRequest extends NDataModel implements ModelInsensitiveRequest 
 
     private transient BiFunction<TableDesc, Boolean, Collection<ColumnDesc>> columnsFetcher = TableRef::filterColumns;
 
+    public BiFunction<TableDesc, Boolean, Collection<ColumnDesc>> getColumnsFetcher() {
+        return columnsFetcher != null ? columnsFetcher : TableRef::filterColumns;
+    }
+
     public ModelRequest() {
         super();
     }

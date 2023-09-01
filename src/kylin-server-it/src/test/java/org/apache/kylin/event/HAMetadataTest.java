@@ -35,12 +35,14 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ImageDesc;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.StringEntity;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
 import org.apache.kylin.common.persistence.metadata.JdbcAuditLogStore;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.util.HadoopUtil;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
 import org.apache.kylin.common.util.RandomUtil;
+import org.apache.kylin.guava30.shaded.common.io.ByteSource;
 import org.apache.kylin.tool.MetadataTool;
 import org.junit.After;
 import org.junit.Assert;
@@ -49,7 +51,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import org.apache.kylin.guava30.shaded.common.io.ByteSource;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,6 +70,7 @@ public class HAMetadataTest extends NLocalFileMetadataTestCase {
                 + "@jdbc,driverClassName=org.h2.Driver,url=jdbc:h2:mem:db_default;DB_CLOSE_DELAY=-1,username=sa,password=");
         UnitOfWork.doInTransactionWithRetry(() -> {
             val resourceStore = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/UUID", null, false);
             resourceStore.checkAndPutResource("/UUID", new StringEntity(RandomUtil.randomUUIDStr()),
                     StringEntity.serializer);
             return null;
@@ -94,6 +96,10 @@ public class HAMetadataTest extends NLocalFileMetadataTestCase {
         queryResourceStore.catchup();
         UnitOfWork.doInTransactionWithRetry(() -> {
             val resourceStore = getStore();
+            MemoryLockUtils.lockAndRecord("/p0/path1", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path2", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path3", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path4", null, false);
             resourceStore.checkAndPutResource("/p0/path1", ByteSource.wrap("path1".getBytes(charset)), -1);
             resourceStore.checkAndPutResource("/p0/path2", ByteSource.wrap("path2".getBytes(charset)), -1);
             resourceStore.checkAndPutResource("/p0/path3", ByteSource.wrap("path3".getBytes(charset)), -1);
@@ -107,6 +113,10 @@ public class HAMetadataTest extends NLocalFileMetadataTestCase {
     public void testMetadataCatchupWithBackup() throws Exception {
         UnitOfWork.doInTransactionWithRetry(() -> {
             val resourceStore = getStore();
+            MemoryLockUtils.lockAndRecord("/p0/path1", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path2", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path3", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path4", null, false);
             resourceStore.checkAndPutResource("/p0/path1", ByteSource.wrap("path1".getBytes(charset)), -1);
             resourceStore.checkAndPutResource("/p0/path2", ByteSource.wrap("path2".getBytes(charset)), -1);
             resourceStore.checkAndPutResource("/p0/path3", ByteSource.wrap("path3".getBytes(charset)), -1);
@@ -122,6 +132,13 @@ public class HAMetadataTest extends NLocalFileMetadataTestCase {
 
         UnitOfWork.doInTransactionWithRetry(() -> {
             val resourceStore = getStore();
+            MemoryLockUtils.lockAndRecord("/p0/path1", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path2", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path3", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path4", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path5", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path6", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path7", null, false);
             resourceStore.checkAndPutResource("/p0/path1", ByteSource.wrap("path1".getBytes(charset)), 0);
             resourceStore.checkAndPutResource("/p0/path2", ByteSource.wrap("path2".getBytes(charset)), 0);
             resourceStore.checkAndPutResource("/p0/path3", ByteSource.wrap("path3".getBytes(charset)), 0);
@@ -144,6 +161,10 @@ public class HAMetadataTest extends NLocalFileMetadataTestCase {
     public void testMetadata_RemoveAuditLog_Restore() throws Exception {
         UnitOfWork.doInTransactionWithRetry(() -> {
             val resourceStore = getStore();
+            MemoryLockUtils.lockAndRecord("/p0/path1.json", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path2.json", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path3.json", null, false);
+            MemoryLockUtils.lockAndRecord("/p0/path4.json", null, false);
             resourceStore.checkAndPutResource("/_global/project/p0.json", ByteSource
                     .wrap("{  \"uuid\": \"1eaca32a-a33e-4b69-83dd-0bb8b1f8c91b\"}".getBytes(charset)), -1);
             resourceStore.checkAndPutResource("/p0/path1.json",

@@ -130,10 +130,9 @@ public class NDataLoadingRangeManagerTest extends NLocalFileMetadataTestCase {
         String start = "2012-12-25 14:27:14.000";
         String end = "2013-01-15 14:27:14.000";
         val prjManager = NProjectManager.getInstance(getTestConfig());
-        val prj = prjManager.getProject("default");
-        val copy = prjManager.copyForWrite(prj);
-        copy.getSegmentConfig().setAutoMergeEnabled(true);
-        prjManager.updateProject(copy);
+        prjManager.updateProject("default", copyForWrite -> {
+            copyForWrite.getSegmentConfig().setAutoMergeEnabled(true);
+        });
         val loadingRange = createDataLoadingRange(DateFormat.stringToMillis(start), DateFormat.stringToMillis(end));
         val ranges = dataLoadingRangeManager.getSegRangesToBuildForNewDataflow(loadingRange);
         Assert.assertEquals(4, ranges.size());
@@ -165,13 +164,11 @@ public class NDataLoadingRangeManagerTest extends NLocalFileMetadataTestCase {
         String end = "2013-01-15 14:27:14.000";
 
         val prjManager = NProjectManager.getInstance(getTestConfig());
-        val prj = prjManager.getProject("default");
-        val copy = prjManager.copyForWrite(prj);
-        copy.getSegmentConfig().getVolatileRange().setVolatileRangeNumber(3L);
-        copy.getSegmentConfig().getVolatileRange().setVolatileRangeEnabled(true);
-        copy.getSegmentConfig().setAutoMergeEnabled(true);
-
-        prjManager.updateProject(copy);
+        prjManager.updateProject("default", copyForWrite -> {
+            copyForWrite.getSegmentConfig().getVolatileRange().setVolatileRangeNumber(3L);
+            copyForWrite.getSegmentConfig().getVolatileRange().setVolatileRangeEnabled(true);
+            copyForWrite.getSegmentConfig().setAutoMergeEnabled(true);
+        });
 
         val loadingRange = createDataLoadingRange(DateFormat.stringToMillis(start), DateFormat.stringToMillis(end));
         val ranges = dataLoadingRangeManager.getSegRangesToBuildForNewDataflow(loadingRange);
@@ -213,11 +210,10 @@ public class NDataLoadingRangeManagerTest extends NLocalFileMetadataTestCase {
         String end = "2012-01-04 20:33:39.000";
         val loadingRange = createDataLoadingRange(DateFormat.stringToMillis(start), DateFormat.stringToMillis(end));
         val prjManager = NProjectManager.getInstance(getTestConfig());
-        val prj = prjManager.getProject("default");
-        val copy = prjManager.copyForWrite(prj);
-        copy.getSegmentConfig().getAutoMergeTimeRanges().add(AutoMergeTimeEnum.YEAR);
-        copy.getSegmentConfig().setAutoMergeEnabled(true);
-        prjManager.updateProject(copy);
+        prjManager.updateProject("default", copyForWrite -> {
+            copyForWrite.getSegmentConfig().getAutoMergeTimeRanges().add(AutoMergeTimeEnum.YEAR);
+            copyForWrite.getSegmentConfig().setAutoMergeEnabled(true);
+        });
         val ranges = dataLoadingRangeManager.getSegRangesToBuildForNewDataflow(loadingRange);
         Assert.assertEquals(4, ranges.size());
         //10/12/24 00:00 - 11/01/01

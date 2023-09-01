@@ -18,7 +18,7 @@
 
 package org.apache.kylin.engine.spark.builder
 
-import org.apache.kylin.common.persistence.transaction.UnitOfWork
+import org.apache.kylin.common.persistence.transaction.{UnitOfWork, UnitOfWorkParams}
 import org.apache.kylin.common.{KapConfig, KylinConfig}
 import org.apache.kylin.engine.spark.utils.LogUtils
 import org.apache.kylin.metadata.model.NTableMetadataManager
@@ -62,7 +62,9 @@ class SnapshotPartitionBuilder extends SnapshotBuilder {
         copyTable
       }
     }
-    UnitOfWork.doInTransactionWithRetry(new TableUpdateOps, project)
+    val params = UnitOfWorkParams.builder.unitName(project).maxRetry(3).useProjectLock(true)
+      .processor((new TableUpdateOps).asInstanceOf[UnitOfWork.Callback[Nothing]]).build()
+    UnitOfWork.doInTransactionWithRetry(params)
     log.info(s"check point partitions for $tableName , partition $partition")
   }
 

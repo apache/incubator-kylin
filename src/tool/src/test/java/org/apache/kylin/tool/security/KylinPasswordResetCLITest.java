@@ -28,6 +28,7 @@ import org.apache.commons.dbcp2.BasicDataSourceFactory;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.metadata.jdbc.AuditLogRowMapper;
+import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.util.LogOutputTestCase;
 import org.apache.kylin.metadata.user.ManagedUser;
 import org.apache.kylin.metadata.user.NKylinUserManager;
@@ -73,13 +74,19 @@ public class KylinPasswordResetCLITest extends LogOutputTestCase {
         user.setPassword(pwdEncoder.encode(user.getPassword()));
         val config = KylinConfig.getInstanceFromEnv();
         val manger = NKylinUserManager.getInstance(config);
-        manger.update(user);
+        UnitOfWork.doInTransactionWithRetry(() -> {
+            NKylinUserManager.getInstance(KylinConfig.getInstanceFromEnv()).update(user);
+            return null;
+        }, "_global");
 
         Assert.assertEquals(user.getPassword(), manger.get(user.getUsername()).getPassword());
 
         val modifyUser = manger.get(user.getUsername());
         modifyUser.setPassword(pwdEncoder.encode("KYLIN2"));
-        manger.update(modifyUser);
+        UnitOfWork.doInTransactionWithRetry(() -> {
+            NKylinUserManager.getInstance(KylinConfig.getInstanceFromEnv()).update(modifyUser);
+            return null;
+        }, "_global");
         Assert.assertEquals(modifyUser.getPassword(), manger.get(user.getUsername()).getPassword());
         Assert.assertTrue(pwdEncoder.matches("KYLIN2", manger.get(user.getUsername()).getPassword()));
 

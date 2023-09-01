@@ -61,8 +61,8 @@ import java.util.stream.Stream;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -74,6 +74,7 @@ import org.apache.kylin.common.exception.QueryErrorCode;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.persistence.transaction.AddS3CredentialToSparkBroadcastEventNotifier;
 import org.apache.kylin.common.persistence.transaction.TransactionException;
+import org.apache.kylin.common.persistence.transaction.UnitOfWorkParams;
 import org.apache.kylin.common.scheduler.EventBusFactory;
 import org.apache.kylin.common.util.BufferedLogger;
 import org.apache.kylin.common.util.CliCommandExecutor;
@@ -84,6 +85,19 @@ import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.common.util.RandomUtil;
 import org.apache.kylin.common.util.ShellException;
 import org.apache.kylin.constants.AclConstants;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.base.Strings;
+import org.apache.kylin.guava30.shaded.common.collect.HashMultimap;
+import org.apache.kylin.guava30.shaded.common.collect.LinkedHashMultimap;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.MapDifference;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Multimap;
+import org.apache.kylin.guava30.shaded.common.collect.SetMultimap;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.guava30.shaded.common.graph.Graph;
+import org.apache.kylin.guava30.shaded.common.graph.Graphs;
 import org.apache.kylin.job.dao.ExecutablePO;
 import org.apache.kylin.job.execution.AbstractExecutable;
 import org.apache.kylin.job.execution.ExecutableState;
@@ -169,20 +183,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.base.Strings;
-import org.apache.kylin.guava30.shaded.common.collect.HashMultimap;
-import org.apache.kylin.guava30.shaded.common.collect.LinkedHashMultimap;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.MapDifference;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Multimap;
-import org.apache.kylin.guava30.shaded.common.collect.SetMultimap;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
-import org.apache.kylin.guava30.shaded.common.graph.Graph;
-import org.apache.kylin.guava30.shaded.common.graph.Graphs;
 
 import lombok.val;
 import lombok.var;
@@ -302,26 +302,19 @@ public class TableService extends BasicService {
             if (origTable == null || origTable.getProject() == null) {
                 nTableDesc.setUuid(RandomUtil.randomUUIDStr());
                 nTableDesc.setLastModified(0);
+                tableMetaMgr.saveSourceTable(nTableDesc);
             } else {
-                nTableDesc.setUuid(origTable.getUuid());
-                nTableDesc.setLastModified(origTable.getLastModified());
-                nTableDesc.setIncrementLoading(origTable.isIncrementLoading());
-                nTableDesc.setTableComment(tableDesc.getTableComment());
+                tableMetaMgr.updateTableDesc(nTableDesc.getIdentity(), copyForWrite -> {
+                    nTableDesc.copyPropertiesTo(copyForWrite);
+
+                    copyForWrite.setUuid(origTable.getUuid());
+                    copyForWrite.setLastModified(origTable.getLastModified());
+                    copyForWrite.setIncrementLoading(origTable.isIncrementLoading());
+                    copyForWrite.setTableComment(tableDesc.getTableComment());
+                });
             }
 
-            tableMetaMgr.saveSourceTable(nTableDesc);
             if (extDesc != null) {
-                TableExtDesc origExt = tableMetaMgr.getTableExtIfExists(tableDesc);
-                TableExtDesc nTableExtDesc = new TableExtDesc(extDesc);
-                if (origExt == null || origExt.getProject() == null) {
-                    nTableExtDesc.setUuid(RandomUtil.randomUUIDStr());
-                    nTableExtDesc.setLastModified(0);
-                } else {
-                    nTableExtDesc.setUuid(origExt.getUuid());
-                    nTableExtDesc.setLastModified(origExt.getLastModified());
-                    nTableExtDesc.setMvcc(origExt.getMvcc());
-                    nTableExtDesc.setOriginalSize(origExt.getOriginalSize());
-                }
                 val colNameMap = Stream.of(nTableDesc.getColumns())
                         .collect(Collectors.toMap(ColumnDesc::getName, col -> {
                             try {
@@ -330,11 +323,28 @@ public class TableService extends BasicService {
                                 return Integer.MAX_VALUE;
                             }
                         }));
-                nTableExtDesc.getAllColumnStats()
-                        .sort(Comparator.comparing(stat -> colNameMap.getOrDefault(stat.getColumnName(), -1)));
-                nTableExtDesc.init(project);
+                TableExtDesc origExt = tableMetaMgr.getTableExtIfExists(tableDesc);
+                TableExtDesc nTableExtDesc = new TableExtDesc(extDesc);
+                if (origExt == null || origExt.getProject() == null) {
+                    nTableExtDesc.setUuid(RandomUtil.randomUUIDStr());
+                    nTableExtDesc.setLastModified(0);
+                    nTableExtDesc.getAllColumnStats()
+                            .sort(Comparator.comparing(stat -> colNameMap.getOrDefault(stat.getColumnName(), -1)));
+                    nTableExtDesc.init(project);
+                    tableMetaMgr.saveTableExt(nTableExtDesc);
+                } else {
+                    tableMetaMgr.updateTableExt(nTableExtDesc.getIdentity(), copyForWrite -> {
+                        nTableExtDesc.copyPropertiesTo(copyForWrite);
 
-                tableMetaMgr.saveTableExt(nTableExtDesc);
+                        copyForWrite.setUuid(origExt.getUuid());
+                        copyForWrite.setLastModified(origExt.getLastModified());
+                        copyForWrite.setMvcc(origExt.getMvcc());
+                        copyForWrite.setOriginalSize(origExt.getOriginalSize());
+                        copyForWrite.getAllColumnStats()
+                                .sort(Comparator.comparing(stat -> colNameMap.getOrDefault(stat.getColumnName(), -1)));
+                        copyForWrite.init(project);
+                    });
+                }
                 if (!broadcastS3Conf.contains(extDesc.getS3RoleCredentialInfo())) {
                     addAndBroadcastSparkSession(extDesc.getS3RoleCredentialInfo());
                     broadcastS3Conf.add(extDesc.getS3RoleCredentialInfo());
@@ -854,8 +864,8 @@ public class TableService extends BasicService {
                 .collect(Collectors.toSet());
         if (tableDesc.getDatabase().equals(projectInstance.getDefaultDatabase())
                 && !databases.contains(projectInstance.getDefaultDatabase())) {
-            projectInstance.setDefaultDatabase(ProjectInstance.DEFAULT_DATABASE);
-            npr.updateProject(projectInstance);
+            npr.updateProject(project,
+                    copyForWrite -> copyForWrite.setDefaultDatabase(ProjectInstance.DEFAULT_DATABASE));
         }
 
         return tableDesc.getIdentity();
@@ -1229,19 +1239,21 @@ public class TableService extends BasicService {
     public Pair<String, List<String>> reloadTable(String projectName, String tableIdentity, boolean needSample,
             int maxRows, boolean needBuild, int priority, String yarnQueue) {
         aclEvaluate.checkProjectWritePermission(projectName);
-        return EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
-            Pair<String, List<String>> pair = new Pair<>();
-            List<String> buildingJobs = innerReloadTable(projectName, tableIdentity, needBuild, null);
-            pair.setSecond(buildingJobs);
-            if (needSample && maxRows > 0) {
-                List<String> jobIds = tableSamplingService.sampling(Sets.newHashSet(tableIdentity), projectName,
-                        maxRows, priority, yarnQueue, null);
-                if (CollectionUtils.isNotEmpty(jobIds)) {
-                    pair.setFirst(jobIds.get(0));
-                }
-            }
-            return pair;
-        }, projectName);
+        UnitOfWorkParams<Pair<String, List<String>>> params = UnitOfWorkParams.<Pair<String, List<String>>> builder()
+                .unitName(projectName).processor(() -> {
+                    Pair<String, List<String>> pair = new Pair<>();
+                    List<String> buildingJobs = innerReloadTable(projectName, tableIdentity, needBuild, null);
+                    pair.setSecond(buildingJobs);
+                    if (needSample && maxRows > 0) {
+                        List<String> jobIds = tableSamplingService.sampling(Sets.newHashSet(tableIdentity), projectName,
+                                maxRows, priority, yarnQueue, null);
+                        if (CollectionUtils.isNotEmpty(jobIds)) {
+                            pair.setFirst(jobIds.get(0));
+                        }
+                    }
+                    return pair;
+                }).build();
+        return EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(params);
     }
 
     public Pair<String, List<String>> reloadAWSTableCompatibleCrossAccount(String projectName,

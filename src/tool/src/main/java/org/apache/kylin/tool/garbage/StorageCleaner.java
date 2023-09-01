@@ -51,6 +51,7 @@ import org.apache.kylin.common.persistence.RawResource;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
 import org.apache.kylin.common.persistence.TrashRecord;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.util.CliCommandExecutor;
 import org.apache.kylin.common.util.CliCommandExecutor.CliCmdExecResult;
@@ -200,13 +201,10 @@ public class StorageCleaner implements GarbageCleaner {
             }
             log.debug("folder {} is collected，detailed -> {}", allFileSystem.getPath(), allFileSystems);
         }
-        UnitOfWork.doInTransactionWithRetry(() -> {
-            collectDeletedProject();
-            for (ProjectInstance project : projects) {
-                collect(project.getName());
-            }
-            return null;
-        }, UnitOfWork.GLOBAL_UNIT);
+        collectDeletedProject();
+        for (ProjectInstance project : projects) {
+            collect(project.getName());
+        }
 
         long configSurvivalTimeThreshold = timeMachineEnabled ? kylinConfig.getStorageResourceSurvivalTimeThreshold()
                 : config.getCuboidLayoutSurvivalTimeThreshold();
@@ -307,6 +305,9 @@ public class StorageCleaner implements GarbageCleaner {
                     ResourceStore threadViewRS = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
                     RawResource raw = resourceStore.getResource(ResourceStore.METASTORE_TRASH_RECORD);
                     long mvcc = raw == null ? -1 : raw.getMvcc();
+                    // TrashRecord doesn't extend RootPersistentEntity. Let's manually lock it's resource path.
+                    MemoryLockUtils.doWithLock(ResourceStore.METASTORE_TRASH_RECORD, false, threadViewRS,
+                            () -> null);
                     threadViewRS.checkAndPutResource(ResourceStore.METASTORE_TRASH_RECORD,
                             ByteSource.wrap(JsonUtil.writeValueAsBytes(new TrashRecord(trashRecord))), mvcc);
                     return 0;
@@ -485,13 +486,14 @@ public class StorageCleaner implements GarbageCleaner {
             String result = "";
             try {
                 KylinConfig config = KylinConfig.getInstanceFromEnv();
-                Set<String> jobTempTables = jobTemps.stream()
-                        .map(node -> tableCleanerHelper.getJobTransactionalTable(project, node.getName()))
+                FileSystem fs = HadoopUtil.getWorkingFileSystem();
+                Set<String> jobTempTables = jobTemps.stream().filter(node -> !node.getName().endsWith(".zip"))
+                        .map(node -> tableCleanerHelper.getJobTransactionalTable(project, node.getName(), fs))
                         .flatMap(Collection::stream).collect(Collectors.toSet());
 
                 Set<String> discardTempTables = NExecutableManager.getInstance(config, project)
                         .getExecutablesByStatus(ExecutableState.DISCARDED).stream()
-                        .map(e -> tableCleanerHelper.getJobTransactionalTable(project, e.getId()))
+                        .map(e -> tableCleanerHelper.getJobTransactionalTable(project, e.getId(), fs))
                         .flatMap(Collection::stream).collect(Collectors.toSet());
                 jobTempTables.addAll(discardTempTables);
 

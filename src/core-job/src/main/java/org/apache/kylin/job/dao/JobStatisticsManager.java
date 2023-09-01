@@ -35,11 +35,10 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.util.ClassUtil;
 import org.apache.kylin.common.util.Pair;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.apache.kylin.metadata.model.NDataModel;
 import org.apache.kylin.metadata.model.NDataModelManager;
-
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 
 public class JobStatisticsManager {
 
@@ -86,28 +85,37 @@ public class JobStatisticsManager {
         return crud.listAll();
     }
 
+    public JobStatistics copyForWrite(JobStatistics jobStatistics) {
+        if (jobStatistics.getProject() == null) {
+            jobStatistics.setProject(project);
+        }
+        return crud.copyForWrite(jobStatistics);
+    }
+
     public JobStatistics updateStatistics(long date, String model, long duration, long byteSize, int deltaCount) {
         JobStatistics jobStatistics = crud.get(String.valueOf(date));
-        JobStatistics jobStatisticsToUpdate;
         if (jobStatistics == null) {
-            jobStatisticsToUpdate = new JobStatistics(date, model, duration, byteSize);
-            return crud.save(jobStatisticsToUpdate);
+            jobStatistics = copyForWrite(new JobStatistics(date, model, duration, byteSize));
+            // double check whether jobStatistics already exists.
+            if (jobStatistics.getMvcc() == -1) {
+                return crud.save(jobStatistics);
+            }
         }
 
-        jobStatisticsToUpdate = crud.copyForWrite(jobStatistics);
+        JobStatistics jobStatisticsToUpdate = copyForWrite(jobStatistics);
         jobStatisticsToUpdate.update(model, duration, byteSize, deltaCount);
         return crud.save(jobStatisticsToUpdate);
     }
 
     public JobStatistics updateStatistics(long date, long duration, long byteSize, int deltaCount) {
         JobStatistics jobStatistics = crud.get(String.valueOf(date));
-        JobStatistics jobStatisticsToUpdate;
         if (jobStatistics == null) {
-            jobStatisticsToUpdate = new JobStatistics(date, duration, byteSize);
-            return crud.save(jobStatisticsToUpdate);
+            // double check whether jobStatistics already exists.
+            jobStatistics = copyForWrite(new JobStatistics(date, duration, byteSize));
+            return crud.save(jobStatistics);
         }
 
-        jobStatisticsToUpdate = crud.copyForWrite(jobStatistics);
+        JobStatistics jobStatisticsToUpdate = copyForWrite(jobStatistics);
         jobStatisticsToUpdate.update(duration, byteSize, deltaCount);
         return crud.save(jobStatisticsToUpdate);
     }

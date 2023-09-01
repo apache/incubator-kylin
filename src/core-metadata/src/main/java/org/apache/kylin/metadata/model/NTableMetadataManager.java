@@ -31,21 +31,17 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
-import org.apache.kylin.common.persistence.JsonSerializer;
 import org.apache.kylin.common.persistence.RawResource;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.Serializer;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.RandomUtil;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.metadata.MetadataConstants;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-
-import lombok.val;
 
 /**
  */
@@ -53,8 +49,6 @@ public class NTableMetadataManager {
 
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(NTableMetadataManager.class);
-
-    private static final Serializer<TableExtDesc> TABLE_EXT_SERIALIZER = new JsonSerializer<>(TableExtDesc.class);
 
     public static NTableMetadataManager getInstance(KylinConfig config, String project) {
         return config.getManager(project, NTableMetadataManager.class);
@@ -153,7 +147,14 @@ public class NTableMetadataManager {
         return srcTableCrud.get(tableName);
     }
 
+    public TableDesc copy(TableDesc tableDesc) {
+        return srcTableCrud.copyBySerialization(tableDesc);
+    }
+
     public TableDesc copyForWrite(TableDesc tableDesc) {
+        if (tableDesc.getProject() == null) {
+            tableDesc.setProject(project);
+        }
         return srcTableCrud.copyForWrite(tableDesc);
     }
 
@@ -161,9 +162,16 @@ public class NTableMetadataManager {
         return srcExtCrud.copyForWrite(tableExtDesc);
     }
 
+    /**
+     * @deprecated Use updateTableDesc(String tableName, TableDescUpdater updater) instead.
+     */
+    @Deprecated
     public void saveSourceTable(TableDesc srcTable) {
-        srcTable.init(project);
-        srcTableCrud.save(srcTable);
+        if (srcTableCrud.contains(srcTable.getIdentity())) {
+            updateTableDesc(srcTable.getIdentity(), srcTable::copyPropertiesTo);
+        } else {
+            createTableDesc(srcTable);
+        }
     }
 
     public void removeSourceTable(String tableIdentity) {
@@ -180,6 +188,35 @@ public class NTableMetadataManager {
      */
     public void resetProjectSpecificTableDesc() {
         srcTableCrud.reloadAll();
+    }
+
+    /**
+     * @deprecated Use updateTableDesc(String tableName, TableDescUpdater updater) instead.
+     */
+    @Deprecated
+    public void updateTableDesc(TableDesc tableDesc) {
+        updateTableDesc(tableDesc.getIdentity(), tableDesc::copyPropertiesTo);
+    }
+
+    public void updateTableDesc(String tableName, TableDescUpdater updater) {
+        TableDesc cached = getTableDesc(tableName);
+        if (cached == null) {
+            throw new IllegalStateException("tableDesc " + tableName + " does not exist");
+        }
+        TableDesc copy = copyForWrite(cached);
+        updater.modify(copy);
+        copy.init(project);
+        srcTableCrud.save(copy);
+    }
+    
+    public void createTableDesc(TableDesc srcTable) {
+        srcTable.init(project);
+        TableDesc copy = copyForWrite(srcTable);
+        srcTableCrud.save(copy);
+    }
+
+    public interface TableDescUpdater {
+        void modify(TableDesc copyForWrite);
     }
 
     // ============================================================================
@@ -239,38 +276,50 @@ public class NTableMetadataManager {
         return srcTableCrud.getSerializer();
     }
 
+    /**
+     * @deprecated Use updateTableExt(String tableName, TableExtDescUpdater updater) instead.
+     */
+    @Deprecated
     public void saveTableExt(TableExtDesc tableExt) {
-        if (tableExt.getUuid() == null || tableExt.getIdentity() == null) {
-            throw new IllegalArgumentException();
+        if (srcExtCrud.contains(tableExt.getIdentity())) {
+            updateTableExt(tableExt.getIdentity(), tableExt::copyPropertiesTo);
+        } else {
+            createTableExt(tableExt);
         }
-
-        // what is this doing??
-        String path = tableExt.getResourcePath();
-        ResourceStore store = getStore();
-        TableExtDesc t = store.getResource(path, TABLE_EXT_SERIALIZER);
-        if (t != null && t.getIdentity() == null)
-            store.deleteResource(path);
-
-        srcExtCrud.save(tableExt);
     }
 
     public void mergeAndUpdateTableExt(TableExtDesc origin, TableExtDesc other) {
-        val copyForWrite = srcExtCrud.copyForWrite(origin);
-        copyForWrite.setColumnStats(other.getAllColumnStats());
-        copyForWrite.setSampleRows(other.getSampleRows());
-        copyForWrite.setTotalRows(other.getTotalRows());
-        copyForWrite.setJodID(other.getJodID());
-        if (other.getOriginalSize() != -1) {
-            copyForWrite.setOriginalSize(other.getOriginalSize());
+        updateTableExt(origin.getIdentity(), copyForWrite -> {
+            copyForWrite.setColumnStats(other.getAllColumnStats());
+            copyForWrite.setSampleRows(other.getSampleRows());
+            copyForWrite.setTotalRows(other.getTotalRows());
+            copyForWrite.setJodID(other.getJodID());
+            if (other.getOriginalSize() != -1) {
+                copyForWrite.setOriginalSize(other.getOriginalSize());
+            }
+        });
+    }
+
+    public void updateTableExt(String tableName, TableExtDescUpdater updater) {
+        TableExtDesc cached = getOrCreateTableExt(tableName);
+        TableExtDesc copy = copyForWrite(cached);
+        updater.modify(copy);
+        srcExtCrud.save(copy);
+    }
+
+    public void createTableExt(TableExtDesc tableExt) {
+        if (tableExt.getUuid() == null || tableExt.getIdentity() == null) {
+            throw new IllegalArgumentException();
         }
-        saveTableExt(copyForWrite);
+        TableExtDesc copy = copyForWrite(tableExt);
+        srcExtCrud.save(copy);
     }
 
     public void saveOrUpdateTableExt(boolean isUpdate, TableExtDesc tableExt) {
         if (isUpdate) {
             mergeAndUpdateTableExt(tableExt, tableExt);
         } else {
-            saveTableExt(tableExt);
+            createTableExt(tableExt);
         }
     }
 
@@ -314,11 +363,7 @@ public class NTableMetadataManager {
         return result;
     }
 
-    public void updateTableDesc(TableDesc tableDesc) {
-        if (!srcTableCrud.contains(tableDesc.getIdentity())) {
-            throw new IllegalStateException("tableDesc " + tableDesc.getName() + "does not exist");
-        }
-        saveSourceTable(tableDesc);
+    public interface TableExtDescUpdater {
+        void modify(TableExtDesc copyForWrite);
     }
-
 }

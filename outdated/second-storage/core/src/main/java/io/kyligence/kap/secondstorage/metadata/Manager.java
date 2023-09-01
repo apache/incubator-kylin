@@ -28,11 +28,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
-import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 
 // CALL FROM CORE
 @NotThreadSafe
@@ -69,6 +67,10 @@ public abstract class Manager<T extends RootPersistentEntity> implements IManage
         this.crud.setCheckCopyOnWrite(true);
     }
 
+    public String getResourcePath(String resourceName) {
+        return crud.resourcePath(resourceName);
+    }
+
     @SuppressWarnings("unchecked")
     protected T save(T entity) {
         if (entity instanceof IManagerAware) {
@@ -81,6 +83,10 @@ public abstract class Manager<T extends RootPersistentEntity> implements IManage
     protected T copy(T entity) {
         return crud.copyBySerialization(entity);
     }
+    
+    protected T copyForWrite(T entity) {
+        return crud.copyForWrite(entity);
+    }
 
     // Create
     protected abstract T newRootEntity(String cubeName);
@@ -92,10 +98,11 @@ public abstract class Manager<T extends RootPersistentEntity> implements IManage
     public T createAS(T entity) {
         if (entity.getUuid() == null)
             throw new IllegalArgumentException();
-        if (crud.contains(entity.getUuid()))
+        T copy = copyForWrite(entity);
+        if (crud.contains(copy.getUuid()))
             throw new IllegalArgumentException("Entity '" + entity.getUuid() + "' already exists");
         // overwrite point
-        return save(entity);
+        return save(copy);
     }
 
     // Read
@@ -126,14 +133,14 @@ public abstract class Manager<T extends RootPersistentEntity> implements IManage
     }
 
     public T update(String uuid, Consumer<T> updater) {
-        return get(uuid).map(this::copy).map(copied -> {
+        return get(uuid).map(this::copyForWrite).map(copied -> {
             updater.accept(copied);
             return internalUpdate(copied);
         }).orElse(null);
     }
 
     protected T upsert(String uuid, Consumer<T> updater, Supplier<T> creator) {
-        return get(uuid).map(this::copy).map(copied -> {
+        return get(uuid).map(this::copyForWrite).map(copied -> {
             updater.accept(copied);
             return internalUpdate(copied);
         }).orElseGet(() -> {

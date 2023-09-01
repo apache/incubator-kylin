@@ -83,26 +83,33 @@ public class StreamingManager {
         crud.reloadAll();
         return listAllStreaming();
     }
+    
+    private StreamingConfig copyForWrite(StreamingConfig streamingConfig) {
+        return crud.copyForWrite(streamingConfig);
+    }
 
     public StreamingConfig createStreamingConfig(StreamingConfig streamingConfig) throws IOException {
         if (streamingConfig == null || StringUtils.isEmpty(streamingConfig.getName())) {
             throw new IllegalArgumentException();
         }
-        if (crud.contains(streamingConfig.resourceName()))
+        StreamingConfig copy = copyForWrite(streamingConfig);
+        if (crud.contains(copy.resourceName()))
             throw new IllegalArgumentException("StreamingConfig '" + streamingConfig.getName() + "' already exists");
 
-        streamingConfig.updateRandomUuid();
+        copy.updateRandomUuid();
 
-        return crud.save(streamingConfig);
+        return crud.save(copy);
     }
 
     public StreamingConfig updateStreamingConfig(StreamingConfig desc) throws IOException {
         if (desc.getUuid() == null || desc.getName() == null) {
             throw new IllegalArgumentException("SteamingConfig Illegal.");
         }
+        StreamingConfig copy = copyForWrite(desc);
         if (!crud.contains(desc.resourceName())) {
             throw new IllegalArgumentException("StreamingConfig '" + desc.getName() + "' does not exist.");
         }
+        desc.copyPropertiesTo(copy);
 
         return crud.save(desc);
     }

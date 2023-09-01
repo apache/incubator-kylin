@@ -32,7 +32,6 @@ import org.apache.kylin.metadata.cube.model.NDataflowUpdate;
 import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.kylin.metadata.model.SegmentRange;
 import org.apache.kylin.metadata.model.SegmentStatusEnum;
-import org.apache.kylin.metadata.model.TableDesc;
 import org.apache.kylin.metadata.query.NativeQueryRealization;
 import org.apache.kylin.metadata.query.QueryMetricsContext;
 import org.apache.kylin.rest.response.SQLResponse;
@@ -173,8 +172,9 @@ public class QueryCacheSignatureUtilTest extends NLocalFileMetadataTestCase {
 
         NTableMetadataManager tableMetadataManager = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(),
                 project);
-        TableDesc table = tableMetadataManager.getTableDesc("DEFAULT.TEST_ORDER");
-        table.setLastModified(System.currentTimeMillis());
+        tableMetadataManager.updateTableDesc("DEFAULT.TEST_ORDER", copyForWrite -> {
+            copyForWrite.setLastModified(System.currentTimeMillis());
+        });
         Assert.assertTrue(QueryCacheSignatureUtil.checkCacheExpired(sqlResponse, project));
     }
 
@@ -194,8 +194,9 @@ public class QueryCacheSignatureUtilTest extends NLocalFileMetadataTestCase {
 
         NTableMetadataManager tableMetadataManager = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(),
                 project);
-        TableDesc table = tableMetadataManager.getTableDesc("DEFAULT.TEST_ORDER");
-        table.setLastModified(System.currentTimeMillis());
+        tableMetadataManager.updateTableDesc("DEFAULT.TEST_ORDER", copyForWrite -> {
+            copyForWrite.setLastModified(System.currentTimeMillis());
+        });
         Assert.assertTrue(QueryCacheSignatureUtil.checkCacheExpired(sqlResponse, project));
     }
 
@@ -217,8 +218,9 @@ public class QueryCacheSignatureUtilTest extends NLocalFileMetadataTestCase {
 
         NTableMetadataManager tableMetadataManager = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(),
                 project);
-        TableDesc table = tableMetadataManager.getTableDesc("DEFAULT.TEST_ORDER");
-        table.setLastModified(System.currentTimeMillis());
+        tableMetadataManager.updateTableDesc("DEFAULT.TEST_ORDER", copyForWrite -> {
+            copyForWrite.setLastModified(System.currentTimeMillis());
+        });
         Assert.assertTrue(QueryCacheSignatureUtil.checkCacheExpired(sqlResponse, project));
     }
 

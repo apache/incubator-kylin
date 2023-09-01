@@ -94,6 +94,7 @@ import org.apache.kylin.metadata.model.NDataModelManager;
 import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.kylin.metadata.model.Segments;
 import org.apache.kylin.metadata.model.TableDesc;
+import org.apache.kylin.metadata.project.EnhancedUnitOfWork;
 import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.metadata.query.NativeQueryRealization;
@@ -1238,6 +1239,27 @@ public class QueryServiceTest extends NLocalFileMetadataTestCase {
         for (Query query : queryRecord.getQueries()) {
             Assert.assertEquals(StringUtils.repeat("abc", 10000), query.getSql());
         }
+    }
+
+    @Test
+    public void testSaveAndRemoveQueryWithTransaction() throws IOException {
+        Query query = new Query("test", "default", "test_sql", "test_description");
+        EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
+            queryService.saveQuery("admin", "default", query);
+            return null;
+        }, "default", 1);
+
+        QueryService.QueryRecord queryRecord = queryService.getSavedQueries("admin", "default");
+        Assert.assertEquals(1, queryRecord.getQueries().size());
+        Assert.assertEquals("test", queryRecord.getQueries().get(0).getName());
+
+        EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
+            queryService.removeSavedQuery("admin", "default", query.getId());
+            return null;
+        }, "default", 1);
+
+        queryRecord = queryService.getSavedQueries("admin", "default");
+        Assert.assertTrue(queryRecord.getQueries().isEmpty());
     }
 
     @Test

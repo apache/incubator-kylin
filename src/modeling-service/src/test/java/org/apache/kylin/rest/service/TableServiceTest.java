@@ -612,9 +612,7 @@ public class TableServiceTest extends CSVSourceTestCase {
         NProjectManager npr = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv());
         NTableMetadataManager tableManager = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(),
                 "default");
-        ProjectInstance projectInstance = npr.getProject("default");
-        projectInstance.setDefaultDatabase(removeDB);
-        npr.updateProject(projectInstance);
+        npr.updateProject("default", copyForWrite -> copyForWrite.setDefaultDatabase(removeDB));
         Assert.assertEquals(removeDB, npr.getDefaultDatabase("default"));
 
         for (TableDesc table : tableManager.listAllTables()) {

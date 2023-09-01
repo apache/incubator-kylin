@@ -31,28 +31,32 @@ import java.util.stream.IntStream;
 
 import org.apache.commons.dbcp2.BasicDataSourceFactory;
 import org.apache.kylin.common.KylinConfig;
-import org.apache.kylin.common.util.CompressionUtils;
 import org.apache.kylin.common.persistence.event.Event;
 import org.apache.kylin.common.persistence.event.ResourceCreateOrUpdateEvent;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
 import org.apache.kylin.common.persistence.metadata.MetadataStore;
 import org.apache.kylin.common.persistence.metadata.jdbc.RawResourceRowMapper;
+import org.apache.kylin.common.persistence.transaction.TransactionException;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.common.util.CompressionUtils;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.io.ByteSource;
 import org.apache.kylin.junit.annotation.MetadataInfo;
 import org.apache.kylin.junit.annotation.OverwriteProp;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.io.ByteSource;
 import lombok.val;
 
 @MetadataInfo(onlyProps = true)
 @OverwriteProp(key = "kylin.metadata.url", value = "test@jdbc,driverClassName=org.h2.Driver,url=jdbc:h2:mem:db_default;DB_CLOSE_DELAY=-1,username=sa,password=")
-public class JdbcMetadataStoreTest {
+class JdbcMetadataStoreTest {
 
     public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
@@ -63,9 +67,13 @@ public class JdbcMetadataStoreTest {
     }
 
     @Test
-    public void testBasic() throws IOException {
+    void testBasic() throws IOException {
         UnitOfWork.doInTransactionWithRetry(() -> {
             val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/p1/abc", null, false);
+            MemoryLockUtils.lockAndRecord("/p1/abc2", null, false);
+            MemoryLockUtils.lockAndRecord("/p1/abc3", null, false);
+            MemoryLockUtils.lockAndRecord("/p1/abc4", null, false);
             store.checkAndPutResource("/p1/abc", ByteSource.wrap("abc".getBytes(DEFAULT_CHARSET)), -1);
             store.checkAndPutResource("/p1/abc2", ByteSource.wrap("abc".getBytes(DEFAULT_CHARSET)), -1);
             store.checkAndPutResource("/p1/abc3", ByteSource.wrap("abc".getBytes(DEFAULT_CHARSET)), -1);
@@ -97,9 +105,10 @@ public class JdbcMetadataStoreTest {
     }
 
     @Test
-    public void testReload() throws Exception {
+    void testReload() throws Exception {
         UnitOfWork.doInTransactionWithRetry(() -> {
             val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/_global/abc", null, false);
             store.checkAndPutResource("/_global/abc", ByteSource.wrap("abc".getBytes(DEFAULT_CHARSET)), -1);
             return 0;
         }, "_global");
@@ -119,7 +128,7 @@ public class JdbcMetadataStoreTest {
     }
 
     @Test
-    public void testPage() throws Exception {
+    void testPage() throws Exception {
         val dataSource = new DriverManagerDataSource();
         val url = getTestConfig().getMetadataUrl();
         dataSource.setUrl(url.getParameter("url"));
@@ -156,9 +165,10 @@ public class JdbcMetadataStoreTest {
 
     @Test
     @Disabled("for develop")
-    public void testDuplicate() {
+    void testDuplicate() {
         UnitOfWork.doInTransactionWithRetry(() -> {
             val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/p1/abc", null, false);
             store.checkAndPutResource("/p1/abc", ByteSource.wrap("abc".getBytes(DEFAULT_CHARSET)), -1);
             store.checkAndPutResource("/p1/abc", ByteSource.wrap("abc".getBytes(DEFAULT_CHARSET)), 0);
             return 0;
@@ -175,13 +185,14 @@ public class JdbcMetadataStoreTest {
 
         UnitOfWork.doInTransactionWithRetry(() -> {
             val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/p1/abc", null, false);
             store.checkAndPutResource("/p1/abc", ByteSource.wrap("abc".getBytes(DEFAULT_CHARSET)), 1);
             return 0;
         }, "p1");
     }
 
     @Test
-    public void testBatchUpdate() throws Exception {
+    void testBatchUpdate() throws Exception {
         val metadataStore = MetadataStore.createMetadataStore(getTestConfig());
         List<Event> events = Collections.singletonList(new ResourceCreateOrUpdateEvent(new RawResource("/p1/test",
                 ByteSource.wrap("test content".getBytes(StandardCharsets.UTF_8)), System.currentTimeMillis(), 0)));
@@ -223,12 +234,26 @@ public class JdbcMetadataStoreTest {
                 CompressionUtils.decompress(auditLogContents));
     }
 
+    @Test
+    void testUpdateTheDeletedResource() {
+        val metadataStore = MetadataStore.createMetadataStore(getTestConfig());
+        ReflectionTestUtils.setField(metadataStore, "isUT", false);
+        List<Event> events = Collections.singletonList(new ResourceCreateOrUpdateEvent(new RawResource("/p1/test",
+                ByteSource.wrap("test content".getBytes(StandardCharsets.UTF_8)), System.currentTimeMillis(), 4)));
+        val unitMessages = new UnitMessages(events);
+
+        Assertions.assertThrows(TransactionException.class, () -> UnitOfWork.doInTransactionWithRetry(() -> {
+            metadataStore.batchUpdate(unitMessages, false, "/p1/test", -1);
+            return null;
+        }, "p1", 1));
+    }
+
     @OverwriteProp.OverwriteProps({ //
             @OverwriteProp(key = "kylin.metadata.compress.enabled", value = "false"), //
             @OverwriteProp(key = "kylin.server.port", value = "8081")//
     })
     @Test
-    public void testBatchUpdateWithMetadataCompressDisable() throws Exception {
+    void testBatchUpdateWithMetadataCompressDisable() throws Exception {
         val metadataStore = MetadataStore.createMetadataStore(getTestConfig());
         List<Event> events = Collections.singletonList(new ResourceCreateOrUpdateEvent(new RawResource("/p1/test",
                 ByteSource.wrap("test content".getBytes(StandardCharsets.UTF_8)), System.currentTimeMillis(), 0)));

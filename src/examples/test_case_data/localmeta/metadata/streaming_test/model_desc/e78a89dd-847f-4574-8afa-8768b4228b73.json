@@ -6,7 +6,6 @@
   "model_type" : "STREAMING",
   "alias" : "stream_merge1",
   "owner" : "ADMIN",
-  "model_type": "STREAMING",
   "config_last_modifier" : null,
   "config_last_modified" : 0,
   "description" : "",

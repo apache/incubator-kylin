@@ -22,13 +22,12 @@ import java.io.IOException;
 
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
-import org.apache.kylin.common.util.ClassUtil;
-import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.common.util.ClassUtil;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 public class SQLBlacklistManager {
 
@@ -102,23 +101,28 @@ public class SQLBlacklistManager {
     public SQLBlacklist getSqlBlacklist(String project) {
         return crud.get(project);
     }
+    
+    private SQLBlacklist copyForWrite(SQLBlacklist sqlBlacklist) {
+        return crud.copyForWrite(sqlBlacklist);
+    }
 
     public SQLBlacklist saveSqlBlacklist(SQLBlacklist sqlBlacklist) throws IOException {
         SQLBlacklist savedSqlBlacklist = getSqlBlacklist(sqlBlacklist.getProject());
+        SQLBlacklist copy;
         if (null != savedSqlBlacklist) {
-            savedSqlBlacklist.setBlacklistItems(sqlBlacklist.getBlacklistItems());
-            crud.save(savedSqlBlacklist);
+            copy = copyForWrite(savedSqlBlacklist);
+            copy.setBlacklistItems(sqlBlacklist.getBlacklistItems());
         } else {
-            crud.save(sqlBlacklist);
+            copy = copyForWrite(sqlBlacklist);
         }
+        crud.save(copy);
         return sqlBlacklist;
     }
 
     public SQLBlacklist addSqlBlacklistItem(String project, SQLBlacklistItem sqlBlacklistItem) throws IOException {
-        SQLBlacklist sqlBlacklist = getSqlBlacklist(project);
+        SQLBlacklist sqlBlacklist = copyForWrite(getSqlBlacklist(project));
         if (null == sqlBlacklist) {
-            sqlBlacklist = new SQLBlacklist();
-            sqlBlacklist.setProject(project);
+            sqlBlacklist = copyForWrite(new SQLBlacklist(project));
         }
         sqlBlacklist.addBlacklistItem(sqlBlacklistItem);
         crud.save(sqlBlacklist);
@@ -126,7 +130,7 @@ public class SQLBlacklistManager {
     }
 
     public SQLBlacklist updateSqlBlacklistItem(String project, SQLBlacklistItem sqlBlacklistItem) throws IOException {
-        SQLBlacklist sqlBlacklist = getSqlBlacklist(project);
+        SQLBlacklist sqlBlacklist = copyForWrite(getSqlBlacklist(project));
         if (null == sqlBlacklist) {
             return null;
         }
@@ -142,7 +146,7 @@ public class SQLBlacklistManager {
     }
 
     public SQLBlacklist deleteSqlBlacklistItem(String project, String id) throws IOException {
-        SQLBlacklist sqlBlacklist = getSqlBlacklist(project);
+        SQLBlacklist sqlBlacklist = copyForWrite(getSqlBlacklist(project));
         if (null == sqlBlacklist) {
             return null;
         }
@@ -152,7 +156,7 @@ public class SQLBlacklistManager {
     }
 
     public SQLBlacklist clearBlacklist(String project) throws IOException {
-        SQLBlacklist sqlBlacklist = getSqlBlacklist(project);
+        SQLBlacklist sqlBlacklist = copyForWrite(getSqlBlacklist(project));
         if (null == sqlBlacklist) {
             return null;
         }

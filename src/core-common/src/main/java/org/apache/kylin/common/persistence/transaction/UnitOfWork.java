@@ -21,6 +21,14 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import static org.apache.kylin.common.persistence.lock.TransactionDeadLockHandler.THREAD_NAME_PREFIX;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.constant.LogConstant;
@@ -39,16 +47,19 @@ import org.apache.kylin.common.persistence.event.ResourceCreateOrUpdateEvent;
 import org.apache.kylin.common.persistence.event.ResourceDeleteEvent;
 import org.apache.kylin.common.persistence.event.ResourceRelatedEvent;
 import org.apache.kylin.common.persistence.event.StartUnit;
+import org.apache.kylin.common.persistence.lock.DeadLockException;
+import org.apache.kylin.common.persistence.lock.LockInterruptException;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
+import org.apache.kylin.common.persistence.lock.TempLock;
+import org.apache.kylin.common.persistence.lock.TransactionLock;
+import org.apache.kylin.common.persistence.metadata.JdbcMetadataStore;
 import org.apache.kylin.common.scheduler.EventBusFactory;
 import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.common.util.RandomUtil;
+import org.apache.kylin.common.util.SetThreadName;
 import org.apache.kylin.common.util.Unsafe;
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -77,33 +88,38 @@ public class UnitOfWork {
     }
 
     public static <T> T doInTransactionWithRetry(UnitOfWorkParams<T> params) {
-        val maxRetry = params.getMaxRetry();
-        val f = params.getProcessor();
-        // reused transaction, won't retry
-        if (isAlreadyInTransaction()) {
-            val unitOfWork = UnitOfWork.get();
-            unitOfWork.checkReentrant(params);
-            try {
-                checkEpoch(params);
-                f.preProcess();
-                return f.process();
-            } catch (Throwable throwable) {
-                f.onProcessError(throwable);
-                throw new TransactionException("transaction failed due to inconsistent state", throwable);
+        try (SetThreadName ignore = new SetThreadName(THREAD_NAME_PREFIX)) {
+            val f = params.getProcessor();
+            // reused transaction, won't retry
+            if (isAlreadyInTransaction()) {
+                val unitOfWork = UnitOfWork.get();
+                unitOfWork.checkReentrant(params);
+                try {
+                    checkEpoch(params);
+                    f.preProcess();
+                    return f.process();
+                } catch (Throwable throwable) {
+                    f.onProcessError(throwable);
+                    throw new TransactionException("transaction failed due to inconsistent state", throwable);
+                }
             }
-        }
 
-        // new independent transaction with retry
-        int retry = 0;
-        val traceId = RandomUtil.randomUUIDStr();
-        while (retry++ < maxRetry) {
-
-            val ret = doTransaction(params, retry, traceId);
-            if (ret.getSecond()) {
-                return ret.getFirst();
+            // new independent transaction with retry
+            int retry = 0;
+            val traceId = RandomUtil.randomUUIDStr();
+            if (params.isRetryMoreTimeForDeadLockException()) {
+                KylinConfig config = KylinConfig.getInstanceFromEnv();
+                params.setRetryUntil(System.currentTimeMillis() + config.getMaxSecondsForDeadLockRetry() * 1000);
             }
+            while (retry++ < params.getMaxRetry()) {
+
+                val ret = doTransaction(params, retry, traceId);
+                if (ret.getSecond()) {
+                    return ret.getFirst();
+                }
+            }
+            throw new IllegalStateException("Unexpected doInTransactionWithRetry end");
         }
-        throw new IllegalStateException("Unexpected doInTransactionWithRetry end");
     }
 
     private static <T> Pair<T, Boolean> doTransaction(UnitOfWorkParams<T> params, int retry, String traceId) {
@@ -144,11 +160,15 @@ public class UnitOfWork {
             if (isAlreadyInTransaction()) {
                 try (SetLogCategory ignored = new SetLogCategory(LogConstant.METADATA_CATEGORY)) {
                     val unitOfWork = UnitOfWork.get();
-                    unitOfWork.getCurrentLock().unlock();
+                    MemoryLockUtils.removeThreadFromGraph();
+                    List<TransactionLock> lockInOrder = Arrays
+                            .asList(unitOfWork.getCurrentLock().toArray(new TransactionLock[0]));
+                    Lists.reverse(lockInOrder).stream().filter(TransactionLock::isHeldByCurrentThread)
+                            .forEach(TransactionLock::unlock);
                     unitOfWork.cleanResource();
-                    if (params.getTempLockName() != null && !params.getTempLockName().equals(params.getUnitName())) {
-                        TransactionLock.removeLock(params.getTempLockName());
-                    }
+                    val curLock = UnitOfWork.threadLocals.get().getCurrentLock();
+                    curLock.stream().filter(TempLock.class::isInstance)
+                            .forEach(l -> TransactionManagerInstance.INSTANCE.removeLock(l.transactionUnit()));
                 } catch (IllegalStateException e) {
                     //has not hold the lock yet, it's ok
                     log.warn(e.getMessage());
@@ -179,23 +199,10 @@ public class UnitOfWork {
     }
 
     static <T> UnitOfWorkContext startTransaction(UnitOfWorkParams<T> params) throws Exception {
-        val project = params.getUnitName();
+        val unitName = params.getUnitName();
         val readonly = params.isReadonly();
         checkEpoch(params);
-        val lock = params.getTempLockName() == null ? TransactionLock.getLock(project, readonly)
-                : TransactionLock.getLock(params.getTempLockName(), readonly);
-
-        try (SetLogCategory ignored = new SetLogCategory(LogConstant.METADATA_CATEGORY)) {
-            log.trace("get lock for project {}, lock is held by current thread: {}", project, lock.isHeldByCurrentThread());
-        }
-        //re-entry is not encouraged (because it indicates complex handling logic, bad smell), let's abandon it first
-        Preconditions.checkState(!lock.isHeldByCurrentThread());
-        lock.lock();
-
-        val unitOfWork = new UnitOfWorkContext(project);
-        unitOfWork.setCurrentLock(lock);
-        unitOfWork.setParams(params);
-        threadLocals.set(unitOfWork);
+        final UnitOfWorkContext unitOfWork = initUnitOfContext(params, unitName, readonly);
 
         if (readonly || !params.isUseSandbox()) {
             unitOfWork.setLocalConfig(null);
@@ -215,6 +222,34 @@ public class UnitOfWork {
             log.trace("sandbox RS {} now takes place for main RS {}", rs, underlying);
         }
 
+        return unitOfWork;
+    }
+
+    private static <T> UnitOfWorkContext initUnitOfContext(UnitOfWorkParams<T> params, String unitName,
+            boolean readonly) {
+        val unitOfWork = new UnitOfWorkContext(unitName);
+        TransactionLock lock;
+        if (params.isUseProjectLock()) {
+            lock = TransactionManagerInstance.INSTANCE.getProjectLock(unitName);
+        } else if (params.getTempLockName() != null) {
+            lock = TransactionManagerInstance.INSTANCE.getTempLock(params.getTempLockName(), readonly);
+        } else {
+            lock = TransactionManagerInstance.INSTANCE.getLock(unitName, readonly);
+            if (lock.transactionUnit().equals(unitName)) {
+                params.setUseProjectLock(true);
+            }
+        }
+        try (SetLogCategory ignored = new SetLogCategory(LogConstant.METADATA_CATEGORY)) {
+            log.info("get lock for project {}, lock is held by current thread: {}", unitName,
+                    lock.isHeldByCurrentThread());
+        }
+        // re-entry is not encouraged (because it indicates complex handling logic, bad smell), let's abandon it first
+        Preconditions.checkState(!lock.isHeldByCurrentThread());
+        lock.lock();
+        unitOfWork.getCurrentLock().add(lock);
+
+        unitOfWork.setParams(params);
+        threadLocals.set(unitOfWork);
         return unitOfWork;
     }
 
@@ -241,6 +276,16 @@ public class UnitOfWork {
         }
         val threadViewRS = (ThreadViewResourceStore) ResourceStore.getKylinMetaStore(config);
         List<RawResource> data = threadViewRS.getResources();
+        if (!params.isUseProjectLock()
+                && (threadViewRS.getMetadataStore() instanceof JdbcMetadataStore || config.isUTEnv())) {
+            data.forEach(rawResource -> {
+                if (!UnitOfWork.checkWriteLock(rawResource.getResPath())) {
+                    throw new IllegalStateException(
+                            "Transaction does not hold a write lock for resPath: " + rawResource.getResPath());
+                }
+            });
+        }
+
         val eventList = data.stream().map(x -> {
             if (x instanceof TombRawResource) {
                 return new ResourceDeleteEvent(x.getResPath());
@@ -280,11 +325,36 @@ public class UnitOfWork {
         }
     }
 
+    public static void recordLocks(String resPath, TransactionLock lock, boolean readOnly) {
+        Preconditions.checkState(lock.isHeldByCurrentThread());
+        UnitOfWork.get().getCurrentLock().add(lock);
+        if (readOnly) {
+            UnitOfWork.get().getReadLockPath().add(resPath);
+        } else {
+            UnitOfWork.get().getWriteLockPath().add(resPath);
+        }
+    }
+
+    public static boolean checkWriteLock(String resPath) {
+        return UnitOfWork.get().getWriteLockPath().contains(resPath);
+    }
+
     private static void handleError(Throwable throwable, UnitOfWorkParams<?> params, int retry, String traceId) {
         if (throwable instanceof KylinException && Objects.nonNull(((KylinException) throwable).getErrorCodeProducer())
                 && ((KylinException) throwable).getErrorCodeProducer().getErrorCode()
                         .equals(ErrorCodeSystem.MAINTENANCE_MODE_WRITE_FAILED.getErrorCode())) {
             retry = params.getMaxRetry();
+        }
+        if (throwable instanceof DeadLockException) {
+            log.debug("DeadLock found in this transaction, will retry");
+            if (params.isRetryMoreTimeForDeadLockException() && System.currentTimeMillis() < params.getRetryUntil()) {
+                params.setMaxRetry(params.getMaxRetry() + 1);
+            }
+        }
+        if (throwable instanceof LockInterruptException) {
+            // Just remove the interrupted flag.
+            Thread.interrupted();
+            log.debug("DeadLock is found by TransactionDeadLockHandler, will retry");
         }
         if (throwable instanceof QuitTxnRightNow) {
             retry = params.getMaxRetry();
@@ -333,7 +403,6 @@ public class UnitOfWork {
 
     public static boolean isReplaying() {
         return Objects.equals(true, replaying.get());
-
     }
 
     public static boolean isReadonly() {

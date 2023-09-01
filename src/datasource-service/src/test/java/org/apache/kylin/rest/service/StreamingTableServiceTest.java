@@ -114,10 +114,6 @@ public class StreamingTableServiceTest extends NLocalFileMetadataTestCase {
         ReflectionTestUtils.setField(accessService, "userAclService", userAclService);
         ReflectionTestUtils.setField(accessService, "userService", userService);
 
-        val prjManager = NProjectManager.getInstance(getTestConfig());
-        val prj = prjManager.getProject(PROJECT);
-        val copy = prjManager.copyForWrite(prj);
-        prjManager.updateProject(copy);
         Mockito.when(userService.listSuperAdminUsers()).thenReturn(Arrays.asList("admin"));
         Mockito.when(userAclService.hasUserAclPermissionInProject(Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(false);

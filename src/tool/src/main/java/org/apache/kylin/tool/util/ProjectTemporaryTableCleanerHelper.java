@@ -32,7 +32,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.kylin.common.KylinConfig;
-import org.apache.kylin.common.util.HadoopUtil;
 import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.kylin.metadata.model.TableDesc;
 import org.apache.kylin.source.hive.HiveCmdBuilder;
@@ -74,13 +73,12 @@ public class ProjectTemporaryTableCleanerHelper {
         dbTableMap.put(dbName, tableNameList);
     }
 
-    public Set<String> getJobTransactionalTable(String project, String jobId) {
+    public Set<String> getJobTransactionalTable(String project, String jobId, FileSystem fs) {
         KylinConfig config = KylinConfig.getInstanceFromEnv();
         String dir = config.getJobTmpTransactionalTableDir(project, jobId);
         Path path = new Path(dir);
         Set<String> tmpTableSet = Sets.newHashSet();
         try {
-            FileSystem fs = HadoopUtil.getWorkingFileSystem();
             if (!fs.exists(path)) {
                 return tmpTableSet;
             }

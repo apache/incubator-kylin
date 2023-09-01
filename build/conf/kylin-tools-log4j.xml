@@ -20,6 +20,9 @@
         <Console name="stderr" target="SYSTEM_ERR">
             <PatternLayout pattern="%X{traceId}%d{ISO8601} %-5p %X{request.project}[%t] %c{2} : %mask{%m}%n"/>
         </Console>
+        <File name="createTableSql" fileName="${env:KYLIN_HOME}/logs/create_table.sql">
+            <PatternLayout pattern="%msg%n"/>
+        </File>
     </Appenders>
     <Loggers>
         <Root level="INFO">
@@ -32,5 +35,8 @@
         <Logger name="io.kyligence" level="DEBUG"/>
         <Logger name="org.apache.kylin.tool.shaded" level="INFO"/>
         <Logger name="org.apache.kylin" level="DEBUG"/>
+        <Logger name="org.apache.kylin.tool.util.CreateTableFromJson" level="INFO">
+            <AppenderRef ref="createTableSql"/>
+        </Logger>
     </Loggers>
 </Configuration>

@@ -137,7 +137,7 @@ public class NUserGroupManager {
                     String.format(Locale.ROOT, MsgPicker.getMsg().getUserGroupExist(), String.join(",", realGroups)));
         }
         for (String name : names) {
-            UserGroup userGroup = new UserGroup(name);
+            UserGroup userGroup = copyForWrite(new UserGroup(name));
             crud.save(userGroup);
         }
     }
@@ -148,7 +148,7 @@ public class NUserGroupManager {
             throw new KylinException(DUPLICATE_USERGROUP_NAME,
                     String.format(Locale.ROOT, MsgPicker.getMsg().getUserGroupExist(), realGroupName));
         }
-        UserGroup userGroup = new UserGroup(name);
+        UserGroup userGroup = copyForWrite(new UserGroup(name));
         crud.save(userGroup);
     }
 

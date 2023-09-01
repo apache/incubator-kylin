@@ -117,9 +117,14 @@ public class SourceUsageManager {
         return crud.copyBySerialization(df);
     }
 
+    public SourceUsageRecord copyForWrite(SourceUsageRecord df) {
+        return crud.copyForWrite(df);
+    }
+
     public SourceUsageRecord createSourceUsageRecord(String resourceName, SourceUsageRecord record) {
         record.setResPath(concatResourcePath(resourceName));
-        return crud.save(record);
+        SourceUsageRecord copy = copyForWrite(record);
+        return crud.save(copy);
     }
 
     public SourceUsageRecord updateSourceUsageRecord(String resourceName, SourceUsageRecordUpdater updater) {
@@ -127,7 +132,7 @@ public class SourceUsageManager {
         if (record == null) {
             record = new SourceUsageRecord();
         }
-        SourceUsageRecord copy = copy(record);
+        SourceUsageRecord copy = copyForWrite(record);
         updater.modify(copy);
         return crud.save(copy);
     }

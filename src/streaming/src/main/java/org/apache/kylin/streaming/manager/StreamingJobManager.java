@@ -77,11 +77,16 @@ public class StreamingJobManager {
 
     public void createStreamingJob(NDataModel model, JobTypeEnum jobType) {
         StreamingJobMeta job = StreamingJobMeta.create(model, JobStatusEnum.STOPPED, jobType);
-        crud.save(job);
+        StreamingJobMeta copy = copyForWrite(job);
+        crud.save(copy);
     }
 
     public StreamingJobMeta copy(StreamingJobMeta jobMeta) {
         return crud.copyBySerialization(jobMeta);
+    }
+    
+    public StreamingJobMeta copyForWrite(StreamingJobMeta jobMeta) {
+        return crud.copyForWrite(jobMeta);
     }
 
     public StreamingJobMeta updateStreamingJob(String jobId, NStreamingJobUpdater updater) {
@@ -89,7 +94,7 @@ public class StreamingJobManager {
         if (cached == null) {
             return null;
         }
-        StreamingJobMeta copy = copy(cached);
+        StreamingJobMeta copy = copyForWrite(cached);
         updater.modify(copy);
         return crud.save(copy);
     }

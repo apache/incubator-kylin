@@ -76,22 +76,38 @@ public class JarInfoManager {
         return String.format(Locale.ROOT, "%s_%s", jarTypeEnum, jarName);
     }
 
+    private JarInfo copyForWrite(JarInfo jarInfo) {
+        return crud.copyForWrite(jarInfo);
+    }
+
     public JarInfo createJarInfo(JarInfo jarInfo) {
         if (Objects.isNull(jarInfo) || StringUtils.isEmpty(jarInfo.resourceName())) {
             throw new IllegalArgumentException("jar info is null or resourceName is null");
         }
-        if (crud.contains(jarInfo.resourceName())) {
-            throw new KylinException(CUSTOM_PARSER_ALREADY_EXISTS_JAR, jarInfo.getJarName());
+        JarInfo copy = copyForWrite(jarInfo);
+        if (crud.contains(copy.resourceName())) {
+            throw new KylinException(CUSTOM_PARSER_ALREADY_EXISTS_JAR, copy.getJarName());
         }
-        jarInfo.updateRandomUuid();
-        return crud.save(jarInfo);
+        copy.updateRandomUuid();
+        return crud.save(copy);
     }
 
+    /**
+     * @deprecated Use updateJarInfo(JarTypeEnum jarTypeEnum, String jarName, JarInfoUpdater updater) instead.
+     */
+    @Deprecated
     public JarInfo updateJarInfo(JarInfo jarInfo) {
-        if (!crud.contains(jarInfo.resourceName())) {
-            throw new KylinException(CUSTOM_PARSER_NOT_EXISTS_JAR, jarInfo.getJarName());
+        return updateJarInfo(jarInfo.getJarType(), jarInfo.getJarName(), jarInfo::copyPropertiesTo);
+    }
+
+    public JarInfo updateJarInfo(JarTypeEnum jarTypeEnum, String jarName, JarInfoUpdater updater) {
+        JarInfo cached = getJarInfo(jarTypeEnum, jarName);
+        if (cached == null) {
+            throw new KylinException(CUSTOM_PARSER_NOT_EXISTS_JAR, jarName);
         }
-        return crud.save(jarInfo);
+        JarInfo copy = copyForWrite(cached);
+        updater.modify(copy);
+        return crud.save(copy);
     }
 
     public JarInfo removeJarInfo(JarTypeEnum jarTypeEnum, String jarName) {
@@ -110,5 +126,9 @@ public class JarInfoManager {
     public List<JarInfo> listJarInfoByType(JarTypeEnum jarTypeEnum) {
         return listJarInfo().stream().filter(jarInfo -> jarTypeEnum == jarInfo.getJarType())
                 .collect(Collectors.toList());
+    }
+
+    public interface JarInfoUpdater {
+        void modify(JarInfo copyForWrite);
     }
 }

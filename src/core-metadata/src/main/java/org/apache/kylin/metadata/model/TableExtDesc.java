@@ -29,9 +29,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
+import org.apache.kylin.guava30.shaded.common.base.Strings;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.measure.hllc.HLLCounter;
 import org.apache.kylin.metadata.MetadataConstants;
 
@@ -40,10 +44,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
-import org.apache.kylin.guava30.shaded.common.base.Strings;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -171,7 +172,7 @@ public class TableExtDesc extends RootPersistentEntity implements Serializable {
     }
 
     public void setCardinality(String cardinality) {
-        if (null == cardinality)
+        if (StringUtils.isEmpty(cardinality))
             return;
 
         String[] cardi = cardinality.split(",");
@@ -189,6 +190,16 @@ public class TableExtDesc extends RootPersistentEntity implements Serializable {
         } else {
             throw new IllegalArgumentException("The given cardinality columns don't match tables " + identity);
         }
+    }
+
+    @Override
+    public <T extends RootPersistentEntity> void copyPropertiesTo(T copy) {
+        TableExtDesc extDesc = (TableExtDesc) copy;
+        extDesc.setColumnStats(this.getAllColumnStats()); // copyProperties cannot copy ColumnStats
+        for (Map.Entry<String, String> entry : this.getDataSourceProps().entrySet()) {
+            extDesc.addDataSourceProp(entry.getKey(), entry.getValue());
+        }
+        super.copyPropertiesTo(extDesc);
     }
 
     public enum RowCountStatus {

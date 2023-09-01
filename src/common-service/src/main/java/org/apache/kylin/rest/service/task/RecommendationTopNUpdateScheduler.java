@@ -29,14 +29,15 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.common.metrics.MetricsCategory;
+import org.apache.kylin.common.metrics.MetricsGroup;
+import org.apache.kylin.common.metrics.MetricsName;
 import org.apache.kylin.common.util.ExecutorServiceUtil;
 import org.apache.kylin.common.util.NamedThreadFactory;
 import org.apache.kylin.common.util.SetThreadName;
 import org.apache.kylin.common.util.TimeUtil;
-import org.apache.kylin.common.metrics.MetricsCategory;
-import org.apache.kylin.common.metrics.MetricsGroup;
-import org.apache.kylin.common.metrics.MetricsName;
 import org.apache.kylin.metadata.favorite.AsyncAccelerationTask;
+import org.apache.kylin.metadata.favorite.AsyncTaskManager;
 import org.apache.kylin.metadata.favorite.FavoriteRule;
 import org.apache.kylin.metadata.favorite.FavoriteRuleManager;
 import org.apache.kylin.metadata.project.EnhancedUnitOfWork;
@@ -146,10 +147,11 @@ public class RecommendationTopNUpdateScheduler {
     public void saveTaskTime(String project) {
         long currentTime = System.currentTimeMillis();
         EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
-            AsyncAccelerationTask asyncAcceleration = (AsyncAccelerationTask) getInstance(
-                    KylinConfig.getInstanceFromEnv(), project).get(ASYNC_ACCELERATION_TASK);
-            asyncAcceleration.setLastUpdateTonNTime(currentTime);
-            getInstance(KylinConfig.getInstanceFromEnv(), project).save(asyncAcceleration);
+            AsyncTaskManager manager = getInstance(KylinConfig.getInstanceFromEnv(), project);
+            AsyncAccelerationTask asyncAcceleration = (AsyncAccelerationTask) manager.get(ASYNC_ACCELERATION_TASK);
+            AsyncAccelerationTask copied = manager.copyForWrite(asyncAcceleration);
+            copied.setLastUpdateTonNTime(currentTime);
+            getInstance(KylinConfig.getInstanceFromEnv(), project).save(copied);
             return null;
         }, project);
     }

@@ -19,12 +19,11 @@ package org.apache.kylin.common.persistence.transaction;
 
 import java.util.concurrent.TimeUnit;
 
+import org.apache.kylin.junit.annotation.MetadataInfo;
 import org.assertj.core.util.Lists;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
-
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +31,11 @@ import lombok.val;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TransactionLockTest {
+@MetadataInfo(onlyProps = true)
+class TransactionProjectLockTest {
 
     @Test
-    public void testStravition() {
+    void testStravition() {
         val threads = Lists.<LogicThread> newArrayList();
 
         for (int i = 0; i < 10; i++) {
@@ -51,7 +51,6 @@ public class TransactionLockTest {
         long minCount = threads.stream().mapToLong(LogicThread::getCount).min().getAsLong();
         Assert.assertTrue(maxCount - minCount <= 1);
 
-        TransactionLock.projectLocks = Maps.newConcurrentMap();
         for (LogicThread thread : threads) {
             thread.interrupt();
         }
@@ -69,12 +68,12 @@ public class TransactionLockTest {
         @Override
         public void run() {
             super.run();
-            val tLock = TransactionLock.getLock("p0", isReader);
+            val tLock = TransactionManagerInstance.INSTANCE.getLock("p0", isReader);
             while (count < 20) {
                 tLock.lock();
                 log.debug("lock by {} {}, {}", isReader ? "reader" : "writer", Thread.currentThread().getName(), count);
                 try {
-                    Thread.sleep(100);
+                    TimeUnit.MILLISECONDS.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {

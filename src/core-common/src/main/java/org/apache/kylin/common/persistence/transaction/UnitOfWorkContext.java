@@ -17,13 +17,17 @@
  */
 package org.apache.kylin.common.persistence.transaction;
 
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.exception.CommonErrorCode;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.persistence.ResourceStore;
-
+import org.apache.kylin.common.persistence.lock.TransactionLock;
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
@@ -42,7 +46,9 @@ public class UnitOfWorkContext {
     private final String project;
 
     private KylinConfig.SetAndUnsetThreadLocalConfig localConfig;
-    private TransactionLock currentLock = null;
+    private Set<TransactionLock> currentLock = new LinkedHashSet<>();
+    private Set<String> writeLockPath = new HashSet<>();
+    private Set<String> readLockPath = new HashSet<>();
 
     @Delegate
     private UnitOfWorkParams params;
@@ -51,12 +57,18 @@ public class UnitOfWorkContext {
 
     List<UnitTask> onUpdatedTasks = Lists.newArrayList();
 
+    List<UnitTask> onStartUpdateTasks = Lists.newArrayList();
+
     public void doAfterUnit(UnitTask task) {
         onFinishedTasks.add(task);
     }
 
     public void doAfterUpdate(UnitTask task) {
         onUpdatedTasks.add(task);
+    }
+
+    public void doBeforeUpdate(UnitTask task) {
+        onStartUpdateTasks.add(task);
     }
 
     void cleanResource() {
@@ -71,9 +83,9 @@ public class UnitOfWorkContext {
     }
 
     void checkLockStatus() {
-        Preconditions.checkNotNull(currentLock);
-        Preconditions.checkState(currentLock.isHeldByCurrentThread());
-
+        Preconditions.checkState(CollectionUtils.isNotEmpty(currentLock));
+        // Some readLocks have been released when upgrade to writeLock.
+        Preconditions.checkState(currentLock.stream().anyMatch(TransactionLock::isHeldByCurrentThread));
     }
 
     void checkReentrant(UnitOfWorkParams params) {
@@ -107,6 +119,12 @@ public class UnitOfWorkContext {
                 throw new KylinException(CommonErrorCode.FAILED_UPDATE_METADATA, "task failed");
             }
         });
+    }
+
+    public void onStartUnitUpdate() throws Exception{
+        for (UnitTask task : onStartUpdateTasks) {
+            task.run();
+        }
     }
 
     public interface UnitTask {

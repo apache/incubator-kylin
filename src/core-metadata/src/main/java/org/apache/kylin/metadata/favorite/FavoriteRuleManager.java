@@ -29,14 +29,13 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.annotation.Clarification;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
-
-import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
 import lombok.val;
 
 @Clarification(priority = Clarification.Priority.MAJOR, msg = "Enterprise")
@@ -75,6 +74,7 @@ public class FavoriteRuleManager {
         this.crud = new CachedCrudAssist<FavoriteRule>(store, resourceRoot, FavoriteRule.class) {
             @Override
             protected FavoriteRule initEntityAfterReload(FavoriteRule entity, String resourceName) {
+                entity.setProject(project);
                 return entity;
             }
         };
@@ -112,6 +112,13 @@ public class FavoriteRuleManager {
         return FavoriteRule.getDefaultRuleIfNull(getByName(ruleName), ruleName);
     }
 
+    private FavoriteRule copyForWrite(FavoriteRule rule) {
+        if (rule.getProject() == null) {
+            rule.setProject(project);
+        }
+        return crud.copyForWrite(rule);
+    }
+
     public void resetRule() {
         FavoriteRule.getAllDefaultRule().forEach(this::updateRule);
     }
@@ -121,7 +128,7 @@ public class FavoriteRuleManager {
     }
 
     public void updateRule(List<FavoriteRule.AbstractCondition> conditions, boolean isEnabled, String ruleName) {
-        FavoriteRule copy = crud.copyForWrite(getOrDefaultByName(ruleName));
+        FavoriteRule copy = copyForWrite(getOrDefaultByName(ruleName));
 
         copy.setEnabled(isEnabled);
 
@@ -140,10 +147,11 @@ public class FavoriteRuleManager {
 
     @VisibleForTesting
     public void createRule(final FavoriteRule rule) {
-        if (getByName(rule.getName()) != null)
+        FavoriteRule copy = copyForWrite(rule);
+        if (getByName(copy.getName()) != null)
             return;
 
-        crud.save(rule);
+        crud.save(copy);
     }
 
     @VisibleForTesting

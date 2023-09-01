@@ -26,22 +26,21 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.Serializer;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.MetadataConstants;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.apache.kylin.metadata.datatype.DataType;
 import org.apache.kylin.metadata.model.ColumnDesc;
+import org.apache.kylin.metadata.model.ManagementType;
+import org.apache.kylin.metadata.model.NDataModel;
+import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.kylin.metadata.model.SegmentRange;
 import org.apache.kylin.metadata.model.SegmentStatusEnum;
 import org.apache.kylin.metadata.model.Segments;
 import org.apache.kylin.metadata.model.TableDesc;
 import org.apache.kylin.metadata.realization.RealizationStatusEnum;
-import org.apache.kylin.metadata.model.ManagementType;
-import org.apache.kylin.metadata.model.NDataModel;
-import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.val;
 import lombok.var;
@@ -113,61 +112,74 @@ public class NDataLoadingRangeManager {
     }
 
     public NDataLoadingRange createDataLoadingRange(NDataLoadingRange dataLoadingRange) {
-        checkNDataLoadingRangeIdentify(dataLoadingRange);
-        checkNDataLoadingRangeExist(dataLoadingRange);
+        NDataLoadingRange copy = copyForWrite(dataLoadingRange);
+        checkNDataLoadingRangeIdentify(copy);
+        checkNDataLoadingRangeExist(copy);
 
         NTableMetadataManager tableMetadataManager = NTableMetadataManager.getInstance(config, project);
-        String tableName = dataLoadingRange.getTableName();
+        String tableName = copy.getTableName();
         TableDesc tableDesc = tableMetadataManager.getTableDesc(tableName);
         if (tableDesc == null) {
-            throw new IllegalArgumentException(DATA_LOADING_RANGE + dataLoadingRange.resourceName() + "' 's table "
-                    + tableName + " does not exists");
+            throw new IllegalArgumentException(
+                    DATA_LOADING_RANGE + copy.resourceName() + "' 's table " + tableName + " does not exists");
         }
-        String columnName = dataLoadingRange.getColumnName();
+        String columnName = copy.getColumnName();
         ColumnDesc columnDesc = tableDesc.findColumnByName(columnName);
         if (columnDesc == null) {
-            throw new IllegalArgumentException(DATA_LOADING_RANGE + dataLoadingRange.resourceName() + "' 's column "
-                    + columnName + " does not exists");
+            throw new IllegalArgumentException(
+                    DATA_LOADING_RANGE + copy.resourceName() + "' 's column " + columnName + " does not exists");
         }
         String columnType = columnDesc.getDatatype();
         DataType dataType = DataType.getType(columnType);
         if (dataType == null || !dataType.isLegalPartitionColumnType()) {
-            throw new IllegalArgumentException(DATA_LOADING_RANGE + dataLoadingRange.resourceName() + "' 's column "
-                    + columnName + " 's dataType does not support partition column");
+            throw new IllegalArgumentException(DATA_LOADING_RANGE + copy.resourceName() + "' 's column " + columnName
+                    + " 's dataType does not support partition column");
         }
 
-        return crud.save(dataLoadingRange);
+        return crud.save(copy);
     }
 
     public NDataLoadingRange appendSegmentRange(NDataLoadingRange dataLoadingRange, SegmentRange segmentRange) {
-        NDataLoadingRange copyForWrite = copyForWrite(dataLoadingRange);
-        val coveredRange = copyForWrite.getCoveredRange();
-        if (coveredRange == null) {
-            copyForWrite.setCoveredRange(segmentRange);
-        } else {
-            if (coveredRange.connects(segmentRange)) {
-                copyForWrite.setCoveredRange(coveredRange.coverWith(segmentRange));
-            } else if (segmentRange.connects(coveredRange)) {
-                copyForWrite.setCoveredRange(segmentRange.coverWith(coveredRange));
+        return updateDataLoadingRange(dataLoadingRange.getTableName(), copyForWrite -> {
+            val coveredRange = copyForWrite.getCoveredRange();
+            if (coveredRange == null) {
+                copyForWrite.setCoveredRange(segmentRange);
             } else {
-                throw new IllegalArgumentException("NDataLoadingRange appendSegmentRange " + segmentRange
-                        + " has overlaps/gap with existing segmentRanges " + copyForWrite.getCoveredRange());
+                if (coveredRange.connects(segmentRange)) {
+                    copyForWrite.setCoveredRange(coveredRange.coverWith(segmentRange));
+                } else if (segmentRange.connects(coveredRange)) {
+                    copyForWrite.setCoveredRange(segmentRange.coverWith(coveredRange));
+                } else {
+                    throw new IllegalArgumentException("NDataLoadingRange appendSegmentRange " + segmentRange
+                            + " has overlaps/gap with existing segmentRanges " + copyForWrite.getCoveredRange());
+                }
             }
-        }
-        return updateDataLoadingRange(copyForWrite);
+            return true;
+        });
     }
 
+    /**
+     * @deprecated Use updateDataLoadingRange(String tableName, DataLoadingRangeUpdater updater) instead.
+     */
+    @Deprecated
     public NDataLoadingRange updateDataLoadingRange(NDataLoadingRange dataLoadingRange) {
-        if (getStore().getConfig().isCheckCopyOnWrite()) {
-            if (dataLoadingRange.isCachedAndShared())
-                throw new IllegalStateException();
-        }
-        checkNDataLoadingRangeIdentify(dataLoadingRange);
-        checkNDataLoadingRangeNotExist(dataLoadingRange);
-
-        return crud.save(dataLoadingRange);
+        return updateDataLoadingRange(dataLoadingRange.getTableName(), copyForWrite -> {
+            dataLoadingRange.copyPropertiesTo(copyForWrite);
+            return true;
+        });
     }
 
+    public NDataLoadingRange updateDataLoadingRange(String tableName, DataLoadingRangeUpdater updater) {
+        NDataLoadingRange cached = getDataLoadingRange(tableName);
+        NDataLoadingRange copy = copyForWrite(cached);
+        if (!updater.modify(copy)) {
+            return null;
+        }
+        checkNDataLoadingRangeIdentify(copy);
+        checkNDataLoadingRangeNotExist(copy);
+        return crud.save(copy);
+    }
+        
     public NDataLoadingRange copyForWrite(NDataLoadingRange dataLoadingRange) {
         return crud.copyForWrite(dataLoadingRange);
     }
@@ -251,16 +263,21 @@ public class NDataLoadingRangeManager {
         if (loadingRange == null) {
             return;
         } else {
-            val copy = copyForWrite(loadingRange);
-            val coveredRange = copy.getCoveredRange();
-            if (coveredRange == null) {
-                return;
-            }
-            if (lastSegment.getSegRange().overlaps(coveredRange)) {
-                copy.setCoveredRange(lastSegment.getSegRange().getEndDeviation(coveredRange));
-                updateDataLoadingRange(copy);
-            }
-
+            updateDataLoadingRange(loadingRange.getTableName(), copyForWrite -> {
+                val coveredRange = copyForWrite.getCoveredRange();
+                if (coveredRange == null) {
+                    return false;
+                }
+                if (lastSegment.getSegRange().overlaps(coveredRange)) {
+                    copyForWrite.setCoveredRange(lastSegment.getSegRange().getEndDeviation(coveredRange));
+                    return true;
+                }
+                return false;
+            });
         }
+    }
+    
+    public interface DataLoadingRangeUpdater {
+        boolean modify(NDataLoadingRange copyForWrite);
     }
 }

@@ -48,7 +48,7 @@ public class MetadataToolTestFixture {
         val dataModel2 = dataModelMgr.getDataModelDescByAlias("nmodel_basic_inner");
         dataModelMgr.dropModel(dataModel2);
 
-        val dataModel3 = dataModelMgr.copyForWrite(dataModel2);
+        val dataModel3 = dataModelMgr.copy(dataModel2);
         dataModel3.setUuid(RandomUtil.randomUUIDStr());
         dataModel3.setAlias("data_model_3");
         dataModel3.setMvcc(-1L);

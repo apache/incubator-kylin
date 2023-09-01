@@ -26,17 +26,13 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.kylin.common.KylinConfig;
-import org.apache.kylin.common.persistence.JsonSerializer;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
-import org.apache.kylin.common.persistence.Serializer;
-import org.apache.kylin.common.util.JsonUtil;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 
 import lombok.val;
 
@@ -44,7 +40,6 @@ import lombok.val;
  */
 public class NExecutableDao {
 
-    private static final Serializer<ExecutablePO> JOB_SERIALIZER = new JsonSerializer<>(ExecutablePO.class);
     private static final Logger logger = LoggerFactory.getLogger(NExecutableDao.class);
 
     public static NExecutableDao getInstance(KylinConfig config, String project) {
@@ -103,6 +98,13 @@ public class NExecutableDao {
         return crud.get(uuid);
     }
 
+    public ExecutablePO copyForWrite(ExecutablePO po) {
+        if (po.getProject() == null) {
+            po.setProject(project);
+        }
+        return crud.copyForWrite(po);
+    }
+
     public ExecutablePO addJob(ExecutablePO job) {
         if (getJobByUuid(job.getUuid()) != null) {
             throw new IllegalArgumentException("job id:" + job.getUuid() + " already exists");
@@ -124,7 +126,7 @@ public class NExecutableDao {
     public void updateJob(String uuid, Predicate<ExecutablePO> updater) {
         val job = getJobByUuid(uuid);
         Preconditions.checkNotNull(job);
-        val copyForWrite = JsonUtil.copyBySerialization(job, JOB_SERIALIZER, null);
+        val copyForWrite = copyForWrite(job);
         if (updater.test(copyForWrite)) {
             crud.save(copyForWrite);
         }
@@ -137,7 +139,7 @@ public class NExecutableDao {
         } else {
             ExecutablePO executablePOFromCache = getJobByUuid(uuid);
             Preconditions.checkNotNull(executablePOFromCache);
-            val copyForWrite = JsonUtil.copyBySerialization(executablePOFromCache, JOB_SERIALIZER, null);
+            val copyForWrite = copyForWrite(executablePOFromCache);
             updating.put(uuid, copyForWrite);
             executablePO = copyForWrite;
         }

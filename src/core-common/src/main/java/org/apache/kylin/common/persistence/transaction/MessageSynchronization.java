@@ -27,7 +27,6 @@ import org.apache.kylin.common.persistence.UnitMessages;
 import org.apache.kylin.common.persistence.event.ResourceCreateOrUpdateEvent;
 import org.apache.kylin.common.persistence.event.ResourceDeleteEvent;
 import org.apache.kylin.common.scheduler.EventBusFactory;
-
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.Setter;
@@ -115,7 +114,7 @@ public class MessageSynchronization {
     }
 
     public void replayAllMetadata(boolean needCloseReplay) throws IOException {
-        val lockKeys = Lists.newArrayList(TransactionLock.getProjectLocksForRead().keySet());
+        val lockKeys = Lists.newArrayList(TransactionManagerInstance.INSTANCE.getProjectLocksForRead().keySet());
         lockKeys.sort(Comparator.naturalOrder());
         val resourceStore = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
         try {
@@ -124,7 +123,7 @@ public class MessageSynchronization {
                 resourceStore.getAuditLogStore().pause();
             }
             for (String lockKey : lockKeys) {
-                TransactionLock.getLock(lockKey, false).lock();
+                TransactionManagerInstance.INSTANCE.getProjectLock(lockKey).lock();
             }
             log.info("Acquired all locks, start to reload");
 
@@ -133,7 +132,7 @@ public class MessageSynchronization {
         } finally {
             Collections.reverse(lockKeys);
             for (String lockKey : lockKeys) {
-                TransactionLock.getLock(lockKey, false).unlock();
+                TransactionManagerInstance.INSTANCE.getProjectLock(lockKey).unlock();
             }
             if (needCloseReplay) {
                 // if not stop, reinit return directly

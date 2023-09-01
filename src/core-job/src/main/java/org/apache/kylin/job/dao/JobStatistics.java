@@ -20,8 +20,11 @@ package org.apache.kylin.job.dao;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.metadata.MetadataConstants;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -73,5 +76,10 @@ public class JobStatistics extends JobStatisticsBasic {
         }
 
         jobStatisticsByModels.put(model, jobStatisticsByModel);
+    }
+
+    @Override
+    public String getResourcePath() {
+        return "/" + getProject() + ResourceStore.JOB_STATISTICS + "/" + date + MetadataConstants.FILE_SURFIX;
     }
 }

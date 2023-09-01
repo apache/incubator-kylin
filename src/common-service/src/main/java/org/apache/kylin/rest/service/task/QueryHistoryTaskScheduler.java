@@ -137,9 +137,10 @@ public class QueryHistoryTaskScheduler {
             QueryHistoryIdOffsetManager manager = QueryHistoryIdOffsetManager.getInstance(config, project);
             QueryHistoryIdOffset queryHistoryIdOffset = manager.get();
             if (queryHistoryIdOffset.getOffset() > maxId || queryHistoryIdOffset.getStatMetaUpdateOffset() > maxId) {
-                queryHistoryIdOffset.setOffset(maxId);
-                queryHistoryIdOffset.setStatMetaUpdateOffset(maxId);
-                manager.save(queryHistoryIdOffset);
+                manager.updateOffset(copyForWrite -> {
+                    copyForWrite.setOffset(maxId);
+                    copyForWrite.setStatMetaUpdateOffset(maxId);
+                });
             }
             return 0;
         }, project);
@@ -230,10 +231,9 @@ public class QueryHistoryTaskScheduler {
                 updateLastQueryTime(modelsLastQueryTime, project);
 
                 // update id offset
-                QueryHistoryIdOffset queryHistoryIdOffset = QueryHistoryIdOffsetManager
-                        .getInstance(KylinConfig.getInstanceFromEnv(), project).get();
-                queryHistoryIdOffset.setStatMetaUpdateOffset(maxId);
-                QueryHistoryIdOffsetManager.getInstance(config, project).save(queryHistoryIdOffset);
+                QueryHistoryIdOffsetManager manager = QueryHistoryIdOffsetManager
+                        .getInstance(config, project);
+                manager.updateOffset(copyForWrite -> copyForWrite.setStatMetaUpdateOffset(maxId));
 
                 // update snpashot hit count
                 incQueryHitSnapshotCount(hitSnapshotCountMap, project);
@@ -424,10 +424,9 @@ public class QueryHistoryTaskScheduler {
                 KylinConfig config = KylinConfig.getInstanceFromEnv();
 
                 // update id offset
-                QueryHistoryIdOffset queryHistoryIdOffset = QueryHistoryIdOffsetManager
-                        .getInstance(KylinConfig.getInstanceFromEnv(), project).get();
-                queryHistoryIdOffset.setOffset(maxId);
-                QueryHistoryIdOffsetManager.getInstance(config, project).save(queryHistoryIdOffset);
+                QueryHistoryIdOffsetManager manager = QueryHistoryIdOffsetManager
+                        .getInstance(config, project);
+                manager.updateOffset(copyForWrite -> copyForWrite.setOffset(maxId));
                 return 0;
             }, project);
 

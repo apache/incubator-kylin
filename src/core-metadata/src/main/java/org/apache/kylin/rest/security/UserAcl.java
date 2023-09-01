@@ -18,6 +18,8 @@
 
 package org.apache.kylin.rest.security;
 
+import static org.apache.kylin.common.persistence.ResourceStore.ACL_GLOBAL_ROOT;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -119,6 +121,11 @@ public class UserAcl extends RootPersistentEntity {
 
     public boolean hasPermission(Integer permissionMask) {
         return CollectionUtils.isNotEmpty(permissionMasks) && permissionMasks.contains(permissionMask);
+    }
+
+    @Override
+    public String getResourcePath() {
+        return ACL_GLOBAL_ROOT + "/" + username;
     }
 
     @Override

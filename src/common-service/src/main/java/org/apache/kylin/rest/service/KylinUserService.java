@@ -36,6 +36,7 @@ import org.apache.kylin.common.msg.Message;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.persistence.JsonSerializer;
 import org.apache.kylin.common.persistence.Serializer;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.rest.aspect.Transaction;
 import org.apache.kylin.rest.constant.Constant;
 import org.apache.kylin.rest.exception.InternalErrorException;
@@ -46,8 +47,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.util.CollectionUtils;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 
 import org.apache.kylin.metadata.user.ManagedUser;
 import org.apache.kylin.metadata.user.NKylinUserManager;
@@ -126,8 +125,9 @@ public class KylinUserService implements UserService {
     public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
         Message msg = MsgPicker.getMsg();
         ManagedUser managedUser;
+        NKylinUserManager manager = getKylinUserManager();
         try {
-            managedUser = getKylinUserManager().get(userName);
+            managedUser = manager.get(userName);
         } catch (IllegalArgumentException e) {
             log.error("exception: ", e);
             throw new UsernameNotFoundException(USER_LOGIN_FAILED.getMsg());
@@ -136,7 +136,7 @@ public class KylinUserService implements UserService {
             throw new UsernameNotFoundException(String.format(Locale.ROOT, msg.getUserNotFound(), userName));
         }
         log.trace("load user : {}", userName);
-        return managedUser;
+        return manager.copy(managedUser);
     }
 
     @Override

@@ -24,10 +24,11 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.apache.kylin.common.persistence.RootPersistentEntity;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.metadata.MetadataConstants;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.Data;
 
@@ -39,6 +40,11 @@ public class SQLBlacklist extends RootPersistentEntity implements Serializable {
 
     public SQLBlacklist() {
         updateRandomUuid();
+    }
+    
+    public SQLBlacklist(String project) {
+        this();
+        this.project = project;
     }
 
     @JsonProperty("project")
@@ -134,5 +140,10 @@ public class SQLBlacklist extends RootPersistentEntity implements Serializable {
     @Override
     public String resourceName() {
         return project;
+    }
+    
+    @Override
+    public String getResourcePath() {
+        return SQL_BLACKLIST_RESOURCE_ROOT + "/" + resourceName() + MetadataConstants.FILE_SURFIX;
     }
 }

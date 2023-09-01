@@ -84,7 +84,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -124,6 +123,7 @@ import org.apache.kylin.common.persistence.RootPersistentEntity;
 import org.apache.kylin.common.persistence.transaction.TransactionException;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.persistence.transaction.UnitOfWorkContext;
+import org.apache.kylin.common.persistence.transaction.UnitOfWorkParams;
 import org.apache.kylin.common.scheduler.EventBusFactory;
 import org.apache.kylin.common.util.DateFormat;
 import org.apache.kylin.common.util.JsonUtil;
@@ -161,7 +161,6 @@ import org.apache.kylin.metadata.cube.model.LayoutEntity;
 import org.apache.kylin.metadata.cube.model.NDataLayout;
 import org.apache.kylin.metadata.cube.model.NDataLoadingRange;
 import org.apache.kylin.metadata.cube.model.NDataLoadingRangeManager;
-import org.apache.kylin.metadata.cube.model.NDataSegDetails;
 import org.apache.kylin.metadata.cube.model.NDataSegment;
 import org.apache.kylin.metadata.cube.model.NDataflow;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
@@ -2024,16 +2023,19 @@ public class ModelService extends AbstractModelService implements TableModelSupp
 
     public NDataModel createModel(String project, ModelRequest modelRequest) {
         checkNewModels(project, Lists.newArrayList(modelRequest));
-        return EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
-            NDataModel model = saveModel(project, modelRequest);
-            modelRequest.setUuid(model.getUuid());
-            updateExcludedCheckerResult(project, modelRequest);
-            // enable second storage
-            if (modelRequest.isWithSecondStorage() && !SecondStorageUtil.isModelEnable(project, model.getId())) {
-                SecondStorageUtil.initModelMetaData(project, model.getId());
-            }
-            return getManager(NDataModelManager.class, project).getDataModelDesc(model.getUuid());
-        }, project);
+        UnitOfWorkParams<NDataModel> params = UnitOfWorkParams.<NDataModel> builder().unitName(project)
+                .processor(() -> {
+                    NDataModel model = saveModel(project, modelRequest);
+                    modelRequest.setUuid(model.getUuid());
+                    updateExcludedCheckerResult(project, modelRequest);
+                    // enable second storage
+                    if (modelRequest.isWithSecondStorage()
+                            && !SecondStorageUtil.isModelEnable(project, model.getId())) {
+                        SecondStorageUtil.initModelMetaData(project, model.getId());
+                    }
+                    return getManager(NDataModelManager.class, project).getDataModelDesc(model.getUuid());
+                }).build();
+        return EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(params);
     }
 
     private NDataModel doCheckBeforeModelSave(String project, ModelRequest modelRequest) {
@@ -2442,10 +2444,7 @@ public class ModelService extends AbstractModelService implements TableModelSupp
             NDataflow dataflow = dfManger.getDataflow(modelId);
             for (String segmentId : segmentIds) {
                 NDataSegment seg = dataflow.getSegment(segmentId);
-                NDataSegDetails segDetails = seg.getSegDetails();
-                List<NDataLayout> layouts = new LinkedList<>(segDetails.getAllLayouts());
-                layouts.removeIf(layout -> indexIds.contains(layout.getLayoutId()));
-                dfManger.updateDataflowDetailsLayouts(seg, layouts);
+                dfManger.updateDataflowDetailsLayouts(seg, indexIds, Collections.emptyList());
             }
             getManager(NIndexPlanManager.class, project).updateIndexPlan(dataflow.getUuid(),
                     IndexPlan::removeTobeDeleteIndexIfNecessary);
@@ -3049,6 +3048,8 @@ public class ModelService extends AbstractModelService implements TableModelSupp
             String[] segmentIds) {
         aclEvaluate.checkProjectOperationPermission(project);
         SecondStorageJobUtil.validateSegment(project, model, Arrays.asList(segmentIds));
+        UnitOfWork.get().doBeforeUpdate(
+                () -> SecondStorageJobUtil.validateSegment(project, model, Arrays.asList(segmentIds)));
         checkSegmentsExistById(model, project, segmentIds);
         checkSegmentsStatus(model, project, segmentIds, SegmentStatusEnumToDisplay.LOADING,
                 SegmentStatusEnumToDisplay.REFRESHING, SegmentStatusEnumToDisplay.MERGING,
@@ -3071,67 +3072,69 @@ public class ModelService extends AbstractModelService implements TableModelSupp
 
     public BuildBaseIndexResponse updateDataModelSemantic(String project, ModelRequest request, boolean isCheckFlat) {
         try {
-            return EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
-                aclEvaluate.checkProjectWritePermission(project);
-                semanticUpdater.expandModelRequest(request);
-                checkModelRequest(request);
-                checkModelPermission(project, request.getUuid());
-                validatePartitionDateColumn(request);
+            UnitOfWorkParams<BuildBaseIndexResponse> params = UnitOfWorkParams.<BuildBaseIndexResponse> builder()
+                    .unitName(project).processor(() -> {
+                        aclEvaluate.checkProjectWritePermission(project);
+                        semanticUpdater.expandModelRequest(request);
+                        checkModelRequest(request);
+                        checkModelPermission(project, request.getUuid());
+                        validatePartitionDateColumn(request);
 
-                val modelId = request.getUuid();
-                val modelManager = getManager(NDataModelManager.class, project);
-                val originModel = modelManager.getDataModelDesc(modelId);
+                        val modelId = request.getUuid();
+                        val modelManager = getManager(NDataModelManager.class, project);
+                        val originModel = modelManager.getDataModelDesc(modelId);
 
-                val copyModel = modelManager.copyForWrite(originModel);
-                UpdateImpact updateImpact = semanticUpdater.updateModelColumns(copyModel, request, true);
-                copyModel.init(modelManager.getConfig(), project, modelManager.getCCRelatedModels(copyModel));
+                        val copyModel = modelManager.copyForWrite(originModel);
+                        UpdateImpact updateImpact = semanticUpdater.updateModelColumns(copyModel, request, true);
+                        copyModel.init(modelManager.getConfig(), project, modelManager.getCCRelatedModels(copyModel));
 
-                BaseIndexUpdateHelper baseIndexUpdater = new BaseIndexUpdateHelper(originModel,
-                        needHandleBaseIndexType(request));
+                        BaseIndexUpdateHelper baseIndexUpdater = new BaseIndexUpdateHelper(originModel,
+                                needHandleBaseIndexType(request));
 
-                preProcessBeforeModelSave(copyModel, project);
-                val updated = modelManager.updateDataModelDesc(copyModel);
+                        preProcessBeforeModelSave(copyModel, project);
+                        val updated = modelManager.updateDataModelDesc(copyModel);
 
-                // 1. delete old internal measure
-                // 2. expand new measures
-                // the ordering of the two steps is important as tomb internal measure
-                // should not be used to construct new expandable measures
-                semanticUpdater.deleteExpandableMeasureInternalMeasures(updated);
-                semanticUpdater.expandExpandableMeasure(updated);
-                preProcessBeforeModelSave(updated, project);
-                getManager(NDataModelManager.class, project).updateDataModelDesc(updated);
+                        // 1. delete old internal measure
+                        // 2. expand new measures
+                        // the ordering of the two steps is important as tomb internal measure
+                        // should not be used to construct new expandable measures
+                        semanticUpdater.deleteExpandableMeasureInternalMeasures(updated);
+                        semanticUpdater.expandExpandableMeasure(updated);
+                        preProcessBeforeModelSave(updated, project);
+                        getManager(NDataModelManager.class, project).updateDataModelDesc(updated);
 
-                indexPlanService.updateForMeasureChange(project, modelId, updateImpact.getInvalidMeasures(),
-                        updateImpact.getReplacedMeasures());
-                Set<Integer> affectedSet = updateImpact.getAffectedIds();
-                val affectedLayoutSet = getAffectedLayouts(project, modelId, affectedSet);
-                if (affectedLayoutSet.size() > 0)
-                    indexPlanService.reloadLayouts(project, modelId, affectedLayoutSet);
-                indexPlanService.clearShardColIfNotDim(project, modelId);
+                        indexPlanService.updateForMeasureChange(project, modelId, updateImpact.getInvalidMeasures(),
+                                updateImpact.getReplacedMeasures());
+                        Set<Integer> affectedSet = updateImpact.getAffectedIds();
+                        val affectedLayoutSet = getAffectedLayouts(project, modelId, affectedSet);
+                        if (affectedLayoutSet.size() > 0)
+                            indexPlanService.reloadLayouts(project, modelId, affectedLayoutSet);
+                        indexPlanService.clearShardColIfNotDim(project, modelId);
 
-                var newModel = modelManager.getDataModelDesc(modelId);
+                        var newModel = modelManager.getDataModelDesc(modelId);
 
-                checkIndexColumnExist(project, modelId, originModel);
+                        checkIndexColumnExist(project, modelId, originModel);
 
-                if (isCheckFlat) {
-                    checkFlatTableSql(newModel);
-                }
+                        if (isCheckFlat) {
+                            checkFlatTableSql(newModel);
+                        }
 
-                val needBuild = semanticUpdater.doHandleSemanticUpdate(project, modelId, originModel,
-                        request.getStart(), request.getEnd());
+                        val needBuild = semanticUpdater.doHandleSemanticUpdate(project, modelId, originModel,
+                                request.getStart(), request.getEnd());
 
-                updateExcludedCheckerResult(project, request);
-                baseIndexUpdater.setSecondStorageEnabled(request.isWithSecondStorage());
-                BuildBaseIndexResponse baseIndexResponse = baseIndexUpdater.update(indexPlanService);
-                if (!request.isSaveOnly() && (needBuild || baseIndexResponse.hasIndexChange())) {
-                    semanticUpdater.buildForModel(project, modelId);
-                }
-                modelChangeSupporters.forEach(listener -> listener.onUpdate(project, modelId));
+                        updateExcludedCheckerResult(project, request);
+                        baseIndexUpdater.setSecondStorageEnabled(request.isWithSecondStorage());
+                        BuildBaseIndexResponse baseIndexResponse = baseIndexUpdater.update(indexPlanService);
+                        if (!request.isSaveOnly() && (needBuild || baseIndexResponse.hasIndexChange())) {
+                            semanticUpdater.buildForModel(project, modelId);
+                        }
+                        modelChangeSupporters.forEach(listener -> listener.onUpdate(project, modelId));
 
-                changeSecondStorageIfNeeded(project, request, () -> !semanticUpdater.isSignificantChange(originModel,
-                        modelManager.getDataModelDesc(modelId)));
-                return baseIndexResponse;
-            }, project);
+                        changeSecondStorageIfNeeded(project, request, () -> !semanticUpdater
+                                .isSignificantChange(originModel, modelManager.getDataModelDesc(modelId)));
+                        return baseIndexResponse;
+                    }).build();
+            return EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(params);
         } catch (TransactionException te) {
             Throwable root = te.getCause();
             if (root instanceof RuntimeException) {
@@ -3363,7 +3366,8 @@ public class ModelService extends AbstractModelService implements TableModelSupp
         return EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
             NDataModelManager modelMgr = getManager(NDataModelManager.class, project);
             semanticUpdater.updateModelColumns(broken, modelRequest);
-            NDataModel model = modelMgr.updateDataModelDesc(broken);
+            NDataModel copy = modelManager.copyForWrite(broken);
+            NDataModel model = modelMgr.updateDataModelDesc(copy);
             modelMgr.updateDataModel(model.getUuid(), copyForWrite -> {
                 modelChangeSupporters.forEach(listener -> listener.onUpdateSingle(project, model.getUuid()));
                 saveDateFormatIfNotExist(project, model.getUuid(), format);

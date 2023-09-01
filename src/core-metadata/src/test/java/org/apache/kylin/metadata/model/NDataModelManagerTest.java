@@ -19,10 +19,12 @@
 package org.apache.kylin.metadata.model;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.kylin.common.KapConfig;
+import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.Pair;
@@ -31,6 +33,7 @@ import org.apache.kylin.common.hystrix.NCircuitBreaker;
 import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
 import org.apache.kylin.metadata.model.NDataModel.Measure;
+import org.apache.kylin.metadata.project.EnhancedUnitOfWork;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -275,4 +278,51 @@ public class NDataModelManagerTest extends NLocalFileMetadataTestCase {
             NCircuitBreaker.stop();
         }
     }
+
+    @Test
+    public void createProjectParallel() {
+        KylinConfig conf = getTestConfig();
+        NDataModelManager manager = NDataModelManager.getInstance(conf, projectDefault);
+        int maxModelNum = manager.listAllModels().size() + 1;
+        getTestConfig().setProperty("kylin.circuit-breaker.threshold.model", String.valueOf(maxModelNum));
+
+        NCircuitBreaker.start(KapConfig.wrap(getTestConfig()));
+
+        NDataModel tmpModel = manager.listAllModels().stream().filter(model -> model.getComputedColumnDescs().isEmpty())
+                .findFirst().get();
+        List<NDataModel> newModels = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            newModels.add(cloneModel(tmpModel));
+        }
+        List<Thread> threads = new ArrayList<>();
+        newModels.forEach(model -> threads.add(new Thread(() -> {
+            EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
+                NDataModelManager mManager = NDataModelManager.getInstance(KylinConfig.getInstanceFromEnv(),
+                        projectDefault);
+                return mManager.createDataModelDesc(model, "ADMIN");
+            }, projectDefault);
+        })));
+        threads.forEach(Thread::start);
+        threads.forEach(thread -> {
+            try {
+                thread.join();
+            } catch (InterruptedException ignored) {
+            }
+        });
+
+        NCircuitBreaker.stop();
+        Assert.assertEquals(maxModelNum, manager.listAllModels().size());
+    }
+
+    private NDataModel cloneModel(NDataModel model) {
+        NDataModel newModel = new NDataModel(model);
+        String uuid = RandomUtil.randomUUIDStr();
+        newModel.setAlias(newModel.getAlias() + uuid);
+        newModel.setProject(model.getProject());
+        newModel.setUuid(uuid);
+        newModel.setMvcc(-1);
+        newModel.setComputedColumnDescs(new ArrayList<>());
+        return newModel;
+    }
+
 }

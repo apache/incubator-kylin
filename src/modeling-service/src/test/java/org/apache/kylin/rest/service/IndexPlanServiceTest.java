@@ -345,12 +345,13 @@ public class IndexPlanServiceTest extends SourceTestCase {
         val readySegs = dfManager.getDataflow(id).getSegments(SegmentStatusEnum.READY, SegmentStatusEnum.WARNING);
         val last = readySegs.getLatestReadySegment().getSegDetails();
         List<NDataLayout> lists = Lists.newArrayList(last.getLayouts());
+        List<Long> toAddLayout = new ArrayList<>();
         saved.getRuleBasedIndex().getLayoutIdMapping().forEach(layoutId -> {
             if (saved.getLayoutEntity(layoutId).getDimsIds().size() > 1) {
-                lists.add(NDataLayout.newDataLayout(last, layoutId));
+                toAddLayout.add(layoutId);
             }
         });
-        dfManager.updateDataflowDetailsLayouts(readySegs.getLatestReadySegment(), lists);
+        dfManager.updateDataflowDetailsLayouts(readySegs.getLatestReadySegment(), Collections.emptyList(), toAddLayout);
         indexPlanManager.updateIndexPlan(id, copyForWrite -> {
             copyForWrite.markIndexesToBeDeleted(copyForWrite.getId(), saved.getRuleBaseLayouts().stream()
                     .filter(layoutEntity -> layoutEntity.getColOrder().size() == 3).collect(Collectors.toSet()));
@@ -971,7 +972,9 @@ public class IndexPlanServiceTest extends SourceTestCase {
         });
 
         Assert.assertEquals(WARNING, dataflowManager.getDataflow(modelId).getLastSegment().getStatus());
-        dataflowManager.updateDataflowDetailsLayouts(df.getLastSegment(), Lists.newArrayList());
+        List<Long> toRemoveLayouts = df.getLastSegment().getSegDetails().getAllLayouts().stream()
+                .map(NDataLayout::getLayoutId).collect(Collectors.toList());
+        dataflowManager.updateDataflowDetailsLayouts(df.getLastSegment(), toRemoveLayouts, Collections.emptyList());
         Assert.assertEquals(READY, dataflowManager.getDataflow(modelId).getLastSegment().getStatus());
     }
 
@@ -1270,8 +1273,8 @@ public class IndexPlanServiceTest extends SourceTestCase {
 
         //remove tobedelete layout from seg1
         val newDf = dfManager.getDataflow(modelId);
-        dfManager.updateDataflowDetailsLayouts(newDf.getSegment(seg1.getId()), layouts1.stream()
-                .filter(layout -> layout.getLayoutId() != tobeDeleteLayoutId).collect(Collectors.toList()));
+        dfManager.updateDataflowDetailsLayouts(newDf.getSegment(seg1.getId()),
+                Collections.singletonList(tobeDeleteLayoutId), Collections.emptyList());
         //segment1
         Assert.assertEquals(1,
                 indexPlanService.getIndexGraph(getProject(), modelId, 100).getSegmentToComplementCount());

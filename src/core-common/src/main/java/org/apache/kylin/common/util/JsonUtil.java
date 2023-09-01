@@ -38,6 +38,10 @@ import java.util.function.BiConsumer;
 
 import javax.annotation.Nullable;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.databind.util.LRUMap;
+import com.fasterxml.jackson.databind.util.LookupCache;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
 import org.apache.kylin.common.persistence.Serializer;
 
@@ -59,13 +63,17 @@ public class JsonUtil {
             .setFailOnUnknownId(false);
 
     static {
+        LookupCache<Object, JavaType> cache = new LRUMap<>(16, 2000);
+        TypeFactory customTypeFactory = TypeFactory.defaultInstance().withCache(cache);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true)
                 .setConfig(mapper.getSerializationConfig().withView(PersistenceView.class));
         mapper.setFilterProvider(simpleFilterProvider);
+        mapper.setTypeFactory(customTypeFactory);
         indentMapper.configure(SerializationFeature.INDENT_OUTPUT, true)
                 .setConfig(indentMapper.getSerializationConfig().withView(PersistenceView.class));
         indentMapper.setFilterProvider(simpleFilterProvider);
+        indentMapper.setTypeFactory(customTypeFactory);
     }
 
     public static <T> T readValue(File src, Class<T> valueType) throws IOException {

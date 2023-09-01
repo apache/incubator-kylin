@@ -75,23 +75,30 @@ public class KafkaConfigManager {
         }
         return crud.get(id);
     }
+    
+    private KafkaConfig copyForWrite(KafkaConfig kafkaConfig) {
+        return crud.copyForWrite(kafkaConfig);
+    }
 
     public KafkaConfig createKafkaConfig(KafkaConfig kafkaConfig) {
         if (kafkaConfig == null || StringUtils.isEmpty(kafkaConfig.getName())) {
             throw new IllegalArgumentException();
         }
-        if (crud.contains(kafkaConfig.resourceName()))
+        KafkaConfig copy = copyForWrite(kafkaConfig);
+        if (crud.contains(copy.resourceName()))
             throw new IllegalArgumentException("Kafka Config '" + kafkaConfig.getName() + "' already exists");
 
-        kafkaConfig.updateRandomUuid();
-        return crud.save(kafkaConfig);
+        copy.updateRandomUuid();
+        return crud.save(copy);
     }
 
     public KafkaConfig updateKafkaConfig(KafkaConfig kafkaConfig) {
-        if (!crud.contains(kafkaConfig.resourceName())) {
+        KafkaConfig copy = copyForWrite(kafkaConfig);
+        if (!crud.contains(copy.resourceName())) {
             throw new IllegalArgumentException("Kafka Config '" + kafkaConfig.getName() + "' does not exist.");
         }
-        return crud.save(kafkaConfig);
+        kafkaConfig.copyPropertiesTo(copy);
+        return crud.save(copy);
     }
 
     public KafkaConfig removeKafkaConfig(String tableIdentity) {

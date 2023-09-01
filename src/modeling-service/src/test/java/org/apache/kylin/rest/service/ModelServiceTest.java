@@ -1761,8 +1761,7 @@ public class ModelServiceTest extends SourceTestCase {
         //remove tobedelete layout from seg1
         val newDf = dfManager.getDataflow(modelId);
         dfManager.updateDataflowDetailsLayouts(newDf.getSegments().get(0),
-                newDf.getSegments().get(0).getLayoutsMap().values().stream()
-                        .filter(layout -> layout.getLayoutId() != tobeDeleteLayoutId).collect(Collectors.toList()));
+                Collections.singletonList(tobeDeleteLayoutId), Collections.emptyList());
 
         // remove seg2 and tobedelete layout should be cleared from indexplan
         val update3 = new NDataflowUpdate(newDf.getUuid());

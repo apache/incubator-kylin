@@ -35,20 +35,21 @@ import org.apache.kylin.common.hystrix.NCircuitBreaker;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.Serializer;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
+import org.apache.kylin.common.persistence.lock.ModuleLockEnum;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.scheduler.EventBusFactory;
 import org.apache.kylin.common.util.ClassUtil;
 import org.apache.kylin.common.util.JsonUtil;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.apache.kylin.metadata.cube.model.NDataflow;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
 import org.apache.kylin.metadata.model.exception.ModelBrokenException;
 
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
-
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
 
@@ -117,6 +118,7 @@ public class NDataModelManager {
                     model.setJoinTables(entity.getJoinTables());
                     model.setDependencies(model.calcDependencies());
                     model.setModelType(entity.getModelType());
+                    model.setLastModified(entity.getLastModified());
 
                     postModelBrokenEvent(entity);
                 }
@@ -241,6 +243,7 @@ public class NDataModelManager {
     public NDataModel createDataModelDesc(NDataModel model, String owner) {
         NDataModel copy = copyForWrite(model);
 
+        MemoryLockUtils.manuallyLockModule(project, ModuleLockEnum.MODEL, getStore());
         checkDuplicateModel(model);
 
         //check model count
@@ -283,21 +286,29 @@ public class NDataModelManager {
     }
 
     public NDataModel updateDataModel(String modelId, NDataModelUpdater updater) {
-        val cached = getDataModelDesc(modelId);
+        NDataModel cached = getDataModelDesc(modelId);
         if (cached == null) {
             throw new KylinException(ErrorCodeServer.MODEL_ID_NOT_EXIST, modelId);
         }
+        if (cached.isBroken()) {
+            cached = getDataModelDescWithoutInit(modelId);
+        }
         val copy = copyForWrite(cached);
         updater.modify(copy);
-        return updateDataModelDesc(copy);
+        return saveModel(copy);
     }
 
+    /**
+     * @deprecated Use updateDataModel(String modelId, NDataModelUpdater updater) instead.
+     */
+    @Deprecated
     public NDataModel updateDataModelDesc(NDataModel desc) {
         String name = desc.getUuid();
         if (!crud.contains(desc.getUuid())) {
             throw new IllegalArgumentException("Model '" + name + "' does not exist.");
         }
-        return saveModel(desc);
+        desc.init(config, project, getCCRelatedModels(desc));
+        return updateDataModel(desc.getUuid(), desc::copyPropertiesTo);
     }
 
     public NDataModel updateDataBrokenModelDesc(NDataModel desc) {
@@ -318,6 +329,10 @@ public class NDataModelManager {
 
     public NDataModel copyForWrite(NDataModel nDataModel) {
         return crud.copyForWrite(nDataModel);
+    }
+
+    public NDataModel copy(NDataModel nDataModel) {
+        return copyBySerialization(nDataModel);
     }
 
     /**

@@ -23,6 +23,7 @@ import java.util.Locale;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.common.persistence.transaction.UnitOfWorkParams;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.Unsafe;
 import org.apache.kylin.guava30.shaded.common.io.ByteSource;
@@ -90,10 +91,11 @@ public class KylinPasswordResetCLI {
 
         user.clearAuthenticateFailedRecord();
 
-        UnitOfWork.doInTransactionWithRetry(
-                () -> ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv()).checkAndPutResource(id,
-                        ByteSource.wrap(JsonUtil.writeValueAsBytes(user)), aclStore.getResource(id).getMvcc()),
-                UnitOfWork.GLOBAL_UNIT);
+        UnitOfWork.doInTransactionWithRetry(UnitOfWorkParams.builder().unitName(UnitOfWork.GLOBAL_UNIT)
+                .useProjectLock(true)
+                .processor(() -> ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv()).checkAndPutResource(
+                        id, ByteSource.wrap(JsonUtil.writeValueAsBytes(user)), aclStore.getResource(id).getMvcc()))
+                .build());
 
         logger.trace("update user : {}", user.getUsername());
         logger.info("User {}'s password is set to default password.", user.getUsername());

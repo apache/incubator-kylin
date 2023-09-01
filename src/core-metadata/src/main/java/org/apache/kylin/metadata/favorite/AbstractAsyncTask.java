@@ -18,8 +18,11 @@
 
 package org.apache.kylin.metadata.favorite;
 
+import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
+import org.apache.kylin.metadata.MetadataConstants;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.EqualsAndHashCode;
@@ -36,7 +39,15 @@ public class AbstractAsyncTask extends RootPersistentEntity {
     @JsonProperty("task_type")
     private String taskType;
 
+    @JsonIgnore
+    private String project;
+
     public AbstractAsyncTask(String taskType) {
         this.taskType = taskType;
+    }
+
+    @Override
+    public String getResourcePath() {
+        return "/" + project + ResourceStore.ASYNC_TASK + "/" + uuid + MetadataConstants.FILE_SURFIX;
     }
 }

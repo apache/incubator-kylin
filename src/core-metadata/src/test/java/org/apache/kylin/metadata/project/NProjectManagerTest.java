@@ -19,6 +19,7 @@
 package org.apache.kylin.metadata.project;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 
 import org.apache.hadoop.fs.FileSystem;
@@ -121,5 +122,36 @@ public class NProjectManagerTest extends NLocalFileMetadataTestCase {
             Assert.assertNull(
                     project.getConfig().getExtendedOverrides().get("kylin.query.implicit-computed-column-convert"));
         }
+    }
+
+    @Test
+    public void createProjectParallel() throws InterruptedException {
+        KylinConfig conf = getTestConfig();
+        NProjectManager manager = NProjectManager.getInstance(conf);
+        int projectNum = manager.listAllProjects().size();
+        getTestConfig().setProperty("kylin.circuit-breaker.threshold.project", String.valueOf(projectNum + 1));
+
+        NCircuitBreaker.start(KapConfig.wrap(getTestConfig()));
+
+        Thread t1 = new Thread(() -> {
+            EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
+                NProjectManager pManager = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv());
+                return pManager.createProject("project_tmp_1", "ADMIN", "", new LinkedHashMap<>());
+            }, "_global");
+        });
+        Thread t2 = new Thread(() -> {
+            EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
+                NProjectManager pManager = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv());
+                return pManager.createProject("project_tmp_2", "ADMIN", "", new LinkedHashMap<>());
+            }, "_global");
+        });
+
+        t1.start();
+        t2.start();
+        t1.join();
+        t2.join();
+
+        NCircuitBreaker.stop();
+        Assert.assertEquals(projectNum + 1, manager.listAllProjects().size());
     }
 }

@@ -99,6 +99,7 @@ public class JdbcMetadataStore extends MetadataStore {
     @Getter
     private final JdbcTemplate jdbcTemplate;
     private final String table;
+    private final boolean isUT;
 
     public JdbcMetadataStore(KylinConfig config) throws Exception {
         super(config);
@@ -108,6 +109,7 @@ public class JdbcMetadataStore extends MetadataStore {
         transactionManager = new DataSourceTransactionManager(dataSource);
         jdbcTemplate = new JdbcTemplate(dataSource);
         table = url.getIdentifier();
+        isUT = config.isUTEnv();
         if (config.isMetadataAuditLogEnabled()) {
             auditLogStore = new JdbcAuditLogStore(config, jdbcTemplate, transactionManager,
                     table + JdbcAuditLogStore.AUDIT_LOG_SUFFIX);
@@ -129,6 +131,7 @@ public class JdbcMetadataStore extends MetadataStore {
                             String.format(Locale.ROOT, SELECT_BY_KEY_MVCC_SQL, table, path, mvcc - 1),
                             RAW_RESOURCE_ROW_MAPPER);
                     if (CollectionUtils.isEmpty(result)) {
+                        assert isUT || mvcc == 0;
                         affectedRow = insert(String.format(Locale.ROOT, INSERT_SQL, table), path, bs, ts, mvcc);
                     } else {
                         affectedRow = update(String.format(Locale.ROOT, UPDATE_SQL, table), bs, mvcc, ts, path,

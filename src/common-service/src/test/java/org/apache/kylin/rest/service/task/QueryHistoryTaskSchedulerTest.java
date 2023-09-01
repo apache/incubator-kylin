@@ -33,7 +33,6 @@ import org.apache.kylin.metadata.cube.model.NDataflowManager;
 import org.apache.kylin.metadata.favorite.AccelerateRuleUtil;
 import org.apache.kylin.metadata.favorite.AsyncAccelerationTask;
 import org.apache.kylin.metadata.favorite.AsyncTaskManager;
-import org.apache.kylin.metadata.favorite.QueryHistoryIdOffset;
 import org.apache.kylin.metadata.favorite.QueryHistoryIdOffsetManager;
 import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.kylin.metadata.model.TableExtDesc;
@@ -144,10 +143,10 @@ public class QueryHistoryTaskSchedulerTest extends NLocalFileMetadataTestCase {
 
         // before update id offset
         QueryHistoryIdOffsetManager idOffsetManager = QueryHistoryIdOffsetManager.getInstance(getTestConfig(), PROJECT);
-        QueryHistoryIdOffset queryHistoryIdOffset = idOffsetManager.get();
-        queryHistoryIdOffset.setOffset(999L);
-        queryHistoryIdOffset.setStatMetaUpdateOffset(999L);
-        idOffsetManager.save(queryHistoryIdOffset);
+        idOffsetManager.updateOffset(copyForWrite -> {
+            copyForWrite.setOffset(999L);
+            copyForWrite.setStatMetaUpdateOffset(999L);
+        });
         Assert.assertEquals(999L, idOffsetManager.get().getOffset());
         // run update
         qhAccelerateScheduler.resetOffsetId();
@@ -164,10 +163,10 @@ public class QueryHistoryTaskSchedulerTest extends NLocalFileMetadataTestCase {
         Mockito.when(qhAccelerateScheduler.queryHistoryDAO.getQueryHistoryMaxId(Mockito.anyString())).thenReturn(12L);
         // before update id offset
         QueryHistoryIdOffsetManager idOffsetManager = QueryHistoryIdOffsetManager.getInstance(getTestConfig(), PROJECT);
-        QueryHistoryIdOffset queryHistoryIdOffset = idOffsetManager.get();
-        queryHistoryIdOffset.setOffset(9L);
-        queryHistoryIdOffset.setStatMetaUpdateOffset(9L);
-        idOffsetManager.save(queryHistoryIdOffset);
+        idOffsetManager.updateOffset(copyForWrite -> {
+            copyForWrite.setOffset(9L);
+            copyForWrite.setStatMetaUpdateOffset(9L);
+        });
         Assert.assertEquals(9L, idOffsetManager.get().getOffset());
 
         // run update

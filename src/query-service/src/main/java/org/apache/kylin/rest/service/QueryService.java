@@ -75,6 +75,7 @@ import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
 import org.apache.kylin.common.persistence.Serializer;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
 import org.apache.kylin.common.scheduler.EventBusFactory;
 import org.apache.kylin.common.util.AddressUtil;
 import org.apache.kylin.common.util.JsonUtil;
@@ -360,7 +361,8 @@ public class QueryService extends BasicService implements CacheSignatureQuerySup
     public void saveQuery(final String creator, final String project, final Query query) throws IOException {
         aclEvaluate.checkProjectQueryPermission(project);
         Message msg = MsgPicker.getMsg();
-        val record = getSavedQueries(creator, project);
+        val record = getSavedQueries(creator, project, true);
+        assert record != null;
         List<Query> currentQueries = record.getQueries();
         if (currentQueries.stream().map(Query::getName).collect(Collectors.toSet()).contains(query.getName()))
             throw new KylinException(SAVE_QUERY_FAILED,
@@ -373,18 +375,31 @@ public class QueryService extends BasicService implements CacheSignatureQuerySup
     @Transaction(project = 1)
     public void removeSavedQuery(final String creator, final String project, final String id) throws IOException {
         aclEvaluate.checkProjectQueryPermission(project);
-        val record = getSavedQueries(creator, project);
+        val record = getSavedQueries(creator, project, true);
+        assert record != null;
         record.setQueries(record.getQueries().stream().filter(q -> !q.getId().equals(id)).collect(Collectors.toList()));
         getStore().checkAndPutResource(getQueryKeyById(project, creator), record, QueryRecordSerializer.getInstance());
     }
 
     public QueryRecord getSavedQueries(final String creator, final String project) throws IOException {
+        return getSavedQueries(creator, project, false);
+    }
+
+    private QueryRecord getSavedQueries(final String creator, final String project, boolean withWriteLock)
+            throws IOException {
         aclEvaluate.checkProjectQueryPermission(project);
         if (null == creator) {
             return null;
         }
-        QueryRecord record = getStore().getResource(getQueryKeyById(project, creator),
-                QueryRecordSerializer.getInstance());
+        String resPath = getQueryKeyById(project, creator);
+        ResourceStore resourceStore = getStore();
+        QueryRecord record;
+        if (withWriteLock) {
+            record = MemoryLockUtils.doWithLock(null, resPath, false, resourceStore,
+                    () -> resourceStore.getResource(resPath, QueryRecordSerializer.getInstance()));
+        } else {
+            record = getStore().getResource(resPath, QueryRecordSerializer.getInstance());
+        }
         if (record == null) {
             return new QueryRecord();
         }

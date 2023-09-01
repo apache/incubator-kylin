@@ -32,18 +32,17 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.KylinConfigExt;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.persistence.ResourceStore;
-import org.apache.kylin.cube.model.validation.ValidateContext;
-import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.cube.model.validation.ValidateContext;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.apache.kylin.metadata.cube.cuboid.CuboidScheduler;
 import org.apache.kylin.metadata.cube.model.validation.NIndexPlanValidator;
 import org.apache.kylin.metadata.model.NDataModel;
 import org.apache.kylin.metadata.model.NDataModelManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 
 import lombok.val;
 
@@ -94,6 +93,13 @@ public class NIndexPlanManager {
         this.crud.setCheckCopyOnWrite(true);
     }
 
+    public IndexPlan copyForWrite(IndexPlan plan) {
+        if (plan.getProject() == null) {
+            plan.setProject(project);
+        }
+        return crud.copyForWrite(plan);
+    }
+
     public IndexPlan copy(IndexPlan plan) {
         return crud.copyBySerialization(plan);
     }
@@ -123,8 +129,6 @@ public class NIndexPlanManager {
     public IndexPlan createIndexPlan(IndexPlan indexPlan) {
         if (indexPlan.getUuid() == null)
             throw new IllegalArgumentException();
-        if (crud.contains(indexPlan.getUuid()))
-            throw new IllegalArgumentException("IndexPlan '" + indexPlan.getUuid() + "' already exists");
 
         try {
             // init the cube plan if not yet
@@ -135,18 +139,22 @@ public class NIndexPlanManager {
             indexPlan.addError(e.getMessage());
         }
 
+        IndexPlan copy = copyForWrite(indexPlan);
+        if (crud.contains(copy.getUuid()))
+            throw new IllegalArgumentException("IndexPlan '" + indexPlan.getUuid() + "' already exists");
+
         // Check base validation
-        if (!indexPlan.getError().isEmpty()) {
-            throw new IllegalArgumentException(indexPlan.getErrorMsg());
+        if (!copy.getError().isEmpty()) {
+            throw new IllegalArgumentException(copy.getErrorMsg());
         }
         // Semantic validation
         NIndexPlanValidator validator = new NIndexPlanValidator();
-        ValidateContext context = validator.validate(indexPlan);
+        ValidateContext context = validator.validate(copy);
         if (!context.ifPass()) {
-            throw new IllegalArgumentException(indexPlan.getErrorMsg());
+            throw new IllegalArgumentException(copy.getErrorMsg());
         }
 
-        return save(indexPlan);
+        return save(copy);
     }
 
     public interface NIndexPlanUpdater {
@@ -155,14 +163,18 @@ public class NIndexPlanManager {
 
     public IndexPlan updateIndexPlan(String indexPlanId, NIndexPlanUpdater updater) {
         IndexPlan cached = getIndexPlan(indexPlanId);
-        IndexPlan copy = copy(cached);
+        IndexPlan copy = copyForWrite(cached);
         updater.modify(copy);
-        return updateIndexPlan(copy);
+        return innerUpdateIndexPlan(copy);
     }
 
     // use the NIndexPlanUpdater instead
     @Deprecated
     public IndexPlan updateIndexPlan(IndexPlan indexPlan) {
+        return updateIndexPlan(indexPlan.getUuid(), indexPlan::copyPropertiesTo);
+    }
+
+    private IndexPlan innerUpdateIndexPlan(IndexPlan indexPlan) {
         if (indexPlan.isCachedAndShared())
             throw new IllegalStateException();
 

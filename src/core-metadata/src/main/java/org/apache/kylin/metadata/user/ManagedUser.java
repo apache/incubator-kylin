@@ -51,6 +51,8 @@ import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 
+import static org.apache.kylin.common.persistence.ResourceStore.USER_ROOT;
+
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE, isGetterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
 @Getter
@@ -141,6 +143,11 @@ public class ManagedUser extends RootPersistentEntity implements UserDetails, Us
         caterLegacy();
 
         this.setUuid(RandomUtil.randomUUIDStr());
+    }
+
+    @Override
+    public String getResourcePath() {
+        return USER_ROOT + "/" + username;
     }
 
     @Override

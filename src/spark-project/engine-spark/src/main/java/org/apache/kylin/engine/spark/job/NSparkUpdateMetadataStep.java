@@ -18,6 +18,7 @@
 
 package org.apache.kylin.engine.spark.job;
 
+import org.apache.kylin.common.persistence.transaction.UnitOfWorkParams;
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import lombok.val;
 import org.apache.hadoop.fs.FileStatus;
@@ -61,10 +62,11 @@ public class NSparkUpdateMetadataStep extends AbstractExecutable {
         Preconditions.checkArgument(parent instanceof DefaultExecutableOnModel);
         val handler = ((DefaultExecutableOnModel) parent).getHandler();
         try {
-            EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
+            EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(UnitOfWorkParams.builder().processor(() -> {
                 handler.handleFinished();
                 return null;
-            }, context.getEpochId(), handler.getProject());
+            }).retryMoreTimeForDeadLockException(true).epochId(context.getEpochId()).unitName(handler.getProject())
+                    .build());
             cleanExpiredSnapshot();
             return ExecuteResult.createSucceed();
         } catch (Throwable throwable) {

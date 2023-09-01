@@ -89,6 +89,7 @@ public abstract class MetadataStore {
 
     public void batchUpdate(UnitMessages unitMessages, boolean skipAuditLog, String unitPath, long epochId)
             throws Exception {
+        UnitOfWork.get().onStartUnitUpdate();
         for (Event event : unitMessages.getMessages()) {
             if (event instanceof ResourceCreateOrUpdateEvent) {
                 val rawResource = ((ResourceCreateOrUpdateEvent) event).getCreatedOrUpdated();

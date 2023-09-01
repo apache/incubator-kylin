@@ -22,11 +22,10 @@ import java.lang.reflect.Method;
 import java.util.Set;
 
 import org.apache.kylin.common.persistence.RootPersistentEntity;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.cglib.proxy.MethodInterceptor;
 import org.springframework.cglib.proxy.MethodProxy;
-
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -39,7 +38,7 @@ public class BrokenEntityProxy implements MethodInterceptor {
             "toString", "getMvcc", "setMvcc", "setConfig", "getConfig", "getModelAlias", "getModel",
             "getRootFactTableName", "setRootFactTableName", "getJoinTables", "setJoinTables", "calcDependencies",
             "getDependencies", "setDependencies", "setHandledAfterBroken", "isHandledAfterBroken", "getOwner",
-            "setOwner", "isMultiPartitionModel",
+            "setOwner", "isMultiPartitionModel", "setLastModified",
             // for broken fusion model
             "getModelId", "getModelType", "isStreaming", "isFusionModel", "getModelTypeFromTable", "isAccessible",
             "fusionModelStreamingPart", "fusionModelBatchPart", "setModelType", "getLastModified");
@@ -65,6 +64,11 @@ public class BrokenEntityProxy implements MethodInterceptor {
         if (method.getName().equals("checkIsNotCachedAndShared")) {
             return null;
         }
+
+        if (method.getName().equals("getLockPaths")) {
+            return null;
+        }
+
         throw new RuntimeException("call on Broken Entity's " + method.getName() + " method");
     }
 

@@ -423,10 +423,11 @@ public class JobManagerTest extends NLocalFileMetadataTestCase {
         val segmentRange = new SegmentRange.TimePartitionedSegmentRange(startTime, endTime);
         val df = dfm.getDataflow(modelId);
         val newSegment = dfm.appendSegment(df, segmentRange, status, partitions);
-        newSegment.getMultiPartitions().forEach(partition -> {
+        val copySegment = dfm.copyForWrite(df).getSegment(newSegment.getId());
+        copySegment.getMultiPartitions().forEach(partition -> {
             partition.setStatus(PartitionStatusEnum.READY);
         });
-        return newSegment;
+        return copySegment;
     }
 
     private NDataLayout generateLayoutForMultiPartition(String modelId, String segmentId, List<String> partitionValues,

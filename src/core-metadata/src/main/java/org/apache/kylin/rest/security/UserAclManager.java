@@ -111,7 +111,7 @@ public class UserAclManager {
     public void addPermission(String name, Set<Permission> permissions) {
         val username = filterUsername(name);
         if (!username.isPresent()) {
-            UserAcl userAcl = new UserAcl(name, permissions);
+            UserAcl userAcl = crud.copyForWrite(new UserAcl(name, permissions));
             crud.save(userAcl);
         } else {
             UserAcl userAcl = get(username.get());
@@ -122,7 +122,7 @@ public class UserAclManager {
     public void addDataQueryProject(String name, String project) {
         val username = filterUsername(name);
         if (!username.isPresent()) {
-            UserAcl userAcl = new UserAcl(name, Collections.emptySet());
+            UserAcl userAcl = crud.copyForWrite(new UserAcl(name, Collections.emptySet()));
             userAcl.addDataQueryProject(project);
             crud.save(userAcl);
         } else {

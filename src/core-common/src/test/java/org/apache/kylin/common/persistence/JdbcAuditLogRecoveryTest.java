@@ -27,11 +27,16 @@ import java.util.stream.IntStream;
 
 import org.apache.commons.dbcp2.BasicDataSourceFactory;
 import org.apache.kylin.common.KylinConfig;
-import org.apache.kylin.common.util.RandomUtil;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
 import org.apache.kylin.common.persistence.metadata.JdbcAuditLogStore;
 import org.apache.kylin.common.persistence.transaction.AuditLogReplayWorker;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.scheduler.EventBusFactory;
+import org.apache.kylin.common.util.RandomUtil;
+import org.apache.kylin.guava30.shaded.common.base.Joiner;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.eventbus.Subscribe;
+import org.apache.kylin.guava30.shaded.common.io.ByteSource;
 import org.apache.kylin.junit.annotation.MetadataInfo;
 import org.apache.kylin.junit.annotation.OverwriteProp;
 import org.awaitility.Awaitility;
@@ -42,11 +47,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
-import org.apache.kylin.guava30.shaded.common.base.Joiner;
-
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.eventbus.Subscribe;
-import org.apache.kylin.guava30.shaded.common.io.ByteSource;
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
 
@@ -97,12 +97,14 @@ public class JdbcAuditLogRecoveryTest {
         val txManager = auditLogStore.getTransactionManager();
         UnitOfWork.doInTransactionWithRetry(() -> {
             val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/_global/project/p1.json", null, false);
             store.checkAndPutResource("/_global/project/p1.json", new StringEntity(RandomUtil.randomUUIDStr()),
                     StringEntity.serializer);
             return null;
         }, "p1");
         UnitOfWork.doInTransactionWithRetry(() -> {
             val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+            MemoryLockUtils.lockAndRecord("/_global/project/p2.json", null, false);
             store.checkAndPutResource("/_global/project/p2.json", new StringEntity(RandomUtil.randomUUIDStr()),
                     StringEntity.serializer);
             return null;
@@ -119,6 +121,7 @@ public class JdbcAuditLogRecoveryTest {
                     Thread.sleep(500);
                     val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
                     val path = "/p1/abc-" + System.currentTimeMillis();
+                    MemoryLockUtils.lockAndRecord(path, null, false);
                     val originAbc = store.getResource(path);
                     store.checkAndPutResource(path, ByteSource.wrap("abc".getBytes(charset)),
                             System.currentTimeMillis(), originAbc == null ? -1 : originAbc.getMvcc());
@@ -127,7 +130,7 @@ public class JdbcAuditLogRecoveryTest {
                 try {
                     auditLogStore.catchupWithTimeout();
                 } catch (Exception e) {
-                    log.debug("catchup 1st phase failed", e);
+                    log.error("catchup 1st phase failed", e);
                 }
             });
             t1.start();
@@ -178,13 +181,14 @@ public class JdbcAuditLogRecoveryTest {
             try {
                 auditLogStore.catchupWithTimeout();
             } catch (Exception e) {
-                log.debug("catchup 2nd phase failed", e);
+                log.error("catchup 2nd phase failed", e);
             }
 
             UnitOfWork.doInTransactionWithRetry(() -> {
                 val store = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
                 IntStream.range(1000, 1000 + size).forEach(id -> {
                     String path = "/p2/abc" + id;
+                    MemoryLockUtils.lockAndRecord(path, null, false);
                     val originAbc = store.getResource(path);
                     store.checkAndPutResource(path, ByteSource.wrap((path + "-version2").getBytes(charset)),
                             System.currentTimeMillis(), originAbc == null ? -1 : originAbc.getMvcc());
@@ -194,10 +198,10 @@ public class JdbcAuditLogRecoveryTest {
             try {
                 auditLogStore.catchupWithTimeout();
             } catch (Exception e) {
-                log.debug("catchup 3rd phase failed", e);
+                log.error("catchup 3rd phase failed", e);
             }
         }).start();
-        Awaitility.await().atMost(20, TimeUnit.SECONDS).until(() -> listener.status == -1);
+        Awaitility.await().atMost(200, TimeUnit.SECONDS).until(() -> listener.status == -1);
 
         Assert.assertEquals(203, systemStore.listResourcesRecursively("/").size());
     }

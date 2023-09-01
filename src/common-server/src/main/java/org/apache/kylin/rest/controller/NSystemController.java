@@ -26,6 +26,7 @@ import static org.apache.kylin.common.exception.code.ErrorCodeServer.TIME_INVALI
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -38,6 +39,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.exception.KylinException;
+import org.apache.kylin.common.persistence.lock.DeadLockInfo;
 import org.apache.kylin.common.persistence.transaction.EpochCheckBroadcastNotifier;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.persistence.transaction.UnitOfWorkParams;
@@ -389,5 +391,36 @@ public class NSystemController extends NBasicController {
                 request.getTmpFileSize());
         setDownloadResponse(backupInputStream, METADATA_FILE, MediaType.APPLICATION_OCTET_STREAM_VALUE, response);
         return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, "", "");
+    }
+
+    @PostMapping(value = "/deadlock/detect")
+    @ResponseBody
+    public EnvelopeResponse<List<DeadLockInfo>> detectDeadLock() {
+        return new EnvelopeResponse<>(CODE_SUCCESS, systemService.detectDeadLock(), "");
+    }
+
+    @PostMapping(value = "/deadlock/kill")
+    @ResponseBody
+    public EnvelopeResponse<String> killThread(@RequestParam(value = "ids") List<Long> ids) {
+        checkCollectionRequiredArg("ids", ids);
+        systemService.killDeadLockThread(ids);
+        return new EnvelopeResponse<>(CODE_SUCCESS, "", "");
+    }
+
+    @PostMapping(value = "/deadlock/kill_all")
+    @ResponseBody
+    public EnvelopeResponse<String> killAllThread() {
+        systemService.killAllDeadLockThread();
+        return new EnvelopeResponse<>(CODE_SUCCESS, "", "");
+    }
+
+    /**
+     * RPC Call
+     */
+    @DeleteMapping(value = "clean_sparder_event_log")
+    @ResponseBody
+    public EnvelopeResponse<String> queryNodeCleanSparderEventsLogs() {
+        systemService.cleanSparderEventLog();
+        return new EnvelopeResponse<>(CODE_SUCCESS, "", "");
     }
 }

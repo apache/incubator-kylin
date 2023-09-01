@@ -33,9 +33,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.persistence.ResourceStore;
-import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
-
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -96,18 +95,21 @@ public class DataParserManager {
         if (parserInfo == null || StringUtils.isEmpty(parserInfo.getClassName())) {
             throw new IllegalArgumentException("data parser info is null or class name is null");
         }
-        if (crud.contains(parserInfo.resourceName())) {
-            throw new KylinException(CUSTOM_PARSER_ALREADY_EXISTS_PARSER, parserInfo.getClassName());
+        DataParserInfo copy = copyForWrite(parserInfo);
+        if (crud.contains(copy.resourceName())) {
+            throw new KylinException(CUSTOM_PARSER_ALREADY_EXISTS_PARSER, copy.getClassName());
         }
-        parserInfo.updateRandomUuid();
-        return crud.save(parserInfo);
+        copy.updateRandomUuid();
+        return crud.save(copy);
     }
 
     public DataParserInfo updateDataParserInfo(DataParserInfo parserInfo) {
-        if (!crud.contains(parserInfo.resourceName())) {
-            throw new KylinException(CUSTOM_PARSER_NOT_EXISTS_PARSER, parserInfo.getClassName());
+        DataParserInfo copy = copyForWrite(parserInfo);
+        if (!crud.contains(copy.resourceName())) {
+            throw new KylinException(CUSTOM_PARSER_NOT_EXISTS_PARSER, copy.getClassName());
         }
-        return crud.save(parserInfo);
+        parserInfo.copyPropertiesTo(copy);
+        return crud.save(copy);
     }
 
     /**

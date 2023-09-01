@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +49,9 @@ import org.apache.kylin.common.KylinConfigExt;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.apache.kylin.metadata.model.ManagementType;
 import org.apache.kylin.metadata.model.NDataModel;
@@ -65,10 +69,6 @@ import org.apache.kylin.metadata.realization.IRealizationProvider;
 import org.apache.kylin.metadata.realization.RealizationStatusEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.val;
 import lombok.var;
@@ -277,14 +277,15 @@ public class NDataflowManager implements IRealizationProvider {
     public NDataflow createDataflow(IndexPlan plan, String owner, RealizationStatusEnum realizationStatusEnum) {
         NDataflow df = NDataflow.create(plan, realizationStatusEnum);
         df.initAfterReload((KylinConfigExt) plan.getConfig(), project);
+        NDataflow copy = copyForWrite(df);
 
         // save dataflow
-        df.getSegments().validate();
-        crud.save(df);
+        copy.getSegments().validate();
+        crud.save(copy);
 
-        fillDf(df);
+        fillDf(copy);
 
-        return df;
+        return copy;
     }
 
     public void fillDf(NDataflow df) {
@@ -339,22 +340,22 @@ public class NDataflowManager implements IRealizationProvider {
     }
 
     public NDataSegment appendPartitions(String dfId, String segId, List<String[]> partitionValues) {
-        val copy = copy(getDataflow(dfId));
-        val segmentCopy = copy.getSegment(segId);
-        partitionValues.forEach(partitionValue -> {
-            if (copy.getSegment(segmentCopy.getId()).isPartitionOverlap(partitionValue)) {
-                throw new IllegalArgumentException(
-                        String.format(Locale.ROOT, "Duplicate partition value [%s] found in segment [%s]",
-                                Arrays.toString(partitionValue), segmentCopy.getId()));
-            }
+        updateDataflow(dfId, copyForWrite -> {
+            val segmentCopy = copyForWrite.getSegment(segId);
+            partitionValues.forEach(partitionValue -> {
+                if (copyForWrite.getSegment(segmentCopy.getId()).isPartitionOverlap(partitionValue)) {
+                    throw new IllegalArgumentException(
+                            String.format(Locale.ROOT, "Duplicate partition value [%s] found in segment [%s]",
+                                    Arrays.toString(partitionValue), segmentCopy.getId()));
+                }
+            });
+            val modelManager = NDataModelManager.getInstance(KylinConfig.getInstanceFromEnv(), project);
+            Set<Long> addPartitions = modelManager.addPartitionsIfAbsent(copyForWrite.getModel(), partitionValues);
+            addPartitions.forEach(partition -> {
+                segmentCopy.getMultiPartitions().add(new SegmentPartition(partition));
+            });
         });
-        val modelManager = NDataModelManager.getInstance(KylinConfig.getInstanceFromEnv(), project);
-        Set<Long> addPartitions = modelManager.addPartitionsIfAbsent(copy.getModel(), partitionValues);
-        addPartitions.forEach(partition -> {
-            segmentCopy.getMultiPartitions().add(new SegmentPartition(partition));
-        });
-        crud.save(copy);
-        return segmentCopy;
+        return copy(getDataflow(dfId)).getSegment(segId);
     }
 
     public NDataSegment appendSegmentForStreaming(NDataflow df, SegmentRange segRange) {
@@ -581,6 +582,10 @@ public class NDataflowManager implements IRealizationProvider {
         return toRemoveSegs;
     }
 
+    public NDataflow copyForWrite(NDataflow df) {
+        return crud.copyForWrite(df);
+    }
+
     public NDataflow copy(NDataflow df) {
         return crud.copyBySerialization(df);
     }
@@ -632,7 +637,7 @@ public class NDataflowManager implements IRealizationProvider {
      */
     public NDataflow updateDataflow(String dfId, NDataflowUpdater updater) {
         NDataflow cached = getDataflow(dfId);
-        NDataflow copy = copy(cached);
+        NDataflow copy = copyForWrite(cached);
         updater.modify(copy);
 
         Set<String> copySegIdSet = copy.getSegments().stream().map(NDataSegment::getId).collect(Collectors.toSet());
@@ -661,15 +666,23 @@ public class NDataflowManager implements IRealizationProvider {
         return getDataflow(modelId).getLastBuildTime();
     }
 
-    public void updateDataflowDetailsLayouts(final NDataSegment seg, final List<NDataLayout> layouts) {
+    public void updateDataflowDetailsLayouts(final NDataSegment seg, final List<Long> toRemoveLayouts,
+            final List<Long> toAddLayouts) {
         NDataSegDetailsManager segDetailsManager = NDataSegDetailsManager.getInstance(KylinConfig.getInstanceFromEnv(),
                 project);
-        NDataSegDetails details = segDetailsManager.getForSegment(seg);
-        details.setLayouts(layouts);
-        NDataSegDetailsManager.getInstance(KylinConfig.getInstanceFromEnv(), project).upsertForSegment(details);
+        segDetailsManager.updateDetails(seg, copyForWrite -> {
+            List<NDataLayout> layouts = new LinkedList<>(copyForWrite.getAllLayouts());
+            layouts.removeIf(layout -> toRemoveLayouts.contains(layout.getLayoutId()));
+            List<Long> existLayouts = layouts.stream().map(NDataLayout::getLayoutId).collect(Collectors.toList());
+            for (Long layoutId : toAddLayouts) {
+                if (!existLayouts.contains(layoutId)) {
+                    layouts.add(NDataLayout.newDataLayout(copyForWrite, layoutId));
+                }
+            }
+            copyForWrite.setLayouts(layouts);
+        });
         updateDataflow(seg.getDataflow().getId(),
                 copyForWrite -> updateSegmentStatus(copyForWrite.getSegment(seg.getId())));
-
     }
 
     public NDataflow updateDataflow(final NDataflowUpdate update) {
@@ -803,20 +816,20 @@ public class NDataflowManager implements IRealizationProvider {
     }
 
     public void removeSegmentPartition(String dfId, Set<Long> toBeDeletedPartIds, Set<String> segments) {
-        val dfCopy = copy(getDataflow(dfId));
-        val updateSegments = new Segments<NDataSegment>();
-        if (CollectionUtils.isEmpty(segments)) {
-            updateSegments.addAll(dfCopy.getSegments());
-        } else {
-            dfCopy.getSegments().forEach(segment -> {
-                if (segments.contains(segment.getId())) {
-                    updateSegments.add(segment);
-                }
-            });
-        }
-        updateSegments.forEach(segment -> segment.getMultiPartitions()
-                .removeIf(partition -> toBeDeletedPartIds.contains(partition.getPartitionId())));
-        crud.save(dfCopy);
+        updateDataflow(dfId, copyForWrite -> {
+            val updateSegments = new Segments<NDataSegment>();
+            if (CollectionUtils.isEmpty(segments)) {
+                updateSegments.addAll(copyForWrite.getSegments());
+            } else {
+                copyForWrite.getSegments().forEach(segment -> {
+                    if (segments.contains(segment.getId())) {
+                        updateSegments.add(segment);
+                    }
+                });
+            }
+            updateSegments.forEach(segment -> segment.getMultiPartitions()
+                    .removeIf(partition -> toBeDeletedPartIds.contains(partition.getPartitionId())));
+        });
     }
 
     public void removeLayoutPartition(String dfId, Set<Long> toBeDeletedPartIds, Set<String> segments) {

@@ -96,10 +96,9 @@ public class AutoMergeTest extends NLocalFileMetadataTestCase {
         val dataflowManager = NDataflowManager.getInstance(getTestConfig(), DEFAULT_PROJECT);
         val df = dataflowManager.getDataflowByModelAlias("nmodel_basic");
         val prjManager = NProjectManager.getInstance(getTestConfig());
-        val prj = prjManager.getProject(DEFAULT_PROJECT);
-        val copy = prjManager.copyForWrite(prj);
-        copy.getSegmentConfig().setAutoMergeEnabled(true);
-        prjManager.updateProject(copy);
+        prjManager.updateProject(DEFAULT_PROJECT, copyForWrite -> {
+            copyForWrite.getSegmentConfig().setAutoMergeEnabled(true);
+        });
         SegmentAutoMergeUtil.autoMergeSegments(DEFAULT_PROJECT, df.getUuid(), "ADMIN");
     }
 

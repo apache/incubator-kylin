@@ -29,14 +29,14 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.ExecutableApplication;
-import org.apache.kylin.common.util.OptionsHelper;
-import org.apache.kylin.metadata.model.DatabaseDesc;
-import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.common.util.OptionBuilder;
+import org.apache.kylin.common.util.OptionsHelper;
 import org.apache.kylin.common.util.Unsafe;
+import org.apache.kylin.metadata.model.DatabaseDesc;
 import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.kylin.metadata.project.EnhancedUnitOfWork;
 import org.apache.kylin.metadata.project.NProjectManager;
+import org.apache.kylin.metadata.project.ProjectInstance;
 
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
@@ -78,17 +78,18 @@ public class UpdateProjectCLI extends ExecutableApplication {
     private void updateProject(ProjectInstance project) {
         EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
             NProjectManager npr = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv());
-            // for upgrade, set project override properties
-            REPLACE_OVERRIDE_PROPERTIES_MAP.forEach(project::replaceKeyOverrideKylinProps);
+            npr.updateProject(project.getName(), copyForWrite -> {
+                // for upgrade, set project override properties
+                REPLACE_OVERRIDE_PROPERTIES_MAP.forEach(copyForWrite::replaceKeyOverrideKylinProps);
 
-            // for upgrade, set default database
-            if (StringUtils.isEmpty(project.getDefaultDatabase())) {
-                val schemaMap = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(), project.getName())
-                        .listTablesGroupBySchema();
-                String defaultDatabase = DatabaseDesc.getDefaultDatabaseByMaxTables(schemaMap);
-                project.setDefaultDatabase(defaultDatabase.toUpperCase(Locale.ROOT));
-            }
-            npr.updateProject(project);
+                // for upgrade, set default database
+                if (StringUtils.isEmpty(copyForWrite.getDefaultDatabase())) {
+                    val schemaMap = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(), copyForWrite.getName())
+                            .listTablesGroupBySchema();
+                    String defaultDatabase = DatabaseDesc.getDefaultDatabaseByMaxTables(schemaMap);
+                    copyForWrite.setDefaultDatabase(defaultDatabase.toUpperCase(Locale.ROOT));
+                }
+            });
             return 0;
         }, project.getName(), 1);
     }

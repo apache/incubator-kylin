@@ -17,12 +17,17 @@
  */
 package org.apache.kylin.common.persistence.transaction;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.apache.kylin.common.persistence.event.ResourceRelatedEvent;
+import org.apache.kylin.common.persistence.lock.TransactionLock;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Data
 @Builder
@@ -33,6 +38,10 @@ public class UnitOfWorkParams<T> {
     private UnitOfWork.Callback<T> epochChecker;
 
     private Consumer<ResourceRelatedEvent> writeInterceptor;
+
+    private UnitRetryContext retryContext;
+
+    private long retryUntil;
 
     @Builder.Default
     private boolean all = false;
@@ -58,11 +67,26 @@ public class UnitOfWorkParams<T> {
     private boolean skipAuditLog = false;
 
     private String tempLockName;
+    
+    @Builder.Default
+    private boolean useProjectLock = false;
+
+    @Builder.Default
+    private boolean retryMoreTimeForDeadLockException = false;
 
     /**
      * only for debug or test
      */
     @Builder.Default
     private long sleepMills = -1;
+
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    public static class UnitRetryContext {
+        private List<TransactionLock> retryLock;
+        private boolean allowRetryNext;
+        private boolean optimisticLockEnabled;
+    }
 
 }

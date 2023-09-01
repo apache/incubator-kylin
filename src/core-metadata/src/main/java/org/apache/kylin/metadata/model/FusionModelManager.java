@@ -89,14 +89,19 @@ public class FusionModelManager {
         return model;
     }
 
+    private FusionModel copyForWrite(FusionModel desc) {
+        return crud.copyForWrite(desc);
+    }
+
     public FusionModel createModel(FusionModel desc) {
         if (desc == null) {
             throw new IllegalArgumentException();
         }
-        if (crud.contains(desc.resourceName()))
-            throw new IllegalArgumentException("Fusion Model  '" + desc.getAlias() + "' already exists");
+        FusionModel copy = copyForWrite(desc);
+        if (crud.contains(copy.resourceName()))
+            throw new IllegalArgumentException("Fusion Model  '" + copy.getAlias() + "' already exists");
 
-        return crud.save(desc);
+        return crud.save(copy);
     }
 
     public String getModelId(NativeQueryRealization realization) {

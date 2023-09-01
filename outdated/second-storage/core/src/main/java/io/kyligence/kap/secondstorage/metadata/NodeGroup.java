@@ -82,6 +82,11 @@ public class NodeGroup extends RootPersistentEntity implements Serializable,
     }
 
     @Override
+    public String getResourcePath() {
+        return manager.getResourcePath(resourceName());
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

@@ -20,7 +20,7 @@ package org.apache.kylin.metadata.cachesync;
 import org.apache.kylin.common.persistence.MissingRootPersistentEntity;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
-
+import org.apache.kylin.common.persistence.metadata.FileMetadataStore;
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 
 import lombok.AllArgsConstructor;
@@ -51,6 +51,10 @@ public class CacheReloadChecker<T extends RootPersistentEntity> {
             return !(entity instanceof MissingRootPersistentEntity);
         }
         if (raw.getMvcc() != entity.getMvcc()) {
+            return true;
+        }
+        if ((store.getMetadataStore() instanceof FileMetadataStore)
+                && (raw.getTimestamp() != entity.getLastModified())) {
             return true;
         }
 

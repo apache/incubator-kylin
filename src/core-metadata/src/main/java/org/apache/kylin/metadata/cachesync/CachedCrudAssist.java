@@ -21,24 +21,27 @@ package org.apache.kylin.metadata.cachesync;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.persistence.JsonSerializer;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
 import org.apache.kylin.common.persistence.Serializer;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.ThreadUtil;
-import org.apache.kylin.metadata.MetadataConstants;
-import org.apache.kylin.util.BrokenEntityProxy;
-
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.cache.Cache;
 import org.apache.kylin.guava30.shaded.common.cache.CustomKeyEquivalenceCacheBuilder;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.metadata.MetadataConstants;
+import org.apache.kylin.util.BrokenEntityProxy;
 
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -88,9 +91,47 @@ public abstract class CachedCrudAssist<T extends RootPersistentEntity> {
         this.checkCopyOnWrite = check;
     }
 
-    // Make copy of an entity such that update can apply on the copy.
-    // Note cached and shared object MUST NOT be updated directly.
+    // If this is a new entity or the reload entity is broken, return a copy of this entity.
+    // If the reload entity is null, just return null.
+    // Otherwise return a copy of the reload entity.
     public T copyForWrite(T entity) {
+        if (entity == null) {
+            return null;
+        }
+        String resourcePath = resourcePath(entity.resourceName());
+        return MemoryLockUtils.doWithLock(entity, resourcePath, false, store, () -> {
+            if (entity.getMvcc() == -1) {
+                return copyIfCachedAndShared(entity);
+            }
+            T reloadedEntity = get(entity.resourceName());
+            if (reloadedEntity == null) {
+                return null;
+            } else if (reloadedEntity.isBroken()) {
+                return copyIfCachedAndShared(entity);
+            } else {
+                return copyIfCachedAndShared(reloadedEntity);
+            }
+        });
+    }
+
+    // Used by managers which doesn't have cache.
+    public static <T extends RootPersistentEntity> T copyForWrite(T entity, Serializer<T> serializer,
+            @Nullable BiConsumer<T, String> initEntity, ResourceStore store) {
+        String resourcePath = entity.getResourcePath();
+        return MemoryLockUtils.doWithLock(entity, resourcePath, false, store, () -> {
+            T reloadedEntity = store.getResource(entity.getResourcePath(), serializer);
+            if (reloadedEntity == null || reloadedEntity.isBroken()) {
+                return JsonUtil.copyForWrite(entity, serializer, initEntity);
+            } else {
+                if (initEntity != null) {
+                    initEntity.accept(reloadedEntity, reloadedEntity.resourceName());
+                }
+                return JsonUtil.copyForWrite(reloadedEntity, serializer, initEntity);
+            }
+        });
+    }
+    
+    public T copyIfCachedAndShared(T entity) {
         return JsonUtil.copyForWrite(entity, serializer, this::initEntityAfterReload);
     }
 
@@ -98,7 +139,7 @@ public abstract class CachedCrudAssist<T extends RootPersistentEntity> {
         return JsonUtil.copyBySerialization(entity, serializer, this::initEntityAfterReload);
     }
 
-    String resourcePath(String resourceName) {
+    public String resourcePath(String resourceName) {
         Preconditions.checkArgument(StringUtils.isNotEmpty(resourceName),
                 "The resource name \"{}\" cannot contain white character", resourceName);
         return resRootPath + "/" + resourceName + resPathSuffix;

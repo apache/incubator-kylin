@@ -22,11 +22,10 @@ import static org.apache.kylin.common.persistence.ResourceStore.UPGRADE;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.metadata.cachesync.CachedCrudAssist;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 
 public class GlobalAclVersionManager {
     private static final Logger logger = LoggerFactory.getLogger(GlobalAclVersionManager.class);
@@ -64,10 +63,15 @@ public class GlobalAclVersionManager {
         return crud.exists(GlobalAclVersion.VERSION_KEY_NAME);
     }
 
+    private GlobalAclVersion copyForWrite(GlobalAclVersion globalAclVersion) {
+        return crud.copyForWrite(globalAclVersion);
+    }
+
     public void save(GlobalAclVersion globalAclVersion) {
         Preconditions.checkNotNull(globalAclVersion.getAclVersion());
+        GlobalAclVersion copy = copyForWrite(globalAclVersion);
         if (!exists()) {
-            crud.save(globalAclVersion);
+            crud.save(copy);
         }
     }
 

@@ -25,12 +25,13 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.common.persistence.lock.MemoryLockUtils;
+import org.apache.kylin.common.persistence.metadata.MetadataStore;
 import org.apache.kylin.common.util.FilePathUtil;
-
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
-
 import org.apache.kylin.guava30.shaded.common.io.ByteSource;
+
 import lombok.Getter;
 import lombok.val;
 
@@ -53,6 +54,11 @@ public class ThreadViewResourceStore extends ResourceStore {
         this.underlying = underlying;
         this.overlay = new InMemResourceStore(kylinConfig);
         resources = Lists.newArrayList();
+    }
+    
+    @Override
+    public MetadataStore getMetadataStore() {
+        return underlying.getMetadataStore();
     }
 
     @Override
@@ -106,9 +112,7 @@ public class ThreadViewResourceStore extends ResourceStore {
             return r == TombRawResource.getINSTANCE() ? null //deleted
                     : r; // updated
         }
-
         return underlying.getResourceImpl(resPath);
-
     }
 
     @Override
@@ -142,6 +146,7 @@ public class ThreadViewResourceStore extends ResourceStore {
 
     @Override
     protected void deleteResourceImpl(String resPath) {
+        MemoryLockUtils.doWithLock(resPath, false, this, () -> null);
         overlay.putTomb(resPath);
         resources.add(new TombRawResource(resPath));
     }

@@ -27,11 +27,13 @@ import java.util.stream.Collectors;
 
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.MissingRootPersistentEntity;
+import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.metadata.MetadataConstants;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -125,5 +127,11 @@ public class FusionModel extends RootPersistentEntity implements Serializable {
             }
         }
         return null;
+    }
+
+    @Override
+    public String getResourcePath() {
+        return "/" + project + ResourceStore.FUSION_MODEL_RESOURCE_ROOT + "/" + resourceName()
+                + MetadataConstants.FILE_SURFIX;
     }
 }

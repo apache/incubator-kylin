@@ -292,11 +292,12 @@ public class AuditLogToolTest extends NLocalFileMetadataTestCase {
                     }
                 }).filter(Objects::nonNull).collect(toList());
 
-        UnitOfWork.doInTransactionWithRetry(UnitOfWorkParams.builder().unitName(project).processor(() -> {
-            val resourceStore = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
-            metadata.forEach(x -> resourceStore.checkAndPutResource(x.getResPath(), x.getByteSource(), -1));
-            return 0;
-        }).maxRetry(1).build());
+        UnitOfWork.doInTransactionWithRetry(
+                UnitOfWorkParams.builder().unitName(project).useProjectLock(true).processor(() -> {
+                    val resourceStore = ResourceStore.getKylinMetaStore(KylinConfig.getInstanceFromEnv());
+                    metadata.forEach(x -> resourceStore.checkAndPutResource(x.getResPath(), x.getByteSource(), -1));
+                    return 0;
+                }).maxRetry(1).build());
         val auditLogStore = (JdbcAuditLogStore) getStore().getAuditLogStore();
         auditLogStore.batchInsert(auditLog);
     }

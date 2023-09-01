@@ -19,17 +19,19 @@
 package org.apache.kylin.common.persistence;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.kylin.common.KylinVersion;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.RandomUtil;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.springframework.beans.BeanUtils;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -149,6 +151,10 @@ public abstract class RootPersistentEntity implements AclEntity, Serializable {
         }
         this.mvcc = mvcc;
     }
+    
+    public <T extends RootPersistentEntity> void copyPropertiesTo(T copy) {
+        BeanUtils.copyProperties(this, copy, "cachedAndShared");
+    }
 
     /**
      * The name as a part of the resource path used to save the entity.
@@ -190,6 +196,14 @@ public abstract class RootPersistentEntity implements AclEntity, Serializable {
 
     public String getResourcePath() {
         return "";
+    }
+
+    public List<String> getLockPaths() {
+        return getLockPaths(getResourcePath());
+    }
+
+    public List<String> getLockPaths(String resourcePath) {
+        return Collections.singletonList(resourcePath);
     }
 
     @Override

@@ -18,6 +18,8 @@
 
 package org.apache.kylin.metadata.favorite;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,6 +28,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.kylin.metadata.MetadataConstants;
 
 @Getter
 @Setter
@@ -37,8 +40,16 @@ public class QueryHistoryIdOffset extends RootPersistentEntity {
 
     @JsonProperty("query_history_stat_id_offset")
     private long statMetaUpdateOffset;
+    
+    @JsonIgnore
+    private String project;
 
     public QueryHistoryIdOffset(long offset) {
         this.offset = offset;
+    }
+    
+    @Override
+    public String getResourcePath() {
+        return "/" + getProject() + ResourceStore.QUERY_HISTORY_ID_OFFSET + "/" + uuid + MetadataConstants.FILE_SURFIX;
     }
 }

@@ -142,7 +142,11 @@ public class NSparkExecutable extends AbstractExecutable implements ChainedStage
         val scheduler = NDefaultScheduler.getInstance(getProject());
         Optional.ofNullable(scheduler.getContext()).ifPresent(context -> {
             Optional.ofNullable(context.getRunningJobThread(this)).ifPresent(taskThread -> {
-                taskThread.interrupt();
+                // workaround for https://olapio.atlassian.net/browse/KE-41836
+                if (Arrays.stream(taskThread.getStackTrace())
+                        .noneMatch(stack -> stack.getClassName().contains("FetcherRunner"))) {
+                    taskThread.interrupt();
+                }
                 context.removeRunningJob(this);
             });
         });
@@ -522,16 +526,18 @@ public class NSparkExecutable extends AbstractExecutable implements ChainedStage
             ResourceStore.dumpKylinProps(tmpDir, props);
         } else {
             // The way of Updating metadata is CopyOnWrite. So it is safe to use Reference in the value.
-            Map<String, RawResource> dumpMap = EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(
-                    UnitOfWorkParams.<Map> builder().readonly(true).unitName(getProject()).maxRetry(1).processor(() -> {
-                        Map<String, RawResource> retMap = Maps.newHashMap();
-                        for (String resPath : getMetadataDumpList(config)) {
-                            ResourceStore resourceStore = ResourceStore.getKylinMetaStore(config);
-                            RawResource rawResource = resourceStore.getResource(resPath);
-                            retMap.put(resPath, rawResource);
-                        }
-                        return retMap;
-                    }).build());
+            Set<String> metadataDumpList = getMetadataDumpList(config);
+            Map<String, RawResource> dumpMap = EnhancedUnitOfWork
+                    .doInTransactionWithCheckAndRetry(UnitOfWorkParams.<Map<String, RawResource>> builder()
+                            .readonly(true).unitName(getProject()).maxRetry(1).processor(() -> {
+                                Map<String, RawResource> retMap = Maps.newHashMap();
+                                for (String resPath : metadataDumpList) {
+                                    ResourceStore resourceStore = ResourceStore.getKylinMetaStore(config);
+                                    RawResource rawResource = resourceStore.getResource(resPath);
+                                    retMap.put(resPath, rawResource);
+                                }
+                                return retMap;
+                            }).build());
 
             if (Objects.isNull(dumpMap) || dumpMap.isEmpty()) {
                 return;

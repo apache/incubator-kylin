@@ -89,7 +89,7 @@ public class AclTCRManager {
                 AclTCR.class) {
             @Override
             protected AclTCR initEntityAfterReload(AclTCR acl, String resourceName) {
-                acl.init(resourceName);
+                acl.init(resourceName, project, true);
                 return acl;
             }
         };
@@ -99,7 +99,7 @@ public class AclTCRManager {
                 AclTCR.class) {
             @Override
             protected AclTCR initEntityAfterReload(AclTCR acl, String resourceName) {
-                acl.init(resourceName);
+                acl.init(resourceName, project, false);
                 return acl;
             }
         };
@@ -134,21 +134,18 @@ public class AclTCRManager {
     }
 
     public void updateAclTCR(AclTCR updateTo, String sid, boolean principal) {
-        updateTo.init(sid);
+        updateTo.init(sid, project, principal);
         if (principal) {
-            doUpdate(updateTo, sid, userCrud);
+            doUpdate(updateTo, userCrud);
         } else {
-            doUpdate(updateTo, sid, groupCrud);
+            doUpdate(updateTo, groupCrud);
         }
     }
 
-    private void doUpdate(AclTCR updateTo, String sid, CachedCrudAssist<AclTCR> crud) {
-        AclTCR copied;
-        AclTCR origin = crud.get(sid);
-        if (Objects.isNull(origin)) {
-            copied = updateTo;
-        } else {
-            copied = crud.copyForWrite(origin);
+    private void doUpdate(AclTCR updateTo, CachedCrudAssist<AclTCR> crud) {
+        AclTCR cached = crud.get(updateTo.resourceName());
+        AclTCR copied = crud.copyForWrite(cached == null ? updateTo : cached);
+        if (copied.getMvcc() != -1) {
             copied.setTable(updateTo.getTable());
         }
         crud.save(copied);
