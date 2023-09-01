@@ -81,6 +81,7 @@ import org.apache.kylin.common.util.AddressUtil;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.common.util.SetThreadName;
+import org.apache.kylin.constants.AclConstants;
 import org.apache.kylin.engine.spark.filter.BloomFilterSkipCollector;
 import org.apache.kylin.engine.spark.filter.ParquetPageFilterCollector;
 import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
@@ -566,6 +567,18 @@ public class QueryService extends BasicService implements CacheSignatureQuerySup
         }
         if (!grantedProjects.contains(sqlRequest.getProject())) {
             throw new KylinException(ACCESS_DENIED, "Access is denied.");
+        }
+
+        val isDataPermissionDefaultEnabled = KylinConfig.getInstanceFromEnv().isDataPermissionDefaultEnabled();
+        if (isDataPermissionDefaultEnabled) {
+            try {
+                Set<String> extPermissions = accessService.getUserNormalExtPermissionsByUserInProject(sqlRequest.getProject(), executeUser);
+                if (!extPermissions.contains(AclConstants.DATA_QUERY)) {
+                    throw new KylinException(ACCESS_DENIED, "Access is denied.");
+                }
+            } catch (Exception e) {
+                throw new KylinException(ACCESS_DENIED, e);
+            }
         }
     }
 

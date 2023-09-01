@@ -230,6 +230,8 @@ public class QueryServiceTest extends NLocalFileMetadataTestCase {
         ReflectionTestUtils.setField(queryService, "aclTCRService", aclTCRService);
         ReflectionTestUtils.setField(accessService, "userService", userService);
         ReflectionTestUtils.setField(accessService, "aclService", aclService);
+        ReflectionTestUtils.setField(accessService, "userAclService", userAclService);
+        ReflectionTestUtils.setField(userAclService, "userService", userService);
         ReflectionTestUtils.setField(aclTCRService, "accessService", accessService);
         ReflectionTestUtils.setField(aclTCRService, "userService", userService);
         ReflectionTestUtils.setField(queryService, "appConfig", appConfig);

@@ -756,13 +756,19 @@ public class AccessService extends BasicService {
         return sidWithPermissions;
     }
 
-    @SneakyThrows(IOException.class)
     public Set<String> getUserNormalExtPermissions(String project) {
-        String projectUuid = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv()).getProject(project)
-                .getUuid();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (Objects.nonNull(authentication)) {
-            val userName = authentication.getName();
+            return getUserNormalExtPermissionsByUserInProject(project, authentication.getName());
+        }
+        return new HashSet<>();
+    }
+
+    @SneakyThrows(IOException.class)
+    public Set<String> getUserNormalExtPermissionsByUserInProject(String project, String userName) {
+        String projectUuid = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv()).getProject(project)
+                .getUuid();
+        if (Objects.nonNull(userName)) {
             if (userAclService.canAdminUserQuery(userName)) {
                 return Collections.singleton(AclConstants.DATA_QUERY);
             }
