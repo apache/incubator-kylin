@@ -43,6 +43,8 @@ public class LayoutRecDetailResponse implements Serializable {
     private List<RecMeasure> measures = Lists.newArrayList();
     @JsonProperty("computed_columns")
     private List<RecComputedColumn> computedColumns = Lists.newArrayList();
+    @JsonProperty("discarded")
+    private boolean discarded;
 
     @Getter
     @Setter
