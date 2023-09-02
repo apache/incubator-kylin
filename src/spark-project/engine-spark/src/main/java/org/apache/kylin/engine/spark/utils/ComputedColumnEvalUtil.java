@@ -26,6 +26,7 @@ import org.apache.kylin.common.exception.QueryErrorCode;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.engine.spark.job.NSparkCubingUtil;
 import org.apache.kylin.engine.spark.smarter.IndexDependencyParser;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.metadata.model.BadModelException;
 import org.apache.kylin.metadata.model.ComputedColumnDesc;
 import org.apache.kylin.metadata.model.NDataModel;
@@ -33,12 +34,8 @@ import org.apache.kylin.metadata.model.exception.IllegalCCExpressionException;
 import org.apache.kylin.metadata.model.util.ComputedColumnUtil;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparderEnv;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.util.SparderTypeUtil;
 import org.springframework.util.CollectionUtils;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -62,7 +59,7 @@ public class ComputedColumnEvalUtil {
     public static void evalDataTypeOfCCInAuto(List<ComputedColumnDesc> computedColumns, NDataModel nDataModel,
             int start, int end) {
         try {
-            evalDataTypeOfCC(computedColumns, SparderEnv.getSparkSession(), nDataModel, start, end);
+            evalDataTypeOfCC(computedColumns, nDataModel, start, end);
         } catch (Exception e) {
             if (end - start > 1) { //numbers of CC > 1
                 evalDataTypeOfCCInAuto(computedColumns, nDataModel, start, start + (end - start) / 2);
@@ -80,7 +77,7 @@ public class ComputedColumnEvalUtil {
             return;
         }
         try {
-            evalDataTypeOfCC(computedColumns, SparderEnv.getSparkSession(), nDataModel, 0, computedColumns.size());
+            evalDataTypeOfCC(computedColumns, nDataModel, 0, computedColumns.size());
         } catch (Exception e) {
             evalDataTypeOfCCInManual(computedColumns, nDataModel, 0, computedColumns.size());
         }
@@ -90,7 +87,7 @@ public class ComputedColumnEvalUtil {
             int start, int end) {
         for (int i = start; i < end; i++) {
             try {
-                evalDataTypeOfCC(computedColumns, SparderEnv.getSparkSession(), nDataModel, i, i + 1);
+                evalDataTypeOfCC(computedColumns, nDataModel, i, i + 1);
             } catch (Exception e) {
                 Preconditions.checkNotNull(computedColumns.get(i));
                 throw new IllegalCCExpressionException(QueryErrorCode.CC_EXPRESSION_ILLEGAL,
@@ -101,15 +98,14 @@ public class ComputedColumnEvalUtil {
         }
     }
 
-    private static void evalDataTypeOfCC(List<ComputedColumnDesc> computedColumns, SparkSession ss,
-            NDataModel nDataModel, int start, int end) {
+    private static void evalDataTypeOfCC(List<ComputedColumnDesc> computedColumns, NDataModel nDataModel, int start,
+            int end) {
         IndexDependencyParser parser = new IndexDependencyParser(nDataModel);
-        Dataset<Row> originDf = parser.generateFullFlatTableDF(ss, nDataModel);
-        originDf.persist();
+        Dataset<Row> df = parser.getFullFlatTableDataFrame(nDataModel);
         String[] ccExprArray = computedColumns.subList(start, end).stream() //
                 .map(ComputedColumnDesc::getInnerExpression) //
                 .map(NSparkCubingUtil::convertFromDotWithBackTick).toArray(String[]::new);
-        Dataset<Row> ds = originDf.selectExpr(ccExprArray);
+        Dataset<Row> ds = df.selectExpr(ccExprArray);
         for (int i = start; i < end; i++) {
             String dataType = SparderTypeUtil.convertSparkTypeToSqlType(ds.schema().fields()[i - start].dataType());
             computedColumns.get(i).setDatatype(dataType);

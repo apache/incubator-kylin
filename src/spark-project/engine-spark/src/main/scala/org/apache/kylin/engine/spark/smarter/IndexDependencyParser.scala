@@ -17,9 +17,6 @@
  */
 package org.apache.kylin.engine.spark.smarter
 
-import java.util
-import java.util.Collections
-
 import org.apache.commons.collections.CollectionUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.kylin.engine.spark.job.NSparkCubingUtil
@@ -28,10 +25,15 @@ import org.apache.kylin.guava30.shaded.common.collect.{Lists, Maps, Sets}
 import org.apache.kylin.metadata.cube.model.LayoutEntity
 import org.apache.kylin.metadata.model._
 import org.apache.kylin.query.util.PushDownUtil
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.execution.utils.SchemaProcessor
-import org.apache.spark.sql.types.StructField
-import org.apache.spark.sql.{Dataset, Row, SparderEnv, SparkSession}
+import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.types.{StructField, StructType}
 
+import java.util
+import java.util.Collections
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -40,8 +42,15 @@ class IndexDependencyParser(val model: NDataModel) {
   private val ccTableNameAliasMap = Maps.newHashMap[String, util.Set[String]]
   private val joinTableAliasMap = Maps.newHashMap[String, util.Set[String]]
   private val allTablesAlias = Sets.newHashSet[String]
+  private var fullFlatTableDF : Option[Dataset[Row]] = None
   initTableNames()
-
+  def getFullFlatTableDataFrame(model: NDataModel): Dataset[Row] = {
+    if (fullFlatTableDF.isDefined) {
+      fullFlatTableDF.get
+    } else {
+      generateFullFlatTableDF(model)
+    }
+  }
   def getRelatedTablesAlias(layouts: util.Collection[LayoutEntity]): util.List[String] = {
     val relatedTables = Sets.newHashSet[String]
     layouts.asScala.foreach(layout => relatedTables.addAll(getRelatedTablesAlias(layout)))
@@ -105,34 +114,47 @@ class IndexDependencyParser(val model: NDataModel) {
     }
   }
 
-  def generateFullFlatTableDF(ss: SparkSession, model: NDataModel): Dataset[Row] = {
-    val rootDF = generateDatasetOnTable(ss, model.getRootFactTable)
+  def generateFullFlatTableDF(model: NDataModel): Dataset[Row] = {
+    val rootLogicalPlan = generateLogicalPlanOnTable(model.getRootFactTable)
     // look up tables
-    val joinTableDFMap = mutable.LinkedHashMap[JoinTableDesc, Dataset[Row]]()
+    val joinTableDFMap = mutable.LinkedHashMap[JoinTableDesc, LogicalPlan]()
     model.getJoinTables.asScala.map((joinTable: JoinTableDesc) => {
-      joinTableDFMap.put(joinTable, generateDatasetOnTable(ss, joinTable.getTableRef))
+      joinTableDFMap.put(joinTable, generateLogicalPlanOnTable(joinTable.getTableRef))
     })
-    val df = FlatTableAndDictBase.joinFactTableWithLookupTables(rootDF, joinTableDFMap, model, needLog = false)
+    val df = FlatTableAndDictBase.joinFactTableWithLookupTables(rootLogicalPlan, joinTableDFMap, model, needLog = false)
     val filterCondition = model.getFilterCondition
     if (StringUtils.isNotEmpty(filterCondition)) {
       val massagedCondition = PushDownUtil.massageExpression(model, model.getProject, filterCondition, null)
-      df.where(NSparkCubingUtil.convertFromDotWithBackTick(massagedCondition))
+      val condition = NSparkCubingUtil.convertFromDot(massagedCondition)
+      SparkOperation.filter(col(condition), df)
     }
-    df
+    SparkInternalAgent.getDataFrame(SparderEnv.getSparkSession, df)
   }
 
-  private def generateDatasetOnTable(ss: SparkSession, tableRef: TableRef): Dataset[Row] = {
+  private def generateLogicalPlanOnTable(tableRef: TableRef): LogicalPlan = {
     val tableCols = tableRef.getColumns.asScala.map(_.getColumnDesc).toArray
     val structType = SchemaProcessor.buildSchemaWithRawTable(tableCols)
     val alias = tableRef.getAlias
-    val dataset = ss.createDataFrame(Lists.newArrayList[Row], structType).alias(alias)
-    FlatTableAndDictBase.wrapAlias(dataset, alias, needLog = false)
+    val fsRelation = LocalRelation(toAttributes(structType))
+    val plan = SubqueryAlias(alias, fsRelation)
+    FlatTableAndDictBase.wrapAlias(plan, alias, needLog = false)
+  }
+
+  def toAttribute(field: StructField): AttributeReference =
+    AttributeReference(field.name, field.dataType, field.nullable, field.metadata)()
+
+  /**
+   * Convert a [[StructType]] into a Seq of [[AttributeReference]].
+   */
+  def toAttributes(schema: StructType): Seq[AttributeReference] = {
+    schema.map(toAttribute)
   }
 
   private def initTableNames(): Unit = {
-    val ccList = model.getComputedColumnDescs
-    val originDf = generateFullFlatTableDF(SparderEnv.getSparkSession, model)
+    fullFlatTableDF = Option(generateFullFlatTableDF(model))
+    val originDf = fullFlatTableDF.get
     val colFields = originDf.schema.fields
+    val ccList = model.getComputedColumnDescs
     val ds = originDf.selectExpr(ccList.asScala.map(_.getInnerExpression)
       .map(NSparkCubingUtil.convertFromDotWithBackTick): _*)
     ccList.asScala.zip(ds.schema.fields).foreach(pair => {
@@ -156,7 +178,7 @@ class IndexDependencyParser(val model: NDataModel) {
 
   def unwrapComputeColumn(ccInnerExpression: String): java.util.Set[TblColRef] = {
     val result: util.Set[TblColRef] = Sets.newHashSet()
-    val originDf = generateFullFlatTableDF(SparderEnv.getSparkSession, model)
+    val originDf = getFullFlatTableDataFrame(model)
     val colFields = originDf.schema.fields
     val ccDs = originDf.selectExpr(NSparkCubingUtil.convertFromDotWithBackTick(ccInnerExpression))
     ccDs.schema.fields.foreach(fieldName => {

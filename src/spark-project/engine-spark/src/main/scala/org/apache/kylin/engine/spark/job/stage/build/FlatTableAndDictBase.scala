@@ -46,6 +46,8 @@ import org.apache.kylin.metadata.cube.planner.CostBasePlannerUtils
 import org.apache.kylin.metadata.model._
 import org.apache.spark.sql.KapFunctions.dict_encode_v3
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.plans.JoinType
+import org.apache.spark.sql.catalyst.plans.logical.{Join, JoinHint, LogicalPlan}
 import org.apache.spark.sql.functions.{col, expr}
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.sql.util.SparderTypeUtil
@@ -718,6 +720,19 @@ object FlatTableAndDictBase extends LogEx {
     newDS
   }
 
+  def wrapAlias(originPlan: LogicalPlan, alias: String, needLog: Boolean): LogicalPlan = {
+    val newFields = originPlan.output
+      .map(f => {
+        val aliasDotColName = "`" + alias + "`" + "." + "`" + f.name + "`"
+        convertFromDot(aliasDotColName)
+      })
+    val newDS = SparkOperation.projectAsAlias(newFields, originPlan)
+    if (needLog) {
+      logInfo(s"Wrap ALIAS ${originPlan.schema.treeString} TO ${newDS.schema.treeString}")
+    }
+    newDS
+  }
+
 
   def joinFactTableWithLookupTables(rootFactDataset: Dataset[Row],
                                     lookupTableDatasetMap: mutable.Map[JoinTableDesc, Dataset[Row]],
@@ -726,6 +741,15 @@ object FlatTableAndDictBase extends LogEx {
     lookupTableDatasetMap.foldLeft(rootFactDataset)(
       (joinedDataset: Dataset[Row], tuple: (JoinTableDesc, Dataset[Row])) =>
         joinTableDataset(model.getRootFactTable.getTableDesc, tuple._1, joinedDataset, tuple._2, needLog))
+  }
+
+  def joinFactTableWithLookupTables(rootFactPlan: LogicalPlan,
+                                    lookupTableDatasetMap: mutable.Map[JoinTableDesc, LogicalPlan],
+                                    model: NDataModel,
+                                    needLog: Boolean): LogicalPlan = {
+    lookupTableDatasetMap.foldLeft(rootFactPlan)(
+      (joinedDataset: LogicalPlan, tuple: (JoinTableDesc, LogicalPlan)) =>
+        joinTableLogicalPlan(model.getRootFactTable.getTableDesc, tuple._1, joinedDataset, tuple._2, needLog))
   }
 
   def joinTableDataset(rootFactDesc: TableDesc,
@@ -760,6 +784,39 @@ object FlatTableAndDictBase extends LogEx {
         afterJoin = afterJoin.join(FiltersUtil.inferFilters(pk, lookupDataset), condition, joinType)
       } else {
         afterJoin = afterJoin.join(lookupDataset, condition, joinType)
+      }
+    }
+    afterJoin
+  }
+
+  def joinTableLogicalPlan(rootFactDesc: TableDesc,
+                           lookupDesc: JoinTableDesc,
+                           rootFactPlan: LogicalPlan,
+                           lookupPlan: LogicalPlan,
+                           needLog: Boolean = true): LogicalPlan = {
+    var afterJoin = rootFactPlan
+    val join = lookupDesc.getJoin
+    if (join != null && !StringUtils.isEmpty(join.getType)) {
+      val joinType = join.getType.toUpperCase(Locale.ROOT)
+      val pk = join.getPrimaryKeyColumns
+      val fk = join.getForeignKeyColumns
+      if (pk.length != fk.length) {
+        throw new RuntimeException(
+          s"Invalid join condition of fact table: $rootFactDesc,fk: ${fk.mkString(",")}," +
+            s" lookup table:$lookupDesc, pk: ${pk.mkString(",")}")
+      }
+      val equiConditionColPairs = fk.zip(pk).map(joinKey =>
+        col(convertFromDot(joinKey._1.getBackTickIdentity))
+          .equalTo(col(convertFromDot(joinKey._2.getBackTickIdentity))))
+
+      if (join.getNonEquiJoinCondition != null) {
+        val condition: Column = getCondition(join)
+        logInfo(s"Root table ${rootFactDesc.getIdentity}, join table ${lookupDesc.getAlias}, non-equi condition: ${condition.toString()}")
+        afterJoin = Join(afterJoin, lookupPlan, JoinType.apply(joinType), Option.apply(condition.expr), JoinHint.NONE)
+      } else {
+        val condition = equiConditionColPairs.reduce(_ && _)
+        logInfo(s"Root table ${rootFactDesc.getIdentity}, join table ${lookupDesc.getAlias}, condition: ${condition.toString()}")
+        afterJoin = Join(afterJoin, lookupPlan, JoinType.apply(joinType), Option.apply(condition.expr), JoinHint.NONE)
       }
     }
     afterJoin
