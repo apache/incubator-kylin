@@ -24,9 +24,9 @@ import java.util.Map;
 
 import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.kylin.common.KapConfig;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.CollectionUtil;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.model.ComputedColumnDesc;
 import org.apache.kylin.metadata.model.NDataModel;
 import org.apache.kylin.metadata.model.ParameterDesc;
@@ -40,8 +40,6 @@ import org.apache.kylin.query.relnode.OLAPContext;
 import org.apache.kylin.query.relnode.TableColRefWithRel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import lombok.val;
 import lombok.var;
@@ -65,7 +63,7 @@ public class ComputedColumnRewriter {
 
     private static void rewriteAggInnerCol(KylinConfig kylinConfig, OLAPContext context, NDataModel model,
             QueryAliasMatchInfo matchInfo) {
-        if (!KapConfig.getInstanceFromEnv().isAggComputedColumnRewriteEnabled()
+        if (!kylinConfig.isConvertExpressionToCcEnabled() || !kylinConfig.isAggComputedColumnRewriteEnabled()
                 || CollectionUtils.isEmpty(model.getComputedColumnDescs())) {
             return;
         }
@@ -102,8 +100,9 @@ public class ComputedColumnRewriter {
             return null;
         }
 
+        boolean onlyReuseUserDefinedCC = kylinConfig.onlyReuseUserDefinedCC();
         for (ComputedColumnDesc cc : model.getComputedColumnDescs()) {
-            if (kylinConfig.isTableExclusionEnabled() && kylinConfig.onlyReuseUserDefinedCC() && cc.isAutoCC()) {
+            if (onlyReuseUserDefinedCC && cc.isAutoCC()) {
                 continue;
             }
 
@@ -122,7 +121,7 @@ public class ComputedColumnRewriter {
 
     private static void rewriteTopNInnerCol(KylinConfig kylinConfig, OLAPContext context, NDataModel model,
             QueryAliasMatchInfo matchInfo) {
-        if (CollectionUtils.isEmpty(model.getComputedColumnDescs()))
+        if (CollectionUtils.isEmpty(model.getComputedColumnDescs()) || !kylinConfig.isConvertExpressionToCcEnabled())
             return;
 
         context.getSortColumns().stream().filter(TblColRef::isInnerColumn).forEach(column -> {
@@ -146,7 +145,7 @@ public class ComputedColumnRewriter {
 
     private static void rewriteGroupByInnerCol(KylinConfig kylinConfig, OLAPContext ctx, NDataModel model,
             QueryAliasMatchInfo matchInfo) {
-        if (CollectionUtils.isEmpty(model.getComputedColumnDescs())) {
+        if (CollectionUtils.isEmpty(model.getComputedColumnDescs()) || !kylinConfig.isConvertExpressionToCcEnabled()) {
             return;
         }
 
@@ -161,8 +160,10 @@ public class ComputedColumnRewriter {
                         tableColRefWIthRel.getTblColRef().getParserDescription(), e);
                 continue;
             }
+
+            boolean onlyReuseUserDefinedCC = kylinConfig.onlyReuseUserDefinedCC();
             for (ComputedColumnDesc cc : model.getComputedColumnDescs()) {
-                if (kylinConfig.isTableExclusionEnabled() && kylinConfig.onlyReuseUserDefinedCC() && cc.isAutoCC()) {
+                if (onlyReuseUserDefinedCC && cc.isAutoCC()) {
                     continue;
                 }
                 SqlNode ccExpressionNode = CalciteParser.getExpNode(cc.getExpression());

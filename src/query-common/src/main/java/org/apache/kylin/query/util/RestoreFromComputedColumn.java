@@ -35,22 +35,21 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
 import org.apache.calcite.util.Litmus;
 import org.apache.commons.collections.MapUtils;
-import org.apache.kylin.common.KapConfig;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.common.util.Unsafe;
-import org.apache.kylin.metadata.cube.model.NDataflowManager;
-import org.apache.kylin.metadata.model.ComputedColumnDesc;
-import org.apache.kylin.metadata.model.NDataModel;
-import org.apache.kylin.metadata.model.tool.CalciteParser;
-import org.apache.kylin.source.adhocquery.IPushDownConverter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.Iterables;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.metadata.cube.model.NDataflowManager;
+import org.apache.kylin.metadata.model.ComputedColumnDesc;
+import org.apache.kylin.metadata.model.NDataModel;
+import org.apache.kylin.metadata.model.tool.CalciteParser;
+import org.apache.kylin.metadata.project.NProjectManager;
+import org.apache.kylin.source.adhocquery.IPushDownConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 //very similar to ConvertToComputedColumn in structure, maybe we should extract a common base class?
 public class RestoreFromComputedColumn implements IPushDownConverter {
@@ -78,10 +77,11 @@ public class RestoreFromComputedColumn implements IPushDownConverter {
         QueryAliasMatcher queryAliasMatcher = new QueryAliasMatcher(project, defaultSchema);
 
         int recursionTimes = 0;
-        int maxRecursionTimes = KapConfig.getInstanceFromEnv().getComputedColumnMaxRecursionTimes();
+        int maxRecursionTimes = NProjectManager.getProjectConfig(project).getConvertCcMaxIterations();
 
         while (recursionTimes < maxRecursionTimes) {
-            QueryInterruptChecker.checkThreadInterrupted("Interrupted sql transformation at the stage of RestoreFromComputedColumn",
+            QueryInterruptChecker.checkThreadInterrupted(
+                    "Interrupted sql transformation at the stage of RestoreFromComputedColumn",
                     "Current step: SQL transformation");
             recursionTimes++;
             boolean recursionCompleted = true;
@@ -181,7 +181,8 @@ public class RestoreFromComputedColumn implements IPushDownConverter {
         for (NDataModel model : modelMap.values()) {
             QueryAliasMatchInfo info = model.getComputedColumnDescs().isEmpty() ? null
                     : queryAliasMatcher.match(model, sqlSelect);
-            QueryInterruptChecker.checkThreadInterrupted("Interrupted sql transformation at the stage of RestoreFromComputedColumn",
+            QueryInterruptChecker.checkThreadInterrupted(
+                    "Interrupted sql transformation at the stage of RestoreFromComputedColumn",
                     "Current step: SQL transformation");
             if (info == null) {
                 continue;

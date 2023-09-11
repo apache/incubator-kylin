@@ -105,6 +105,14 @@ class KylinConfigBaseTest {
                 new PropertiesEntity("kylin.metrics.system-cube-sink-default-class",
                         "org.apache.kylin.metrics.lib.impl.hive.HiveSink",
                         "org.apache.kylin.metrics.lib.impl.hive.HiveSink"));
+        map.put("isConvertExpressionToCcEnabled",
+                new PropertiesEntity("kylin.query.implicit-computed-column-convert", "true", true));
+
+        map.put("isAggComputedColumnRewriteEnabled",
+                new PropertiesEntity("kylin.query.agg-computed-column-rewrite", "true", true));
+
+        map.put("getConvertCcMaxIterations",
+                new PropertiesEntity("kylin.query.computed-column-max-recursion-times", "10", 10));
 
         map.put("isKylinMetricsMonitorEnabled", new PropertiesEntity("kylin.metrics.monitor-enabled", "false", false));
 

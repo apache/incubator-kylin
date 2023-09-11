@@ -70,15 +70,6 @@ public class KapConfigTest {
 
         map.put("getChannelUser", new PropertiesEntity("kylin.env.channel", "on-premises", "on-premises"));
 
-        map.put("isImplicitComputedColumnConvertEnabled",
-                new PropertiesEntity("kylin.query.implicit-computed-column-convert", "true", true));
-
-        map.put("isAggComputedColumnRewriteEnabled",
-                new PropertiesEntity("kylin.query.agg-computed-column-rewrite", "true", true));
-
-        map.put("getComputedColumnMaxRecursionTimes",
-                new PropertiesEntity("kylin.query.computed-column-max-recursion-times", "10", 10));
-
         map.put("isJdbcEscapeEnabled", new PropertiesEntity("kylin.query.jdbc-escape-enabled", "true", true));
 
         map.put("getListenerBusBusyThreshold",
@@ -258,8 +249,10 @@ public class KapConfigTest {
                 new PropertiesEntity("kylin.query.spark-job-trace-parallel-max", "50", 50));
         map.put("isSourceUsageUnwrapComputedColumn",
                 new PropertiesEntity("kylin.metadata.history-source-usage-unwrap-computed-column", "true", true));
-        map.put("getKerberosTGTRenewalInterval", new PropertiesEntity("kylin.kerberos.tgt-renewal-interval-minutes", "10", 10L));
-        map.put("getKerberosTGTRetryInterval", new PropertiesEntity("kylin.kerberos.tgt-retry-interval-minutes", "60", 60L));
+        map.put("getKerberosTGTRenewalInterval",
+                new PropertiesEntity("kylin.kerberos.tgt-renewal-interval-minutes", "10", 10L));
+        map.put("getKerberosTGTRetryInterval",
+                new PropertiesEntity("kylin.kerberos.tgt-retry-interval-minutes", "60", 60L));
     }
 
     @Test

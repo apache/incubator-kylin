@@ -22,12 +22,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.kylin.common.annotation.Clarification;
 import org.apache.kylin.common.util.EncryptUtil;
 import org.apache.kylin.common.util.FileUtils;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Clarification(priority = Clarification.Priority.MAJOR, msg = "Enterprise")
@@ -233,21 +234,6 @@ public class KapConfig {
         return config.getOptional("kylin.smart.conf." + conf, null);
     }
 
-    /**
-     * Query
-     */
-    public boolean isImplicitComputedColumnConvertEnabled() {
-        return Boolean.parseBoolean(config.getOptional("kylin.query.implicit-computed-column-convert", "true"));
-    }
-
-    public boolean isAggComputedColumnRewriteEnabled() {
-        return Boolean.parseBoolean(config.getOptional("kylin.query.agg-computed-column-rewrite", "true"));
-    }
-
-    public int getComputedColumnMaxRecursionTimes() {
-        return Integer.parseInt(config.getOptional("kylin.query.computed-column-max-recursion-times", "10"));
-    }
-
     public boolean isJdbcEscapeEnabled() {
         return Boolean.parseBoolean(config.getOptional("kylin.query.jdbc-escape-enabled", "true"));
     }
@@ -266,7 +252,8 @@ public class KapConfig {
     }
 
     public Boolean isConstraintPropagationEnabled() {
-        return Boolean.parseBoolean(config.getOptional("kylin.query.engine.spark-constraint-propagation-enabled", FALSE));
+        return Boolean
+                .parseBoolean(config.getOptional("kylin.query.engine.spark-constraint-propagation-enabled", FALSE));
     }
 
     /**
@@ -716,11 +703,13 @@ public class KapConfig {
     }
 
     public boolean isApplyLimitInfoToSourceScanRowsEnabled() {
-        return Boolean.parseBoolean(config.getOptional("kylin.query.apply-limit-info-to-source-scan-rows-enabled", FALSE));
+        return Boolean
+                .parseBoolean(config.getOptional("kylin.query.apply-limit-info-to-source-scan-rows-enabled", FALSE));
     }
 
     public boolean isAutoAdjustBigQueryRowsThresholdEnabled() {
-        return Boolean.parseBoolean(config.getOptional("kylin.query.auto-adjust-big-query-rows-threshold-enabled", FALSE));
+        return Boolean
+                .parseBoolean(config.getOptional("kylin.query.auto-adjust-big-query-rows-threshold-enabled", FALSE));
     }
 
     public long getBigQuerySecond() {

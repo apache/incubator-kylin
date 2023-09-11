@@ -793,6 +793,18 @@ public abstract class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(getOptional("kylin.metadata.only-reuse-user-defined-computed-column", FALSE));
     }
 
+    public boolean isConvertExpressionToCcEnabled() {
+        return Boolean.parseBoolean(getOptional("kylin.query.implicit-computed-column-convert", TRUE));
+    }
+
+    public boolean isAggComputedColumnRewriteEnabled() {
+        return Boolean.parseBoolean(getOptional("kylin.query.agg-computed-column-rewrite", TRUE));
+    }
+
+    public int getConvertCcMaxIterations() {
+        return Integer.parseInt(getOptional("kylin.query.computed-column-max-recursion-times", "10"));
+    }
+
     /**
      * expose computed column in the table metadata and select * queries
      */
@@ -1941,13 +1953,13 @@ public abstract class KylinConfigBase implements Serializable {
     }
 
     public String getMppOnTheFlyLayoutsProvider() {
-        return this.getOptional("kylin.query.mpp-on-the-fly-layouts-provider", "io.kyligence.kap.engine.spark.job.MppOnTheFlyImpl");
+        return this.getOptional("kylin.query.mpp-on-the-fly-layouts-provider",
+                "io.kyligence.kap.engine.spark.job.MppOnTheFlyImpl");
     }
 
     public boolean enableReplaceDynamicParams() {
         return Boolean.parseBoolean(this.getOptional("kylin.query.replace-dynamic-params-enabled", FALSE));
     }
-
 
     public String getPercentileApproxAlgorithm() {
         // Valid values: t-digest
@@ -2870,8 +2882,7 @@ public abstract class KylinConfigBase implements Serializable {
     }
 
     public long getTableAccessCacheTTL() {
-        return TimeUtil.timeStringAs(getOptional("kylin.source.hive.table-access-cache-ttl", "7d"),
-                TimeUnit.MINUTES);
+        return TimeUtil.timeStringAs(getOptional("kylin.source.hive.table-access-cache-ttl", "7d"), TimeUnit.MINUTES);
     }
 
     public String[] getHiveDatabases() {
@@ -4126,11 +4137,13 @@ public abstract class KylinConfigBase implements Serializable {
     }
 
     public boolean isKylinLocalCacheEnabled() {
-        return Boolean.parseBoolean(getOptional("kylin.storage.columnar.spark-conf.spark.kylin.local-cache.enabled", FALSE));
+        return Boolean
+                .parseBoolean(getOptional("kylin.storage.columnar.spark-conf.spark.kylin.local-cache.enabled", FALSE));
     }
 
     public boolean isKylinFileStatusCacheEnabled() {
-        return Boolean.parseBoolean(getOptional("kylin.storage.columnar.spark-conf.spark.hadoop.spark.kylin.file-status-cache.enabled", FALSE));
+        return Boolean.parseBoolean(getOptional(
+                "kylin.storage.columnar.spark-conf.spark.hadoop.spark.kylin.file-status-cache.enabled", FALSE));
     }
 
     public boolean isSupportPushdownHiveCsvEnhancement() {
