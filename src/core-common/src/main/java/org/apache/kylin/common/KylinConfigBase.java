@@ -1970,6 +1970,14 @@ public abstract class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(getOptional("kylin.cache.redis.cluster-enabled", FALSE));
     }
 
+    public boolean isRedisSentinelEnabled() {
+        return Boolean.parseBoolean(getOptional("kylin.cache.redis.sentinel-enabled", FALSE));
+    }
+
+    public String getRedisSentinelMasterId() {
+        return getOptional("kylin.cache.redis.sentinel-master", null);
+    }
+
     public String getRedisHosts() {
         return getOptional("kylin.cache.redis.hosts", "localhost:6379");
     }

@@ -133,8 +133,7 @@ public class QueryMetricsContext extends QueryMetrics {
 
         if (context.getQueryTagInfo().isHitExceptionCache() || context.getQueryTagInfo().isStorageCacheUsed()) {
             this.isCacheHit = true;
-            this.cacheType = KylinConfig.getInstanceFromEnv().isRedisEnabled() ? QueryHistory.CacheType.REDIS.name()
-                    : QueryHistory.CacheType.EHCACHE.name();
+            this.cacheType = context.getQueryTagInfo().getStorageCacheType();
         }
         this.resultRowCount = context.getMetrics().getResultRowCount();
         this.queryMsg = context.getMetrics().getQueryMsg();

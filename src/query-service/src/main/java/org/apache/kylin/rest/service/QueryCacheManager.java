@@ -36,6 +36,7 @@ import org.apache.kylin.rest.cache.KylinCache;
 import org.apache.kylin.rest.cache.KylinEhCache;
 import org.apache.kylin.rest.cache.memcached.CompositeMemcachedCache;
 import org.apache.kylin.rest.cache.RedisCache;
+import org.apache.kylin.rest.cache.RedisCacheV2;
 import org.apache.kylin.rest.request.SQLRequest;
 import org.apache.kylin.rest.response.SQLResponse;
 import org.apache.kylin.rest.response.TableMetaCacheResult;
@@ -73,10 +74,15 @@ public class QueryCacheManager implements CommonQueryCacheSupporter {
     public void init() {
         KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
         if (kylinConfig.isRedisEnabled()) {
-            kylinCache = RedisCache.getInstance();
+            if (kylinConfig.isRedisSentinelEnabled()) {
+                kylinCache = RedisCacheV2.getInstance();
+            } else {
+                kylinCache = RedisCache.getInstance();
+            }
         } else if (kylinConfig.isMemcachedEnabled()) {
             kylinCache = CompositeMemcachedCache.getInstance();
-        } else {
+        }
+        if (kylinCache == null) {
             kylinCache = KylinEhCache.getInstance();
         }
         if (kylinCache instanceof RedisCache && checkRedisClient()) {
@@ -164,7 +170,7 @@ public class QueryCacheManager implements CommonQueryCacheSupporter {
     }
 
     public SQLResponse doSearchQuery(QueryCacheManager.Type type, SQLRequest sqlRequest) {
-        Object response = kylinCache.get(type.rootCacheName, sqlRequest.getProject(), sqlRequest.getCacheKey());
+        Object response = getCache(type.rootCacheName, sqlRequest.getProject(), sqlRequest.getCacheKey());
         logger.debug("[query cache log] The cache key is: {}", sqlRequest.getCacheKey());
         if (response == null) {
             return null;
@@ -254,7 +260,7 @@ public class QueryCacheManager implements CommonQueryCacheSupporter {
     }
 
     public TableMetaCacheResult doGetSchemaCache(String project, String userName) {
-        Object metaList = kylinCache.get(Type.SCHEMA_CACHE.rootCacheName, project, userName);
+        Object metaList = getCache(Type.SCHEMA_CACHE.rootCacheName, project, userName);
         if (metaList == null) {
             return null;
         }
@@ -286,7 +292,7 @@ public class QueryCacheManager implements CommonQueryCacheSupporter {
         if (modelName != null) {
             cacheKey = cacheKey + modelName;
         }
-        Object metaList = kylinCache.get(Type.SCHEMA_CACHE.rootCacheName, project, cacheKey);
+        Object metaList = getCache(Type.SCHEMA_CACHE.rootCacheName, project, cacheKey);
         if (metaList == null) {
             return null;
         }
@@ -298,15 +304,15 @@ public class QueryCacheManager implements CommonQueryCacheSupporter {
         if (modelName != null) {
             cacheKey = cacheKey + modelName;
         }
-        kylinCache.put(Type.SCHEMA_CACHE.rootCacheName, project, cacheKey, schemas);
+        putCache(Type.SCHEMA_CACHE.rootCacheName, project, cacheKey, schemas);
     }
 
     public void clearSchemaCacheV2(String project, String userName) {
-        kylinCache.remove(Type.SCHEMA_CACHE.rootCacheName, project, userName + "v2");
+        removeCache(Type.SCHEMA_CACHE.rootCacheName, project, userName + "v2");
     }
 
     public void clearSchemaCache(String project, String userName) {
-        kylinCache.remove(Type.SCHEMA_CACHE.rootCacheName, project, userName);
+        removeCache(Type.SCHEMA_CACHE.rootCacheName, project, userName);
     }
 
     public void onClearSchemaCache(String project) {
@@ -314,12 +320,12 @@ public class QueryCacheManager implements CommonQueryCacheSupporter {
     }
 
     public void clearSchemaCache(String project) {
-        kylinCache.clearByType(Type.SCHEMA_CACHE.rootCacheName, project);
+        clearCacheByType(Type.SCHEMA_CACHE.rootCacheName, project);
     }
 
     public void clearQueryCache(SQLRequest request) {
-        kylinCache.remove(Type.SUCCESS_QUERY_CACHE.rootCacheName, request.getProject(), request.getCacheKey());
-        kylinCache.remove(Type.EXCEPTION_QUERY_CACHE.rootCacheName, request.getProject(), request.getCacheKey());
+        removeCache(Type.SUCCESS_QUERY_CACHE.rootCacheName, request.getProject(), request.getCacheKey());
+        removeCache(Type.EXCEPTION_QUERY_CACHE.rootCacheName, request.getProject(), request.getCacheKey());
     }
 
     public void onClearProjectCache(String project) {
@@ -329,25 +335,92 @@ public class QueryCacheManager implements CommonQueryCacheSupporter {
     public void clearProjectCache(String project) {
         if (project == null) {
             logger.info("[query cache log] clear query cache for all projects.");
-            kylinCache.clearAll();
+            clearAllCache();
         } else {
             logger.info("[query cache log] clear query cache for {}", project);
-            kylinCache.clearByType(Type.SUCCESS_QUERY_CACHE.rootCacheName, project);
-            kylinCache.clearByType(Type.EXCEPTION_QUERY_CACHE.rootCacheName, project);
-            kylinCache.clearByType(Type.SCHEMA_CACHE.rootCacheName, project);
+            clearCacheByType(Type.SUCCESS_QUERY_CACHE.rootCacheName, project);
+            clearCacheByType(Type.EXCEPTION_QUERY_CACHE.rootCacheName, project);
+            clearCacheByType(Type.SCHEMA_CACHE.rootCacheName, project);
         }
     }
 
-    public void recoverCache() {
-        boolean isRedisEnabled = KylinConfig.getInstanceFromEnv().isRedisEnabled();
-        if (isRedisEnabled) {
-            RedisCache.recoverInstance();
-            logger.info("[query cache log] Redis client recover successfully.");
+    public boolean recoverCache() {
+        logger.info("Redis client recovery start.");
+        KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
+        // no need to recover
+        if (!kylinConfig.isRedisEnabled()) {
+            logger.info("No need to recover Redis client, isRedisEnabled:{}", kylinConfig.isRedisEnabled());
+            return false;
+        }
+
+        if (!kylinConfig.isRedisSentinelEnabled()) {
+            // cluster、standalone
+            kylinCache = RedisCache.recoverInstance();
+        } else {
+            // sentinel
+            if (kylinCache instanceof RedisCacheV2) {
+                kylinCache = ((RedisCacheV2) kylinCache).recoverInstance();
+            } else {
+                kylinCache = RedisCacheV2.getInstance();
+            }
+        }
+
+        // recover failed，use Ehcache
+        if (kylinCache == null) {
+            logger.info("Redis client recover failed, use ehcache instead.");
+            kylinCache = KylinEhCache.getInstance();
+            return false;
+        } else {
+            logger.info("Redis client recover successfully.");
+            return true;
         }
     }
 
     //for test
     public KylinCache getCache() {
         return kylinCache;
+    }
+
+    public Object getCache(String type, String project, Object key) {
+        try {
+            return kylinCache.get(type, project, key);
+        } catch (Exception e) {
+            logger.error("Get cache failed, type:{}, project:{}, key:{}, exception:{}", type, project, key, e);
+        }
+        return null;
+    }
+
+    public void putCache(String type, String project, Object key, Object value) {
+        try {
+            kylinCache.put(type, project, key, value);
+        } catch (Exception e) {
+            logger.error("Put cache failed, type:{}, project:{}, key:{}, value:{}, exception:{}", type, project, key,
+                    value, e);
+        }
+    }
+
+    public boolean removeCache(String type, String project, Object key) {
+        try {
+            return kylinCache.remove(type, project, key);
+        } catch (Exception e) {
+            logger.error("Remove cache failed, type:{}, project:{}, key:{}, exception:{}", type, project, key, e);
+        }
+        return false;
+    }
+
+    public void clearAllCache() {
+        try {
+            kylinCache.clearAll();
+        } catch (Exception e) {
+            logger.error("Clear all cache failed, exception:", e);
+        }
+    }
+
+    public void clearCacheByType(String type, String project) {
+        try {
+            kylinCache.clearByType(type, project);
+        } catch (Exception e) {
+            logger.error("Clear cache by type failed, type:{}, project:{}, exception:{}", type, project, e);
+        }
     }
 }

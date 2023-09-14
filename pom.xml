@@ -188,6 +188,7 @@
         <ehcache.version>2.10.9.2</ehcache.version>
         <net.spy.memcached.verion>2.12.3</net.spy.memcached.verion>
         <redis.version>3.8.0</redis.version>
+        <lettuce.version>6.1.8.RELEASE</lettuce.version>
         <apache-httpclient.version>4.5.13</apache-httpclient.version>
         <beanutils.version>1.9.4</beanutils.version>
         <xerces.version>2.12.2</xerces.version>
@@ -795,6 +796,12 @@
                 <groupId>redis.clients</groupId>
                 <artifactId>jedis</artifactId>
                 <version>${redis.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.lettuce</groupId>
+                <artifactId>lettuce-core</artifactId>
+                <version>${lettuce.version}</version>
             </dependency>
 
             <!--KAP test scope-->

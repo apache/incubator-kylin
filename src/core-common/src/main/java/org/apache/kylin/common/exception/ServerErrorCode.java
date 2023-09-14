@@ -289,6 +289,7 @@ public enum ServerErrorCode implements ErrorCodeSupplier {
 
     // 10040XXX cache
     REDIS_CLEAR_ERROR("KE-010040001"), //
+    REDIS_INIT_FAILED("KE-010040002"), //
 
     // 10050XXX SQL DDL
     DDL_CHECK_ERROR("KE-010050001");

@@ -18,22 +18,32 @@
 
 package org.apache.kylin.rest.cache;
 
-import org.apache.kylin.guava30.shaded.common.base.Joiner;
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import static org.apache.kylin.rest.cache.CacheConstant.NX;
+import static org.apache.kylin.rest.cache.CacheConstant.PREFIX;
+import static org.apache.kylin.rest.cache.CacheConstant.XX;
+
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.Singletons;
-import org.apache.kylin.common.util.CompressionUtils;
 import org.apache.kylin.common.util.EncryptUtil;
-import org.apache.kylin.rest.service.CommonQueryCacheSupporter;
-import org.apache.kylin.rest.util.SerializeUtil;
+import org.apache.kylin.guava30.shaded.common.base.Joiner;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
@@ -48,24 +58,10 @@ import redis.clients.jedis.exceptions.JedisMovedDataException;
 import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.util.JedisClusterCRC16;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-public class RedisCache implements KylinCache {
+public class RedisCache extends AbstractKylinCache implements KylinCache {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisCache.class);
 
-    private static final String NX = "NX";
-    private static final String XX = "XX";
-    private static final String PREFIX = "Kylin5-";
-    private static final String CHARSET_NAME = "UTF-8";
     private static final Charset CHARSET = StandardCharsets.UTF_8;
     private static final String SCAN_POINTER_START_STR = new String(ScanParams.SCAN_POINTER_START_BINARY, CHARSET);
     private static JedisPool jedisPool;
@@ -232,14 +228,6 @@ public class RedisCache implements KylinCache {
             isRecovering.set(false);
         }
         return cache;
-    }
-
-    private String getTypeProjectPrefix(String type, String project) {
-        return String.format(Locale.ROOT, "%s-%s", type, project);
-    }
-
-    private boolean isExceptionQuery(String type) {
-        return type.equals(CommonQueryCacheSupporter.Type.EXCEPTION_QUERY_CACHE.rootCacheName);
     }
 
     @Override
@@ -455,47 +443,6 @@ public class RedisCache implements KylinCache {
             }
         }
         return keys;
-    }
-
-    private byte[] convertValueToByte(Object value) {
-        try {
-            return CompressionUtils.compress(SerializeUtil.serialize(value));
-        } catch (Exception e) {
-            logger.error("serialize failed!", e);
-            return null;
-        }
-    }
-
-    private byte[] getBytesFromString(String str) {
-        try {
-            return str.getBytes(CHARSET_NAME);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("unsupported encoding:" + CHARSET_NAME, e);
-        }
-    }
-
-    private byte[] convertKeyToByte(String type, Object key) {
-        try {
-            String prefixAndType = PREFIX + type;
-            byte[] typeBytes = getBytesFromString(prefixAndType);
-            byte[] keyBytes = SerializeUtil.serialize(key);
-            byte[] trueKeyBytes = new byte[keyBytes.length + typeBytes.length];
-            System.arraycopy(typeBytes, 0, trueKeyBytes, 0, typeBytes.length);
-            System.arraycopy(keyBytes, 0, trueKeyBytes, typeBytes.length, keyBytes.length);
-            return trueKeyBytes;
-        } catch (Exception e) {
-            logger.error("serialize fail!", e);
-            return null;
-        }
-    }
-
-    private Object convertByteToObject(byte[] bytes) {
-        try {
-            return SerializeUtil.deserialize(CompressionUtils.decompress(bytes));
-        } catch (Exception e) {
-            logger.error("deserialize fail!", e);
-            return null;
-        }
     }
 
     @Override
