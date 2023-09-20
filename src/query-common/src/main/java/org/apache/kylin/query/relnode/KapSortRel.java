@@ -18,7 +18,10 @@
 
 package org.apache.kylin.query.relnode;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -26,15 +29,21 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.model.TblColRef;
 import org.apache.kylin.metadata.realization.SQLDigest;
 import org.apache.kylin.query.util.ICutContextStrategy;
 
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import lombok.Getter;
+import lombok.Setter;
 
 public class KapSortRel extends OLAPSortRel implements KapRel {
     private Set<OLAPContext> subContexts = Sets.newHashSet();
+    @Setter
+    @Getter
+    protected boolean needPushToSubCtx;
 
     public KapSortRel(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation,
             RexNode offset, RexNode fetch) {
@@ -100,6 +109,12 @@ public class KapSortRel extends OLAPSortRel implements KapRel {
                 TblColRef orderCol = olapChild.getColumnRowType().getAllColumns().get(index);
                 this.context.addSort(orderCol, order);
                 this.context.allColumns.addAll(orderCol.getSourceColumns());
+            }
+        } else if (needPushToSubCtx) {
+            List<Set<TblColRef>> sourceColumns = this.columnRowType.getSourceColumns();
+            if (CollectionUtils.isNotEmpty(sourceColumns)) {
+                ContextUtil.updateSubContexts(
+                        sourceColumns.stream().flatMap(Collection::stream).collect(Collectors.toSet()), subContexts);
             }
         }
     }

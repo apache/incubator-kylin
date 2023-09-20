@@ -21,12 +21,14 @@ package org.apache.kylin.query.routing;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.engine.spark.NLocalWithSparkSessionTest;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
 import org.apache.kylin.metadata.cube.model.NDataflow;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
+import org.apache.kylin.query.relnode.KapSortRel;
 import org.apache.kylin.query.relnode.OLAPContext;
 import org.apache.kylin.util.OlapContextTestUtil;
 import org.junit.After;
@@ -98,6 +100,25 @@ public class RealizationChooserTest extends NLocalWithSparkSessionTest {
     }
 
     @Test
+    public void testPushSortRelToSubOlapContexts() throws SqlParseException {
+        overwriteSystemProp("kylin.query.print-logical-plan", "true");
+        String project = "joins_graph_left_or_inner";
+        String sql = "select a.NAME from TEST_BANK_INCOME a inner join TEST_BANK_LOCATION b on a.COUNTRY = b.COUNTRY\n"
+                + "order by a.INCOME nulls last";
+        RelNode relNode = OlapContextTestUtil.cutOlapContextsAndReturnRelNode(project, sql);
+        KapSortRel sortRel = null;
+        while (relNode != null) {
+            if (relNode instanceof KapSortRel) {
+                sortRel = (KapSortRel) relNode;
+                break;
+            }
+            relNode = relNode.getInput(0);
+        }
+        Assert.assertNotNull(sortRel);
+        Assert.assertTrue(sortRel.isNeedPushToSubCtx());
+    }
+
+    @Test
     public void testCanMatchModelInnerQueryLeft() throws SqlParseException {
         // model: TEST_BANK_INCOME inner join TEST_BANK_LOCATION
         // query: TEST_BANK_INCOME left join TEST_BANK_LOCATION with not null filter
@@ -127,7 +148,8 @@ public class RealizationChooserTest extends NLocalWithSparkSessionTest {
             String sql = "select a.NAME from TEST_BANK_INCOME a left join TEST_BANK_LOCATION b \n"
                     + " on a.COUNTRY = b.COUNTRY where " + filter;
             OLAPContext olapContext = OlapContextTestUtil.getOlapContexts(getProject(), sql).get(0);
-            Map<String, String> sqlAlias2ModelNameMap = OlapContextTestUtil.matchJoins(dataflow.getModel(), olapContext);
+            Map<String, String> sqlAlias2ModelNameMap = OlapContextTestUtil.matchJoins(dataflow.getModel(),
+                    olapContext);
             Assert.assertTrue(sqlAlias2ModelNameMap.isEmpty());
         }
     }

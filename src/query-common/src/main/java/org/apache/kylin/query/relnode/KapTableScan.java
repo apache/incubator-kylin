@@ -33,15 +33,14 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.kylin.metadata.model.TableDesc;
-import org.apache.kylin.metadata.model.TblColRef;
-import org.apache.kylin.query.schema.OLAPSchema;
-import org.apache.kylin.query.schema.OLAPTable;
-import org.apache.kylin.query.engine.KECalciteConfig;
-import org.apache.kylin.query.util.ICutContextStrategy;
-
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.metadata.model.TableDesc;
+import org.apache.kylin.metadata.model.TblColRef;
+import org.apache.kylin.query.engine.KECalciteConfig;
+import org.apache.kylin.query.schema.OLAPSchema;
+import org.apache.kylin.query.schema.OLAPTable;
+import org.apache.kylin.query.util.ICutContextStrategy;
 
 /**
  */
@@ -153,6 +152,9 @@ public class KapTableScan extends OLAPTableScan implements EnumerableRel, KapRel
                 break;
             }
             KapRel parent = (KapRel) tempParent;
+            if (parent instanceof KapSortRel) {
+                ((KapSortRel) parent).setNeedPushToSubCtx(true);
+            }
 
             if (topProjParent == null && parent instanceof OLAPProjectRel
                     && !((OLAPProjectRel) parent).isMerelyPermutation()) {
