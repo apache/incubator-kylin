@@ -260,4 +260,14 @@ public class JdbcUtil {
         val dataSource = BasicDataSourceFactory.createDataSource(props);
         return new JdbcTemplate(dataSource);
     }
+
+    public static <T> T retry(Callback<T> func) throws Exception {
+        try {
+            return func.handle();
+        } catch (Exception e) {
+            log.error("occur exception, retry", e);
+            return func.handle();
+        }
+    }
+
 }

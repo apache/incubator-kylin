@@ -41,6 +41,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.Singletons;
 import org.apache.kylin.common.exception.KylinException;
+import org.apache.kylin.common.persistence.metadata.jdbc.JdbcUtil;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -122,17 +123,20 @@ public class JdbcEpochStore extends EpochStore {
         }
         return dataSource.getConnection();
     }
-
+    
     @Override
     public void createIfNotExist() throws Exception {
         if (isTableExists(getConnection(jdbcTemplate), table)) {
-            if (!isPrimaryKeyExists(getConnection(jdbcTemplate), table)) {
-                withTransaction(transactionManager, () -> {
-                    jdbcTemplate.execute(getAddPrimarykeySql(table));
-                    return 1;
-                });
-                log.info("Succeed to add table primary key: {}", table);
-            }
+            JdbcUtil.retry(() -> {
+                if (!isPrimaryKeyExists(getConnection(jdbcTemplate), table)) {
+                    withTransaction(transactionManager, () -> {
+                        jdbcTemplate.execute(getAddPrimarykeySql(table));
+                        return 1;
+                    });
+                    log.info("Succeed to add table primary key: {}", table);
+                }
+                return 1;
+            });
             return;
         }
         String fileName = "metadata-jdbc-default.properties";

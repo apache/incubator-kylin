@@ -20,6 +20,8 @@ package org.apache.kylin.common.persistence.metadata.jdbc;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -50,5 +52,20 @@ public class JdbcUtilTest {
         this.connection = DriverManager.getConnection("jdbc:h2:mem:jdbc_util_test;DB_CLOSE_DELAY=-1", "sa",
                 null);
         Assert.assertFalse(JdbcUtil.isColumnExists(connection, table, "not_exists"));
+    }
+
+    @Test
+    public void testRetry() throws Exception {
+        Set set = new HashSet();
+        int result = JdbcUtil.retry(() -> {
+            boolean shouldThrowException = set.isEmpty();
+            set.add(true);
+            if (shouldThrowException) {
+                throw new Exception("test");
+            }
+            return 1;
+        });
+        Assert.assertEquals(1, result);
+
     }
 }
