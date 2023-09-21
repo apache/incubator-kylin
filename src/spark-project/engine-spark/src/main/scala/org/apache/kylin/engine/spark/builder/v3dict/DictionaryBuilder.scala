@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.kylin.common.KylinConfig
 import org.apache.kylin.common.exception.KylinRuntimeException
 import org.apache.kylin.common.util.HadoopUtil
+import org.apache.kylin.engine.spark.builder.ZKHelper
 import org.apache.kylin.engine.spark.builder.v3dict.DictBuildMode.{V2UPGRADE, V3APPEND, V3INIT, V3UPGRADE}
 import org.apache.kylin.engine.spark.job.NSparkCubingUtil
 import org.apache.kylin.metadata.model.TblColRef
@@ -40,7 +41,7 @@ import util.retry.blocking.RetryStrategy.RetryStrategyProducer
 import util.retry.blocking.{Failure, Retry, RetryStrategy, Success}
 
 import java.nio.file.Paths
-import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.concurrent.locks.Lock
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.DurationInt
 import scala.util.control.NonFatal
@@ -49,7 +50,6 @@ object DictionaryBuilder extends Logging {
 
   implicit val retryStrategy: RetryStrategyProducer =
     RetryStrategy.randomBackOff(5.seconds, 15.seconds, maxAttempts = 20)
-  lazy val v3dictMergeLock = new ReentrantReadWriteLock(true)
 
   def buildGlobalDict(
                        project: String,
@@ -88,12 +88,11 @@ object DictionaryBuilder extends Logging {
   private def transformerDictPlan(
                                    spark: SparkSession,
                                    context: DictionaryContext,
-                                   plan: LogicalPlan): DictPlanVersion = {
+                                   plan: LogicalPlan): LogicalPlan = {
 
     val dictPath = getDictionaryPathAndCheck(context)
-    val dictVersion = DeltaLog.forTable(spark, dictPath).snapshot.version
-    val dictTableDF = spark.read.format("delta").option("versionAsOf", dictVersion).load(dictPath);
-    val maxOffset = dictTableDF.count()
+    val dictTable: DeltaTable = DeltaTable.forPath(dictPath)
+    val maxOffset = dictTable.toDF.count()
     logInfo(s"Dict $dictPath item count $maxOffset")
 
     plan match {
@@ -102,19 +101,19 @@ object DictionaryBuilder extends Logging {
         val windowSpec = org.apache.spark.sql.expressions.Window.orderBy(col(column))
         val joinCondition = createColumn(
           EqualTo(col(column).cast(StringType).expr,
-            getLogicalPlan(dictTableDF).output.head))
-        val filterKey = getLogicalPlan(dictTableDF).output.head.name
+            getLogicalPlan(dictTable.toDF).output.head))
+        val filterKey = getLogicalPlan(dictTable.toDF).output.head.name
         val antiJoinDF = getDataFrame(spark, windowChild)
           .filter(col(filterKey).isNotNull)
-          .join(dictTableDF,
+          .join(dictTable.toDF,
             joinCondition,
             "left_anti")
           .select(col(column).cast(StringType) as "dict_key",
             (row_number().over(windowSpec) + lit(maxOffset)).cast(LongType) as "dict_value")
         logInfo(s"Dict logical plan : ${antiJoinDF.queryExecution.logical.treeString}")
-        DictPlanVersion(getLogicalPlan(antiJoinDF), dictVersion)
+        getLogicalPlan(antiJoinDF)
 
-      case _ => DictPlanVersion(plan, dictVersion)
+      case _ => plan
     }
   }
 
@@ -186,34 +185,22 @@ object DictionaryBuilder extends Logging {
   }
 
   private def mergeIncrementDict(spark: SparkSession, context: DictionaryContext, plan: LogicalPlan): Unit = {
-    val incDictVersion = transformerDictPlan(spark, context, plan)
-    val incrementDictDF = getDataFrame(spark, incDictVersion.incDictPlan)
-    val dictPath = getDictionaryPathAndCheck(context)
-    if (incrementDictDF.isEmpty) {
-      logInfo(s"Increment dict for global dict $dictPath is empty, no need to merge.")
-      return
-    }
-    tryMergeIncrementDict(spark, dictPath, incDictVersion.sourceDeltaVersion, incrementDictDF)
-  }
-
-  private def tryMergeIncrementDict(spark: SparkSession, dictPath: String, dictVersion: Long,
-                                    incDictDF: Dataset[Row]): Unit = {
-    v3dictMergeLock.writeLock().lock()
+    ZKHelper.tryZKJaasConfiguration(spark)
+    val lock: Lock = KylinConfig.getInstanceFromEnv.getDistributedLockFactory
+      .getLockForCurrentThread(getDictionaryLockPath(context))
+    lock.lock()
     try {
+      val dictPlan = transformerDictPlan(spark, context, plan)
+      val incrementDictDF = getDataFrame(spark, dictPlan)
+      val dictPath = getDictionaryPathAndCheck(context)
       logInfo(s"Increment build global dict $dictPath")
-      val curVersion = DeltaLog.forTable(spark, dictPath).snapshot.version
-      if (dictVersion != curVersion) {
-        logInfo(s"Cur v3dict version is $curVersion, incDict is based on version $curVersion, will be retry")
-        throw new KylinRuntimeException(s"Cur v3dict version is $curVersion, " +
-          s"incDict is based on version $curVersion, will be retry")
-      } else {
-        val dictTable = DeltaTable.forPath(dictPath)
-        dictTable.merge(incDictDF, "1 != 1")
-          .whenNotMatched().insertAll()
-          .execute()
-      }
+      val dictTable = DeltaTable.forPath(dictPath)
+      dictTable.alias("dict")
+        .merge(incrementDictDF.alias("incre_dict"), "1 != 1")
+        .whenNotMatched().insertAll()
+        .execute()
     } finally {
-      v3dictMergeLock.writeLock().unlock()
+      lock.unlock()
     }
   }
 
@@ -353,11 +340,19 @@ object DictionaryBuilder extends Logging {
     v3ditPath
   }
 
+  def getDictionaryLockPath(context: DictionaryContext): String = {
+    val dictPath = Paths.get(context.project,
+      HadoopUtil.GLOBAL_DICT_V3_STORAGE_ROOT,
+      context.dbName,
+      context.tableName,
+      context.columnName)
+    dictPath.toString
+  }
+
   def wrapCol(ref: TblColRef): String = {
     NSparkCubingUtil.convertFromDot(ref.getBackTickIdentity)
   }
 }
-case class DictPlanVersion(incDictPlan: LogicalPlan, sourceDeltaVersion: Long)
 
 class DictionaryContext(
                          val project: String,

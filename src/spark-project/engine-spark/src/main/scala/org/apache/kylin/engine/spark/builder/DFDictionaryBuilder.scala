@@ -48,28 +48,13 @@ class DFDictionaryBuilder(
     changeAQEConfig(true)
   }
 
-  private val YARN_CLUSTER: String = "cluster"
   private val AQE = "spark.sql.adaptive.enabled";
   private val originalAQE = ss.conf.get(AQE)
-
-  private def tryZKJaasConfiguration(): Unit = {
-    val config = KylinConfig.getInstanceFromEnv
-    if (YARN_CLUSTER.equals(config.getDeployMode)) {
-      val kapConfig = KapConfig.wrap(config)
-      if (KapConfig.FI_PLATFORM.equals(kapConfig.getKerberosPlatform) || KapConfig.TDH_PLATFORM.equals(kapConfig.getKerberosPlatform)) {
-        val sparkConf = ss.sparkContext.getConf
-        val principal = sparkConf.get("spark.kerberos.principal")
-        val keytab = sparkConf.get("spark.kerberos.keytab")
-        logInfo(s"ZKJaasConfiguration principal: $principal, keyTab: $keytab")
-        javax.security.auth.login.Configuration.setConfiguration(new ZKJaasConfiguration(principal, keytab))
-      }
-    }
-  }
 
   @throws[IOException]
   private[builder] def safeBuild(ref: TblColRef): Unit = {
     val sourceColumn = ref.getIdentity
-    tryZKJaasConfiguration()
+    ZKHelper.tryZKJaasConfiguration(ss)
     val lock: Lock = KylinConfig.getInstanceFromEnv.getDistributedLockFactory
       .getLockForCurrentThread(getLockPath(sourceColumn))
     lock.lock()
