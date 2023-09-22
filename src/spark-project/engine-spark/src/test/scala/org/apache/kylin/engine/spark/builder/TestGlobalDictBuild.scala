@@ -17,10 +17,12 @@
  */
 package org.apache.kylin.engine.spark.builder
 
-import org.apache.commons.lang3.RandomStringUtils
+import org.apache.commons.lang3.{RandomStringUtils, StringUtils}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{Path, PathFilter}
 import org.apache.kylin.common.KylinConfig
+import org.apache.kylin.engine.spark.builder.v3dict.GlobalDictionaryBuilderHelper.genRandomData
+import org.apache.kylin.engine.spark.job.NSparkCubingUtil
 import org.apache.kylin.metadata.cube.cuboid.{AdaptiveSpanningTree, NSpanningTreeFactory}
 import org.apache.kylin.metadata.cube.model.{NDataSegment, NDataflow, NDataflowManager}
 import org.apache.kylin.metadata.model.TblColRef
@@ -46,6 +48,40 @@ class TestGlobalDictBuild extends SparderBaseFunSuite with SharedSparkSession wi
   def getTestConfig: KylinConfig = {
     val config = KylinConfig.getInstanceFromEnv
     config
+  }
+
+  test("build v2 dict and encode flattable") {
+    val dsMgr: NDataflowManager = NDataflowManager.getInstance(getTestConfig, DEFAULT_PROJECT)
+    val df: NDataflow = dsMgr.getDataflow(CUBE_NAME)
+    val seg = df.getLastSegment
+    val nSpanningTree = NSpanningTreeFactory.fromLayouts(seg.getIndexPlan.getAllLayouts, df.getUuid)
+    val dictColSet = DictionaryBuilderHelper.extractTreeRelatedGlobalDicts(seg, nSpanningTree.getAllIndexEntities)
+
+    val dictCol = dictColSet.iterator().next()
+    val encodeColName: String = StringUtils.split(dictCol.getTable, ".").apply(1) + NSparkCubingUtil.SEPARATOR + dictCol.getName
+    val randomDF = genRandomData(spark, encodeColName, 1000, 10)
+
+    val dictionaryBuilder = new DFDictionaryBuilder(randomDF, seg, randomDF.sparkSession, dictColSet)
+    val colName = dictColSet.iterator().next()
+    val bucketPartitionSize = DictionaryBuilderHelper.calculateBucketSize(seg, colName, randomDF)
+    val buildVersion = System.currentTimeMillis()
+    dictionaryBuilder.build(colName, bucketPartitionSize, randomDF, buildVersion)
+    val dict = new NGlobalDictionaryV2(seg.getProject,
+      colName.getTable,
+      colName.getName,
+      seg.getConfig.getHdfsWorkingDirectory,
+      buildVersion)
+    val meta1 = dict.getMetaInfo
+    Assert.assertEquals(1000, meta1.getDictCount)
+    val encode = encodeColumn(randomDF, seg, dictColSet, buildVersion)
+    val rowsWithZero = encode.filter(encode(encode.columns(1)) === 0)
+    Assert.assertEquals(true, rowsWithZero.isEmpty)
+    // clean all
+    val cleanCol = dictColSet.iterator().next()
+    val cleanDict = new NGlobalDictionaryV2(seg.getProject, cleanCol.getTable, cleanCol.getName, seg.getConfig.getHdfsWorkingDirectory)
+    val cleanDictPath = new Path(seg.getConfig.getHdfsWorkingDirectory + cleanDict.getResourceDir)
+    val fileSystem = cleanDictPath.getFileSystem(new Configuration())
+    fileSystem.delete(cleanDictPath, true)
   }
 
   test("global dict build and checkout bucket resize strategy") {
@@ -150,10 +186,11 @@ class TestGlobalDictBuild extends SparderBaseFunSuite with SharedSparkSession wi
     val dictColumn = col(dataflow.getModel.getColumnIdByColumnName(dictCol.getIdentity).toString)
     val distinctDS = sampleDS.select(dictColumn).distinct()
     val dictBuilder = new DFDictionaryBuilder(sampleDS, segment, spark, dictColSet)
-    dictBuilder.build(dictCol, shufflePartitionSizeInt, distinctDS)
+    val buildVersion = System.currentTimeMillis()
+    dictBuilder.build(dictCol, shufflePartitionSizeInt, distinctDS, buildVersion)
 
     val dictStore = NGlobalDictStoreFactory.getResourceStore(segment.getConfig.getHdfsWorkingDirectory + dictV2.getResourceDir)
-    val versionPath = dictStore.getVersionDir(dictStore.listAllVersions()(0))
+    val versionPath = dictStore.getVersionDir(buildVersion)
 
     val dictDirSize = fileSystem.listStatus(versionPath, new PathFilter {
       override def accept(path: Path): Boolean = {
@@ -184,7 +221,7 @@ class TestGlobalDictBuild extends SparderBaseFunSuite with SharedSparkSession wi
     seg.getConfig.setProperty("kylin.engine.global-dict-aqe-enabled", "FALSE")
     dictionaryBuilder.changeAQEConfig(false)
     Assert.assertFalse(spark.conf.get("spark.sql.adaptive.enabled").toBoolean)
-    dictionaryBuilder.build(col, bucketPartitionSize, ds)
+    dictionaryBuilder.build(col, bucketPartitionSize, ds, System.currentTimeMillis())
     Assert.assertTrue(spark.conf.get("spark.sql.adaptive.enabled").equals(originalAQE))
 
     // false true
@@ -196,7 +233,7 @@ class TestGlobalDictBuild extends SparderBaseFunSuite with SharedSparkSession wi
     dictionaryBuilder.changeAQEConfig(false)
     Assert.assertTrue(spark.conf.get("spark.sql.adaptive.enabled").equals(originalAQE))
 
-    dictionaryBuilder.build(col, bucketPartitionSize, ds)
+    dictionaryBuilder.build(col, bucketPartitionSize, ds, System.currentTimeMillis())
     Assert.assertTrue(spark.conf.get("spark.sql.adaptive.enabled").equals(originalAQE))
 
     // true true
@@ -210,10 +247,17 @@ class TestGlobalDictBuild extends SparderBaseFunSuite with SharedSparkSession wi
     val col = dictColSet.iterator().next()
     val ds = randomDataSet.select("26").distinct()
     val bucketPartitionSize = DictionaryBuilderHelper.calculateBucketSize(seg, col, ds)
-    dictionaryBuilder.build(col, bucketPartitionSize, ds)
+    val buildVersion = System.currentTimeMillis()
+    dictionaryBuilder.build(col, bucketPartitionSize, ds, buildVersion)
     val dict = new NGlobalDictionaryV2(seg.getProject, col.getTable, col.getName,
-      seg.getConfig.getHdfsWorkingDirectory)
+      seg.getConfig.getHdfsWorkingDirectory, buildVersion)
     dict.getMetaInfo
+  }
+
+  def encodeColumn(ds: Dataset[Row], dataSegment: NDataSegment,
+                   encodeCols: Set[TblColRef], buildVersion: Long): Dataset[Row] = {
+    val encodeDs = DFTableEncoder.encodeTable(ds, dataSegment, encodeCols, buildVersion)
+    encodeDs
   }
 
   def generateOriginData(count: Int, length: Int): Dataset[Row] = {

@@ -87,11 +87,13 @@ class GlobalDictionaryUpdateSuite extends SparderBaseFunSuite with LocalMetadata
     val dictionaryBuilder = new DFDictionaryBuilder(randomDataSet, seg, randomDataSet.sparkSession, dictColSet)
     val colName = dictColSet.iterator().next()
     val bucketPartitionSize = DictionaryBuilderHelper.calculateBucketSize(seg, colName, randomDataSet)
-    dictionaryBuilder.build(colName, bucketPartitionSize, randomDataSet)
+    val buildVersion = System.currentTimeMillis()
+    dictionaryBuilder.build(colName, bucketPartitionSize, randomDataSet, buildVersion)
     val dict = new NGlobalDictionaryV2(seg.getProject,
       colName.getTable,
       colName.getName,
-      seg.getConfig.getHdfsWorkingDirectory)
+      seg.getConfig.getHdfsWorkingDirectory,
+      buildVersion)
     dict.getMetaInfo
   }
 }

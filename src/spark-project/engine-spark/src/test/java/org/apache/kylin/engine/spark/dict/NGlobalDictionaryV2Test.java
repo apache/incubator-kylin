@@ -35,6 +35,7 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.dict.NBucketDictionary;
 import org.apache.spark.dict.NGlobalDictHDFSStore;
 import org.apache.spark.dict.NGlobalDictMetaInfo;
+import org.apache.spark.dict.NGlobalDictS3Store;
 import org.apache.spark.dict.NGlobalDictStore;
 import org.apache.spark.dict.NGlobalDictionaryV2;
 import org.apache.spark.sql.Dataset;
@@ -70,33 +71,33 @@ public class NGlobalDictionaryV2Test extends NLocalWithSparkSessionTest {
 
     @Test
     public void testGlobalDictHDFSStoreRoundTest() throws IOException {
-        testAll();
+        testAll(false);
     }
 
     @Test
     public void testGlobalDictS3StoreRoundTest() throws IOException {
         // global s3 dict store
         overwriteSystemProp("kylin.engine.global-dict.store.impl", "org.apache.spark.dict.NGlobalDictS3Store");
-        testAll();
+        testAll(true);
     }
 
-    private void testAll() throws IOException {
-        roundTest(5);
-        roundTest(50);
-        roundTest(500);
+    private void testAll(boolean isS3Store) throws IOException {
+        roundTest(5, isS3Store);
+        roundTest(50, isS3Store);
+        roundTest(500, isS3Store);
     }
 
-    private void roundTest(int size) throws IOException {
+    private void roundTest(int size, boolean isS3Store) throws IOException {
         System.out.println("NGlobalDictionaryV2Test -> roundTest -> " + System.currentTimeMillis());
         KylinConfig config = KylinConfig.getInstanceFromEnv();
-        NGlobalDictionaryV2 dict1 = new NGlobalDictionaryV2("t1", "a", "spark", config.getHdfsWorkingDirectory());
-        NGlobalDictionaryV2 dict2 = new NGlobalDictionaryV2("t2", "a", "local", config.getHdfsWorkingDirectory());
+        NGlobalDictionaryV2 dict1 = new NGlobalDictionaryV2("t1", "a", "spark", config.getHdfsWorkingDirectory(), System.currentTimeMillis());
+        NGlobalDictionaryV2 dict2 = new NGlobalDictionaryV2("t2", "a", "local", config.getHdfsWorkingDirectory(), System.currentTimeMillis());
         List<String> stringList = generateRandomData(size);
         Collections.sort(stringList);
-        runWithSparkBuildGlobalDict(dict1, stringList);
-        runWithLocalBuildGlobalDict(dict2, stringList);
-        compareTwoVersionDict(dict1, dict2);
-        compareTwoModeVersionNum(dict1, dict2);
+        runWithSparkBuildGlobalDict(dict1, stringList, isS3Store);
+        runWithLocalBuildGlobalDict(dict2, stringList, isS3Store);
+        compareTwoVersionDict(dict1, dict2, isS3Store);
+        compareTwoModeVersionNum(dict1, dict2, isS3Store);
     }
 
     private List<String> generateRandomData(int size) {
@@ -107,9 +108,14 @@ public class NGlobalDictionaryV2Test extends NLocalWithSparkSessionTest {
         return stringList;
     }
 
-    private void runWithSparkBuildGlobalDict(NGlobalDictionaryV2 dict, List<String> stringSet) throws IOException {
+    private void runWithSparkBuildGlobalDict(NGlobalDictionaryV2 dict, List<String> stringSet, boolean isS3Store) throws IOException {
         KylinConfig config = KylinConfig.getInstanceFromEnv();
-        dict.prepareWrite();
+        if (isS3Store) {
+            dict.prepareWriteS3();
+        } else {
+            dict.prepareWrite();
+        }
+
         List<Row> rowList = Lists.newLinkedList();
         for (String str : stringSet) {
             rowList.add(RowFactory.create(str));
@@ -122,7 +128,7 @@ public class NGlobalDictionaryV2Test extends NLocalWithSparkSessionTest {
             return new Tuple2<>(row.get(0).toString(), null);
         }).sortByKey().partitionBy(new HashPartitioner(BUCKET_SIZE)).mapPartitionsWithIndex(
                 (Function2<Integer, Iterator<Tuple2<String, String>>, Iterator<Object>>) (bucketId, tuple2Iterator) -> {
-                    NBucketDictionary bucketDict = dict.loadBucketDictionary(bucketId);
+                    NBucketDictionary bucketDict = isS3Store? dict.loadBucketDictionaryForTestS3(bucketId) : dict.loadBucketDictionary(bucketId);
                     while (tuple2Iterator.hasNext()) {
                         Tuple2<String, String> tuple2 = tuple2Iterator.next();
                         bucketDict.addRelativeValue(tuple2._1);
@@ -131,12 +137,20 @@ public class NGlobalDictionaryV2Test extends NLocalWithSparkSessionTest {
                     return Collections.emptyIterator();
                 }, true).count();
 
-        dict.writeMetaDict(BUCKET_SIZE, config.getGlobalDictV2MaxVersions(), config.getGlobalDictV2VersionTTL());
+        if (isS3Store) {
+            dict.writeMetaDictForTestS3(BUCKET_SIZE, config.getGlobalDictV2MaxVersions(), config.getGlobalDictV2VersionTTL());
+        } else {
+            dict.writeMetaDict(BUCKET_SIZE, config.getGlobalDictV2MaxVersions(), config.getGlobalDictV2VersionTTL());
+        }
     }
 
-    private void runWithLocalBuildGlobalDict(NGlobalDictionaryV2 dict, List<String> stringSet) throws IOException {
+    private void runWithLocalBuildGlobalDict(NGlobalDictionaryV2 dict, List<String> stringSet, boolean isS3Store) throws IOException {
         KylinConfig config = KylinConfig.getInstanceFromEnv();
-        dict.prepareWrite();
+        if (isS3Store) {
+            dict.prepareWriteS3();
+        } else {
+            dict.prepareWrite();
+        }
         HashPartitioner partitioner = new HashPartitioner(BUCKET_SIZE);
         Map<Integer, List<String>> vmap = new HashMap<>();
         for (int i = 0; i < BUCKET_SIZE; i++) {
@@ -148,31 +162,36 @@ public class NGlobalDictionaryV2Test extends NLocalWithSparkSessionTest {
         }
 
         for (Map.Entry<Integer, List<String>> entry : vmap.entrySet()) {
-            NBucketDictionary bucketDict = dict.loadBucketDictionary(entry.getKey());
+            NBucketDictionary bucketDict = isS3Store ? dict.loadBucketDictionaryForTestS3(entry.getKey()):dict.loadBucketDictionary(entry.getKey());
             for (String s : entry.getValue()) {
                 bucketDict.addRelativeValue(s);
             }
             bucketDict.saveBucketDict(entry.getKey());
         }
 
-        dict.writeMetaDict(BUCKET_SIZE, config.getGlobalDictV2MaxVersions(), config.getGlobalDictV2VersionTTL());
+        if (isS3Store) {
+            dict.writeMetaDictForTestS3(BUCKET_SIZE, config.getGlobalDictV2MaxVersions(), config.getGlobalDictV2VersionTTL());
+        } else {
+            dict.writeMetaDict(BUCKET_SIZE, config.getGlobalDictV2MaxVersions(), config.getGlobalDictV2VersionTTL());
+        }
+
     }
 
-    private void compareTwoModeVersionNum(NGlobalDictionaryV2 dict1, NGlobalDictionaryV2 dict2) throws IOException {
-        NGlobalDictStore store1 = new NGlobalDictHDFSStore(dict1.getResourceDir());
-        NGlobalDictStore store2 = new NGlobalDictHDFSStore(dict2.getResourceDir());
+    private void compareTwoModeVersionNum(NGlobalDictionaryV2 dict1, NGlobalDictionaryV2 dict2, boolean isS3Store) throws IOException {
+        NGlobalDictStore store1 = isS3Store? new NGlobalDictS3Store(dict1.getResourceDir()) : new NGlobalDictHDFSStore(dict1.getResourceDir());
+        NGlobalDictStore store2 = isS3Store? new NGlobalDictS3Store(dict2.getResourceDir()) : new NGlobalDictHDFSStore(dict2.getResourceDir());
         Assert.assertEquals(store1.listAllVersions().length, store2.listAllVersions().length);
     }
 
-    private void compareTwoVersionDict(NGlobalDictionaryV2 dict1, NGlobalDictionaryV2 dict2) throws IOException {
-        NGlobalDictMetaInfo metadata1 = dict1.getMetaInfo();
-        NGlobalDictMetaInfo metadata2 = dict2.getMetaInfo();
+    private void compareTwoVersionDict(NGlobalDictionaryV2 dict1, NGlobalDictionaryV2 dict2, boolean isS3Store) throws IOException {
+        NGlobalDictMetaInfo metadata1 = isS3Store? dict1.getMetaInfoForTestS3():dict1.getMetaInfo();
+        NGlobalDictMetaInfo metadata2 = isS3Store? dict2.getMetaInfoForTestS3():dict2.getMetaInfo();
         // compare dict meta info
         Assert.assertEquals(metadata1, metadata2);
 
         for (int i = 0; i < metadata1.getBucketSize(); i++) {
-            NBucketDictionary bucket1 = dict1.loadBucketDictionary(i);
-            NBucketDictionary bucket2 = dict2.loadBucketDictionary(i);
+            NBucketDictionary bucket1 = isS3Store? dict1.loadBucketDictionaryForTestS3(i):dict1.loadBucketDictionary(i);
+            NBucketDictionary bucket2 = isS3Store? dict2.loadBucketDictionaryForTestS3(i):dict2.loadBucketDictionary(i);
 
             Object2LongMap<String> map1 = bucket1.getAbsoluteDictMap();
             Object2LongMap<String> map2 = bucket2.getAbsoluteDictMap();

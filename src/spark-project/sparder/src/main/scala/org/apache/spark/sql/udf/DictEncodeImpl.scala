@@ -30,19 +30,18 @@ object DictEncodeImpl {
       override def initialValue(): util.HashMap[String, NBucketDictionary] = new util.HashMap[String, NBucketDictionary]()
     }
 
-  def evaluate(inputValue: String, dictParams: String, bucketSize: String): Long = {
+  def evaluate(inputValue: String, dictParams: String, bucketSize: String, buildVersion: String): Long = {
     var cachedBucketDict = DictEncodeImpl.cacheBucketDict.get().get(dictParams)
     if (cachedBucketDict == null) {
-      cachedBucketDict = initBucketDict(dictParams, bucketSize)
+      cachedBucketDict = initBucketDict(dictParams, bucketSize, buildVersion)
     }
     cachedBucketDict.encode(inputValue)
   }
 
-  private def initBucketDict(dictParams: String, bucketSize: String): NBucketDictionary = {
+  private def initBucketDict(dictParams: String, bucketSize: String, buildVersion: String): NBucketDictionary = {
     val partitionID = TaskContext.get.partitionId
     val encodeBucketId = partitionID % bucketSize.toInt
-    val globalDict = new NGlobalDictionaryV2(dictParams)
-
+    val globalDict = new NGlobalDictionaryV2(dictParams, buildVersion.toLong)
     val cachedBucketDict = globalDict.loadBucketDictionary(encodeBucketId, true)
     DictEncodeImpl.cacheBucketDict.get.put(dictParams, cachedBucketDict)
     TaskContext.get().addTaskCompletionListener(new TaskCompletionListener {

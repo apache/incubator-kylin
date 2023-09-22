@@ -58,8 +58,9 @@ public class DictionaryBuilderHelper {
      */
     public static int calculateBucketSize(NDataSegment seg, TblColRef col, Dataset<Row> afterDistinct)
             throws IOException {
+        long resizeVersion = System.currentTimeMillis();
         NGlobalDictionaryV2 globalDict = new NGlobalDictionaryV2(seg.getProject(), col.getTable(), col.getName(),
-                seg.getConfig().getHdfsWorkingDirectory());
+                seg.getConfig().getHdfsWorkingDirectory(), resizeVersion);
         int bucketPartitionSize = globalDict.getBucketSizeOrDefault(seg.getConfig().getGlobalDictV2MinHashPartitions());
         int bucketThreshold = seg.getConfig().getGlobalDictV2ThresholdBucketSize();
         int resizeBucketSize = bucketPartitionSize;
@@ -107,7 +108,7 @@ public class DictionaryBuilderHelper {
             if (resizeBucketSize != bucketPartitionSize) {
                 logger.info("Start building a global dictionary column for {}, need resize from {} to {} ",
                         col.getName(), bucketPartitionSize, resizeBucketSize);
-                resize(col, seg, resizeBucketSize, afterDistinct.sparkSession());
+                resize(col, seg, resizeBucketSize, afterDistinct.sparkSession(), resizeVersion);
                 logger.info("End building a global dictionary column for {}, need resize from {} to {} ", col.getName(),
                         bucketPartitionSize, resizeBucketSize);
             }

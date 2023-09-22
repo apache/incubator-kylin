@@ -247,8 +247,8 @@ object KapFunctions {
     }
   }
 
-  def dict_encode(column: Column, dictParams: Column, bucketSize: Column): Column = {
-    Column(DictEncode(column.expr, dictParams.expr, bucketSize.expr))
+  def dict_encode(column: Column, dictParams: Column, bucketSize: Column, buildVersion: Column): Column = {
+    Column(DictEncode(column.expr, dictParams.expr, bucketSize.expr, buildVersion.expr))
   }
 
   def dict_encode_v3(column: Column, colName: String): Column = {

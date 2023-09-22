@@ -34,8 +34,9 @@ import scala.collection.JavaConverters._
 object NGlobalDictBuilderAssist extends Logging {
 
   @throws[IOException]
-  def resize(ref: TblColRef, seg: NDataSegment, bucketPartitionSize: Int, ss: SparkSession): Unit = {
-    val globalDict = new NGlobalDictionaryV2(seg.getProject, ref.getTable, ref.getName, seg.getConfig.getHdfsWorkingDirectory)
+  def resize(ref: TblColRef, seg: NDataSegment, bucketPartitionSize: Int, ss: SparkSession, resizeVersion: Long): Unit = {
+    val globalDict = new NGlobalDictionaryV2(seg.getProject, ref.getTable,
+      ref.getName, seg.getConfig.getHdfsWorkingDirectory, resizeVersion)
 
     val broadcastDict = ss.sparkContext.broadcast(globalDict)
     globalDict.prepareWrite()

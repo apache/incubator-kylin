@@ -38,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 
+import static org.apache.spark.dict.NGlobalDictionaryV2.NO_VERSION_SPECIFIED;
+
 public class NGlobalDictHDFSStore implements NGlobalDictStore {
 
     protected static final String VERSION_PREFIX = "version_";
@@ -381,17 +383,17 @@ public class NGlobalDictHDFSStore implements NGlobalDictStore {
     }
 
     @Override
-    public void commit(String workingDir, int maxVersions, long versionTTL) throws IOException {
+    public void commit(String workingDir, int maxVersions, long versionTTL, long buildVersion) throws IOException {
         Path workingPath = new Path(workingDir);
-        // copy working dir to newVersion dir
-        Path newVersionPath = new Path(basePath, VERSION_PREFIX + System.currentTimeMillis());
+        final long commitVersion = buildVersion == NO_VERSION_SPECIFIED ? System.currentTimeMillis() : buildVersion;
+        Path newVersionPath = new Path(basePath, VERSION_PREFIX + commitVersion);
         fileSystem.rename(workingPath, newVersionPath);
         logger.info("Commit from {} to {}", workingPath, newVersionPath);
         cleanUp(maxVersions, versionTTL);
     }
 
     @Override
-    public String getWorkingDir() {
+    public String getWorkingDir(long buildVersion) {
         return baseDir + WORKING_DIR;
     }
 

@@ -71,21 +71,25 @@ public class NGlobalDictS3Store extends NGlobalDictHDFSStore {
     }
 
     @Override
-    public void commit(String workingDir, int maxVersions, long versionTTL) throws IOException {
+    public void commit(String workingDir, int maxVersions, long versionTTL, long buildVersion) throws IOException {
         cleanWorkingFlagPath(basePath);
         logger.info("Commit {}", workingDir);
         cleanUp(maxVersions, versionTTL);
     }
 
     @Override
-    public String getWorkingDir() {
-        Path path = getWorkingFlagPath(basePath);
+    public String getWorkingDir(long buildVersion) {
+        Path path = getWorkingFlagPath(basePath, buildVersion);
         long timestamp = Long.parseLong(path.getName().substring(WORKING_PREFIX.length()));
         return baseDir + VERSION_PREFIX + timestamp;
     }
 
     private Path getWorkingFlagPath(Path basePath) {
-        long timestamp = pathToVersion.getOrDefault(basePath.toString(), System.currentTimeMillis());
+        return getWorkingFlagPath(basePath, System.currentTimeMillis());
+    }
+
+    private Path getWorkingFlagPath(Path basePath, long buildVersion) {
+        long timestamp = pathToVersion.getOrDefault(basePath.toString(), buildVersion);
         pathToVersion.putIfAbsent(basePath.toString(), timestamp);
         try {
             FileSystem fileSystem = HadoopUtil.getFileSystem(basePath);
@@ -100,10 +104,10 @@ public class NGlobalDictS3Store extends NGlobalDictHDFSStore {
         } catch (IOException ioe) {
             logger.error("Get exception when get version", ioe);
         }
-        return getWorkingFlagPath(basePath, timestamp);
+        return generateWorkingFlagPath(basePath, timestamp);
     }
 
-    private Path getWorkingFlagPath(Path basePath, long version) {
+    private Path generateWorkingFlagPath(Path basePath, long version) {
         return new Path(basePath + "/" + WORKING_PREFIX + version);
     }
 

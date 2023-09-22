@@ -48,7 +48,7 @@ public interface NGlobalDictStore {
 
     void writeMetaInfo(int bucketSize, String workingDir) throws IOException;
 
-    void commit(String workingDir, int maxVersions, long versionTTL) throws IOException;
+    void commit(String workingDir, int maxVersions, long versionTTL, long buildVersion) throws IOException;
 
-    String getWorkingDir();
+    String getWorkingDir(long buildVersion);
 }

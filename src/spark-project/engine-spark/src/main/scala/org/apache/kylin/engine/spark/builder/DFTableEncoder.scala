@@ -22,6 +22,7 @@ import org.apache.kylin.engine.spark.job.NSparkCubingUtil._
 import org.apache.kylin.metadata.cube.model.NDataSegment
 import org.apache.kylin.metadata.model.TblColRef
 import org.apache.spark.dict.NGlobalDictionaryV2
+import org.apache.spark.dict.NGlobalDictionaryV2.NO_VERSION_SPECIFIED
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.KapFunctions._
 import org.apache.spark.sql.functions.{col, _}
@@ -34,7 +35,7 @@ import scala.collection.mutable._
 
 object DFTableEncoder extends Logging {
 
-  def encodeTable(ds: Dataset[Row], seg: NDataSegment, cols: util.Set[TblColRef]): Dataset[Row] = {
+  def encodeTable(ds: Dataset[Row], seg: NDataSegment, cols: util.Set[TblColRef], buildVersion: Long): Dataset[Row] = {
     val structType = ds.schema
     var partitionedDs = ds
 
@@ -61,17 +62,21 @@ object DFTableEncoder extends Logging {
 
     val encodingArgs = encodingCols.map {
       ref =>
-        val globalDict = new NGlobalDictionaryV2(seg.getProject, ref.getTable, ref.getName, seg.getConfig.getHdfsWorkingDirectory)
+        val globalDict = new NGlobalDictionaryV2(seg.getProject, ref.getTable,
+          ref.getName, seg.getConfig.getHdfsWorkingDirectory, buildVersion)
         val bucketSize = globalDict.getBucketSizeOrDefault(seg.getConfig.getGlobalDictV2MinHashPartitions)
         val enlargedBucketSize = (((minBucketSize / bucketSize) + 1) * bucketSize).toInt
-
+        logInfo(s"[EncodeTable/${buildVersion}] bucketSize:$bucketSize")
         val encodeColRef = convertFromDot(ref.getBackTickIdentity)
         val columnIndex = structType.fieldIndex(encodeColRef)
 
         val dictParams = Array(seg.getProject, ref.getTable, ref.getName, seg.getConfig.getHdfsWorkingDirectory)
           .mkString(SEPARATOR)
         val aliasName = structType.apply(columnIndex).name.concat(ENCODE_SUFFIX)
-        val encodeCol = dict_encode(col(encodeColRef).cast(StringType), lit(dictParams), lit(bucketSize).cast(StringType)).as(aliasName)
+        val encodeCol = dict_encode(col(encodeColRef).cast(StringType),
+                                    lit(dictParams),
+                                    lit(bucketSize).cast(StringType),
+                                    lit(buildVersion).cast(LongType)).as(aliasName)
         val columns = encodeCol
         (enlargedBucketSize, col(encodeColRef).cast(StringType), columns, aliasName,
           bucketSize == 1)

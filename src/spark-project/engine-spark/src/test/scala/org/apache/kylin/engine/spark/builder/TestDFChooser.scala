@@ -160,8 +160,9 @@ class TestDFChooser extends SparderBaseFunSuite with SharedSparkSession with Loc
         val dict1 = new NGlobalDictionaryV2(seg.getProject, col.getTable, col.getName, seg.getConfig.getHdfsWorkingDirectory)
         val meta1 = dict1.getMetaInfo
         val needResizeBucketSize = dict1.getBucketSizeOrDefault(seg.getConfig.getGlobalDictV2MinHashPartitions) + 10
-        NGlobalDictBuilderAssist.resize(col, seg, needResizeBucketSize, spark)
-        val dict2 = new NGlobalDictionaryV2(seg.getProject, col.getTable, col.getName, seg.getConfig.getHdfsWorkingDirectory)
+        val resizeVersion = System.currentTimeMillis()
+        NGlobalDictBuilderAssist.resize(col, seg, needResizeBucketSize, spark, resizeVersion)
+        val dict2 = new NGlobalDictionaryV2(seg.getProject, col.getTable, col.getName, seg.getConfig.getHdfsWorkingDirectory, resizeVersion)
         Assert.assertEquals(meta1.getDictCount, dict2.getMetaInfo.getDictCount)
         Assert.assertEquals(meta1.getBucketSize + 10, dict2.getMetaInfo.getBucketSize)
       }

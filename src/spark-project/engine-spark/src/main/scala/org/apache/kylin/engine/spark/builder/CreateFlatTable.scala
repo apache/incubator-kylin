@@ -31,6 +31,7 @@ import org.apache.kylin.guava30.shaded.common.collect.Sets
 import org.apache.kylin.metadata.cube.cuboid.NSpanningTree
 import org.apache.kylin.metadata.cube.model.{NCubeJoinedFlatTableDesc, NDataSegment}
 import org.apache.kylin.metadata.model._
+import org.apache.spark.dict.NGlobalDictionaryV2.NO_VERSION_SPECIFIED
 import org.apache.spark.sql.functions.{col, expr}
 import org.apache.spark.sql.{Dataset, Row, SparkSession}
 
@@ -115,12 +116,14 @@ class CreateFlatTable(val flatTable: IJoinedFlatTableDesc,
                                dictCols: Set[TblColRef],
                                encodeCols: Set[TblColRef]): Dataset[Row] = {
     val ccDataset = withColumn(ds, ccCols)
+    var buildVersion = System.currentTimeMillis()
     if (seg.isDictReady) {
       logInfo(s"Skip already built dict, segment: ${seg.getId} of dataflow: ${seg.getDataflow.getId}")
+      buildVersion = NO_VERSION_SPECIFIED
     } else {
-      buildDict(ccDataset, dictCols)
+      buildDict(ccDataset, dictCols, buildVersion)
     }
-    encodeColumn(ccDataset, encodeCols)
+    encodeColumn(ccDataset, encodeCols, buildVersion)
   }
 
   private def withColumn(ds: Dataset[Row], withCols: Set[TblColRef]): Dataset[Row] = {
@@ -131,21 +134,21 @@ class CreateFlatTable(val flatTable: IJoinedFlatTableDesc,
     withDs
   }
 
-  private def buildDict(ds: Dataset[Row], dictCols: Set[TblColRef]): Unit = {
+  private def buildDict(ds: Dataset[Row], dictCols: Set[TblColRef], buildVersion: Long): Unit = {
     val matchedCols = if (seg.getIndexPlan.isSkipEncodeIntegerFamilyEnabled) {
       filterOutIntegerFamilyType(ds, dictCols)
     } else {
       selectColumnsInTable(ds, dictCols)
     }
     val builder = new DFDictionaryBuilder(ds, seg, ss, Sets.newHashSet(matchedCols.asJavaCollection))
-    builder.buildDictSet()
+    builder.buildDictSet(buildVersion)
   }
 
-  private def encodeColumn(ds: Dataset[Row], encodeCols: Set[TblColRef]): Dataset[Row] = {
+  private def encodeColumn(ds: Dataset[Row], encodeCols: Set[TblColRef], buildVersion: Long): Dataset[Row] = {
     val matchedCols = selectColumnsInTable(ds, encodeCols)
     var encodeDs = ds
     if (matchedCols.nonEmpty) {
-      encodeDs = DFTableEncoder.encodeTable(ds, seg, matchedCols.asJava)
+      encodeDs = DFTableEncoder.encodeTable(ds, seg, matchedCols.asJava, buildVersion)
     }
     encodeDs
   }

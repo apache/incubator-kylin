@@ -43,8 +43,8 @@ class DFDictionaryBuilder(
                            val colRefSet: util.Set[TblColRef]) extends LogEx with Serializable {
 
   @throws[IOException]
-  def buildDictSet(): Unit = {
-    colRefSet.asScala.foreach(col => safeBuild(col))
+  def buildDictSet(buildVersion: Long): Unit = {
+    colRefSet.asScala.foreach(col => safeBuild(col, buildVersion))
     changeAQEConfig(true)
   }
 
@@ -52,7 +52,7 @@ class DFDictionaryBuilder(
   private val originalAQE = ss.conf.get(AQE)
 
   @throws[IOException]
-  private[builder] def safeBuild(ref: TblColRef): Unit = {
+  private[builder] def safeBuild(ref: TblColRef, buildVersion: Long): Unit = {
     val sourceColumn = ref.getIdentity
     ZKHelper.tryZKJaasConfiguration(ss)
     val lock: Lock = KylinConfig.getInstanceFromEnv.getDistributedLockFactory
@@ -64,7 +64,7 @@ class DFDictionaryBuilder(
       val bucketPartitionSize = logTime(s"calculating bucket size for $sourceColumn") {
         DictionaryBuilderHelper.calculateBucketSize(seg, ref, dictColDistinct)
       }
-      build(ref, bucketPartitionSize, dictColDistinct)
+      build(ref, bucketPartitionSize, dictColDistinct, buildVersion)
     } finally lock.unlock()
   }
 
@@ -90,10 +90,12 @@ class DFDictionaryBuilder(
       """.stripMargin
   }
 
+
   @throws[IOException]
   private[builder] def build(ref: TblColRef, bucketPartitionSize: Int,
-                             afterDistinct: Dataset[Row]): Unit = logTime(s"building global dictionaries V2 for ${ref.getIdentity}") {
-    val globalDict = new NGlobalDictionaryV2(seg.getProject, ref.getTable, ref.getName, seg.getConfig.getHdfsWorkingDirectory)
+                             afterDistinct: Dataset[Row],
+                             buildVersion: Long): Unit = logTime(s"building global dictionaries V2 for ${ref.getIdentity}") {
+    val globalDict = new NGlobalDictionaryV2(seg.getProject, ref.getTable, ref.getName, seg.getConfig.getHdfsWorkingDirectory, buildVersion)
     globalDict.prepareWrite()
     val broadcastDict = ss.sparkContext.broadcast(globalDict)
 
@@ -121,7 +123,7 @@ class DFDictionaryBuilder(
 
     if (seg.getConfig.isGlobalDictCheckEnabled) {
       logInfo(s"Start to check the correctness of the global dict, table: ${ref.getTableAlias}, col: ${ref.getName}")
-      val latestGD = new NGlobalDictionaryV2(seg.getProject, ref.getTable, ref.getName, seg.getConfig.getHdfsWorkingDirectory)
+      val latestGD = new NGlobalDictionaryV2(seg.getProject, ref.getTable, ref.getName, seg.getConfig.getHdfsWorkingDirectory, buildVersion)
       for (bid <- 0 until globalDict.getMetaInfo.getBucketSize) {
         val dMap = latestGD.loadBucketDictionary(bid).getAbsoluteDictMap
         val vdCount = dMap.values().stream().distinct().count()

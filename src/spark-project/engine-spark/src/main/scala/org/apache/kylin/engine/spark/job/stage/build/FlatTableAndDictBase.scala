@@ -44,6 +44,7 @@ import org.apache.kylin.metadata.cube.cuboid.AdaptiveSpanningTree.AdaptiveTreeBu
 import org.apache.kylin.metadata.cube.model.NDataSegment
 import org.apache.kylin.metadata.cube.planner.CostBasePlannerUtils
 import org.apache.kylin.metadata.model._
+import org.apache.spark.dict.NGlobalDictionaryV2.NO_VERSION_SPECIFIED
 import org.apache.spark.sql.KapFunctions.dict_encode_v3
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.JoinType
@@ -563,18 +564,20 @@ abstract class FlatTableAndDictBase(private val jobContext: SegmentJob,
     if (dictCols.isEmpty && encodeCols.isEmpty) {
       return table
     }
+    var buildVersion = System.currentTimeMillis()
     if (dataSegment.isDictReady) {
       logInfo(s"Skip DICTIONARY segment $segmentId")
+      buildVersion = NO_VERSION_SPECIFIED
     } else {
       // ensure at least one worker was registered before dictionary lock added.
       waitTillWorkerRegistered()
-      buildDict(table, dictCols)
+      buildDict(table, dictCols, buildVersion)
     }
 
     if (config.isV3DictEnable) {
       buildV3DictIfNeeded(table, encodeCols)
     } else {
-      encodeColumn(table, encodeCols)
+      encodeColumn(table, encodeCols, buildVersion)
     }
   }
 
@@ -632,23 +635,24 @@ abstract class FlatTableAndDictBase(private val jobContext: SegmentJob,
     tableWithCcs
   }
 
-  private def buildDict(ds: Dataset[Row], dictCols: Set[TblColRef]): Unit = {
+  private def buildDict(ds: Dataset[Row], dictCols: Set[TblColRef], buildVersion: Long): Unit = {
     if (config.isV2DictEnable) {
-      logInfo("Build v2 dict default.")
+      logInfo(s"Build v2 dict default. " +
+        s"[${dataSegment.getModel.getAlias}] model dict build version is $buildVersion")
       var matchedCols = selectColumnsInTable(ds, dictCols)
       if (dataSegment.getIndexPlan.isSkipEncodeIntegerFamilyEnabled) {
         matchedCols = matchedCols.filterNot(_.getType.isIntegerFamily)
       }
       val builder = new DFDictionaryBuilder(ds, dataSegment, sparkSession, Sets.newHashSet(matchedCols.asJavaCollection))
-      builder.buildDictSet()
+      builder.buildDictSet(buildVersion)
     }
   }
 
-  private def encodeColumn(ds: Dataset[Row], encodeCols: Set[TblColRef]): Dataset[Row] = {
+  private def encodeColumn(ds: Dataset[Row], encodeCols: Set[TblColRef], buildVersion: Long): Dataset[Row] = {
     val matchedCols = selectColumnsInTable(ds, encodeCols)
     var encodeDs = ds
     if (matchedCols.nonEmpty) {
-      encodeDs = DFTableEncoder.encodeTable(ds, dataSegment, matchedCols.asJava)
+      encodeDs = DFTableEncoder.encodeTable(ds, dataSegment, matchedCols.asJava, buildVersion)
     }
     encodeDs
   }

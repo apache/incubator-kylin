@@ -366,7 +366,9 @@ case class DictEncodeV3(child: Expression, col: String) extends UnaryExpression 
   override protected def nullSafeEval(input: Any): Any = super.nullSafeEval(input)
 }
 
-case class DictEncode(left: Expression, mid: Expression, right: Expression) extends TernaryExpression with ExpectsInputTypes {
+case class DictEncode(left: Expression, mid: Expression,
+                      right: Expression, buildVersion: Expression)
+  extends QuaternaryExpression with ExpectsInputTypes {
 
   def maxFields: Int = SQLConf.get.maxToStringFields
 
@@ -376,7 +378,9 @@ case class DictEncode(left: Expression, mid: Expression, right: Expression) exte
 
   override def third: Expression = right
 
-  override def inputTypes: Seq[AbstractDataType] = Seq(AnyDataType, StringType, StringType)
+  override def fourth: Expression = buildVersion
+
+  override def inputTypes: Seq[AbstractDataType] = Seq(AnyDataType, StringType, StringType, LongType)
 
   override protected def doGenCode(ctx: CodegenContext,
                                    ev: ExprCode): ExprCode = {
@@ -395,13 +399,14 @@ case class DictEncode(left: Expression, mid: Expression, right: Expression) exte
 
     val dictParamsTerm = mid.simpleString(maxFields)
     val bucketSizeTerm = right.simpleString(maxFields).toInt
+    val version = buildVersion.simpleString(maxFields).toLong
 
     val initBucketDictFuncName = ctx.addNewFunction(s"init${bucketDictTerm.replace("[", "").replace("]", "")}BucketDict",
       s"""
          | private void init${bucketDictTerm.replace("[", "").replace("]", "")}BucketDict(int idx) {
          |   try {
          |     int bucketId = idx % $bucketSizeTerm;
-         |     $globalDictTerm = new org.apache.spark.dict.NGlobalDictionaryV2("$dictParamsTerm");
+         |     $globalDictTerm = new org.apache.spark.dict.NGlobalDictionaryV2("$dictParamsTerm",${version}L);
          |     $bucketDictTerm = $globalDictTerm.loadBucketDictionary(bucketId, true);
          |   } catch (Exception e) {
          |     throw new RuntimeException(e);
@@ -411,13 +416,13 @@ case class DictEncode(left: Expression, mid: Expression, right: Expression) exte
 
     ctx.addPartitionInitializationStatement(s"$initBucketDictFuncName(partitionIndex);");
 
-    defineCodeGen(ctx, ev, (arg1, arg2, arg3) => {
+    defineCodeGen(ctx, ev, (arg1, arg2, arg3, arg4) => {
       s"""$bucketDictTerm.encode($arg1)"""
     })
   }
 
-  override protected def nullSafeEval(input1: Any, input2: Any, input3: Any): Any = {
-    DictEncodeImpl.evaluate(input1.toString, input2.toString, input3.toString)
+  override protected def nullSafeEval(input1: Any, input2: Any, input3: Any, input4: Any): Any = {
+    DictEncodeImpl.evaluate(input1.toString, input2.toString, input3.toString, input4.toString)
   }
 
   override def eval(input: InternalRow): Any = {
@@ -432,8 +437,11 @@ case class DictEncode(left: Expression, mid: Expression, right: Expression) exte
 
   override def prettyName: String = "DICTENCODE"
 
-  override protected def withNewChildrenInternal(newFirst: Expression, newSecond: Expression, newThird: Expression): Expression = {
-    val newChildren = Seq(newFirst, newSecond, newThird)
+  override protected def withNewChildrenInternal(newFirst: Expression,
+                                                 newSecond: Expression,
+                                                 newThird: Expression,
+                                                 newFourth: Expression): Expression = {
+    val newChildren = Seq(newFirst, newSecond, newThird, newFourth)
     super.legacyWithNewChildren(newChildren)
   }
 }

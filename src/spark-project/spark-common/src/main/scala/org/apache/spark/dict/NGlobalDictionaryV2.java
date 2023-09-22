@@ -19,6 +19,9 @@ package org.apache.spark.dict;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Arrays;
+
+import com.alibaba.nacos.common.JustForTest;
 
 import org.apache.kylin.common.util.HadoopUtil;
 import org.slf4j.Logger;
@@ -29,6 +32,10 @@ import lombok.val;
 public class NGlobalDictionaryV2 implements Serializable {
 
     public static final String SEPARATOR = "_0_DOT_0_";
+
+    // The latest dictionary file is read by default if no version is specified
+    public static final long NO_VERSION_SPECIFIED = -1L;
+
     protected static final Logger logger = LoggerFactory.getLogger(NGlobalDictionaryV2.class);
     private NGlobalDictMetaInfo metadata;
 
@@ -36,27 +43,41 @@ public class NGlobalDictionaryV2 implements Serializable {
     private String project;
     private String sourceTable;
     private String sourceColumn;
+
+    // Default is -1L, which means that no version is specified.
+    // Dict data is read from the latest version each time
+    private final long buildVersion;
     private boolean isFirst = true;
 
-    public NGlobalDictionaryV2(String project, String sourceTable, String sourceColumn, String baseDir)
-            throws IOException {
-        this.project = project;
-        this.sourceTable = sourceTable;
-        this.sourceColumn = sourceColumn;
-        this.baseDir = baseDir + getResourceDir();
-        this.metadata = getMetaInfo();
-        if (metadata != null) {
-            isFirst = false;
-        }
-    }
-
-    public NGlobalDictionaryV2(String dictParams) throws IOException {
+    public NGlobalDictionaryV2(String dictParams, long buildVersion) throws IOException {
         val dictInfo = dictParams.split(SEPARATOR);
         this.project = dictInfo[0];
         this.sourceTable = dictInfo[1];
         this.sourceColumn = dictInfo[2];
         this.baseDir = dictInfo[3];
         this.baseDir = baseDir + getResourceDir();
+        this.buildVersion = buildVersion;
+        this.metadata = getMetaInfo();
+        if (metadata != null) {
+            isFirst = false;
+        }
+    }
+
+    // Note: You do not need to specify a build version
+    //       if you do not need to encode flat tables or
+    //       if you only need to read the latest dictionary data
+    public NGlobalDictionaryV2(String project, String sourceTable, String sourceColumn, String baseDir)
+            throws IOException {
+        this(project,sourceTable,sourceColumn,baseDir, NO_VERSION_SPECIFIED);
+    }
+
+    public NGlobalDictionaryV2(String project, String sourceTable, String sourceColumn, String baseDir, long buildVersion)
+            throws IOException {
+        this.project = project;
+        this.sourceTable = sourceTable;
+        this.sourceColumn = sourceColumn;
+        this.baseDir = baseDir + getResourceDir();
+        this.buildVersion = buildVersion;
         this.metadata = getMetaInfo();
         if (metadata != null) {
             isFirst = false;
@@ -68,18 +89,31 @@ public class NGlobalDictionaryV2 implements Serializable {
     }
 
     private String getWorkingDir() {
-        return getResourceStore(baseDir).getWorkingDir();
+        return getResourceStore(baseDir).getWorkingDir(this.buildVersion);
     }
 
     public NBucketDictionary loadBucketDictionary(int bucketId) throws IOException {
         return loadBucketDictionary(bucketId, false);
     }
 
+    // Only for S3 test !
+    @JustForTest
+    public NBucketDictionary loadBucketDictionaryForTestS3(int bucketId) throws IOException {
+        if (null == metadata) {
+            metadata = getMetaInfoForTestS3();
+        }
+        return new NBucketDictionary(baseDir, getWorkingDir(), bucketId, metadata, false, this.buildVersion, true);
+    }
+
     public NBucketDictionary loadBucketDictionary(int bucketId, boolean isForColumnEncoding) throws IOException {
+        return loadBucketDictionary(bucketId, isForColumnEncoding, this.buildVersion);
+    }
+
+    public NBucketDictionary loadBucketDictionary(int bucketId, boolean isForColumnEncoding, long buildVersion) throws IOException {
         if (null == metadata) {
             metadata = getMetaInfo();
         }
-        return new NBucketDictionary(baseDir, getWorkingDir(), bucketId, metadata, isForColumnEncoding);
+        return new NBucketDictionary(baseDir, getWorkingDir(), bucketId, metadata, isForColumnEncoding, buildVersion);
     }
 
     public NBucketDictionary createNewBucketDictionary() {
@@ -91,25 +125,56 @@ public class NGlobalDictionaryV2 implements Serializable {
         globalDictStore.prepareForWrite(getWorkingDir());
     }
 
+    // Only for S3 test !
+    @JustForTest
+    public void prepareWriteS3() throws IOException {
+        NGlobalDictStore globalDictStore = new NGlobalDictS3Store(baseDir);
+        globalDictStore.prepareForWrite(globalDictStore.getWorkingDir(this.buildVersion));
+    }
+
+    // Only for S3 test !
+    @JustForTest
+    public void writeMetaDictForTestS3(int bucketSize, int maxVersions, long versionTTL) throws IOException {
+        NGlobalDictStore globalDictStore = new NGlobalDictS3Store(baseDir);
+        String workingDir = globalDictStore.getWorkingDir(this.buildVersion);
+        globalDictStore.writeMetaInfo(bucketSize, workingDir);
+        globalDictStore.commit(workingDir, maxVersions, versionTTL, this.buildVersion);
+    }
+
     public void writeMetaDict(int bucketSize, int maxVersions, long versionTTL) throws IOException {
         NGlobalDictStore globalDictStore = getResourceStore(baseDir);
         globalDictStore.writeMetaInfo(bucketSize, getWorkingDir());
         commit(maxVersions, versionTTL);
     }
 
-    public NGlobalDictMetaInfo getMetaInfo() throws IOException {
-        NGlobalDictStore globalDictStore = getResourceStore(baseDir);
-        NGlobalDictMetaInfo metadata;
+
+    private NGlobalDictMetaInfo getMetaInfo(NGlobalDictStore globalDictStore) throws IOException {
+        NGlobalDictMetaInfo nGlobalDictMetaInfo;
         Long[] versions = globalDictStore.listAllVersions();
         logger.info("getMetaInfo versions.length is {}", versions.length);
-
         if (versions.length == 0) {
             return null;
+        } else if (this.buildVersion == NO_VERSION_SPECIFIED || !Arrays.asList(versions).contains(buildVersion)) {
+            logger.info("Initializes dict metainfo with the latest version:{}", versions[versions.length - 1]);
+            nGlobalDictMetaInfo = globalDictStore.getMetaInfo(versions[versions.length - 1]);
         } else {
-            metadata = globalDictStore.getMetaInfo(versions[versions.length - 1]);
+            logger.info("Initializes dict metainfo with the specified version:{}", this.buildVersion);
+            nGlobalDictMetaInfo = globalDictStore.getMetaInfo(this.buildVersion);
         }
-        logger.info("getMetaInfo metadata is null : [{}]", metadata == null);
-        return metadata;
+        logger.info("getMetaInfo metadata is null : [{}]", nGlobalDictMetaInfo == null);
+        return nGlobalDictMetaInfo;
+    }
+
+    // Only for S3 test !
+    @JustForTest
+    public NGlobalDictMetaInfo getMetaInfoForTestS3() throws IOException {
+        NGlobalDictStore globalDictStore = new NGlobalDictS3Store(baseDir);
+        return getMetaInfo(globalDictStore);
+    }
+
+    public NGlobalDictMetaInfo getMetaInfo() throws IOException {
+        NGlobalDictStore globalDictStore = getResourceStore(baseDir);
+        return getMetaInfo(globalDictStore);
     }
 
     public int getBucketSizeOrDefault(int defaultSize) {
@@ -133,7 +198,7 @@ public class NGlobalDictionaryV2 implements Serializable {
 
     private void commit(int maxVersions, long versionTTL) throws IOException {
         NGlobalDictStore globalDictStore = getResourceStore(baseDir);
-        globalDictStore.commit(getWorkingDir(), maxVersions, versionTTL);
+        globalDictStore.commit(getWorkingDir(), maxVersions, versionTTL, this.buildVersion);
     }
 
     private NGlobalDictStore getResourceStore(String baseDir) {
