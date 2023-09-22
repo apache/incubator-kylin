@@ -76,6 +76,7 @@ public class SparderQueryPlanExec implements QueryPlanExec {
 
         QueryContextCutter.selectRealization(QueryContext.current().getProject(), rel,
                 BackdoorToggles.getIsQueryFromAutoModeling());
+
         String msg = "EXECUTION PLAN AFTER (SparderQueryPlanExec) SELECT REALIZATION IS SET";
         ContextUtil.dumpCalcitePlan(msg, rel, log);
 
@@ -106,6 +107,11 @@ public class SparderQueryPlanExec implements QueryPlanExec {
 
         // rewrite
         rewrite(rel);
+
+        // query detect
+        if (QueryContext.current().getQueryTagInfo().isQueryDetect()) {
+            return new ExecuteResult(Lists.newArrayList(), 0);
+        }
 
         // submit rel and dataContext to query engine
         return internalCompute(new SparkEngine(), dataContext, rel.getInput(0));

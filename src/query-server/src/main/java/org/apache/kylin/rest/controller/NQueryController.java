@@ -73,12 +73,14 @@ import org.apache.kylin.rest.exception.ForbiddenException;
 import org.apache.kylin.rest.exception.InternalErrorException;
 import org.apache.kylin.rest.model.Query;
 import org.apache.kylin.rest.request.PrepareSqlRequest;
+import org.apache.kylin.rest.request.QueryDetectRequest;
 import org.apache.kylin.rest.request.SQLFormatRequest;
 import org.apache.kylin.rest.request.SQLRequest;
 import org.apache.kylin.rest.request.SaveSqlRequest;
 import org.apache.kylin.rest.request.SyncFileSegmentsRequest;
 import org.apache.kylin.rest.response.DataResult;
 import org.apache.kylin.rest.response.EnvelopeResponse;
+import org.apache.kylin.rest.response.QueryDetectResponse;
 import org.apache.kylin.rest.response.QueryHistoryFiltersResponse;
 import org.apache.kylin.rest.response.QueryStatisticsResponse;
 import org.apache.kylin.rest.response.SQLResponse;
@@ -660,6 +662,13 @@ public class NQueryController extends NBasicController {
     @PutMapping(value = "/format")
     public EnvelopeResponse<List<String>> formatQuery(@RequestBody SQLFormatRequest request) {
         return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, queryService.format(request.getSqls()), "");
+    }
+
+    @ApiOperation(value = "queryDetect", tags = { "QE" })
+    @PostMapping("/detection")
+    public EnvelopeResponse<QueryDetectResponse> queryDetect(@RequestBody QueryDetectRequest request) {
+        checkProjectName(request.getProject());
+        return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, queryService.queryDetect(request), "");
     }
 
     private void checkQueryName(String queryName) {

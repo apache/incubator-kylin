@@ -82,11 +82,13 @@ import org.apache.kylin.metadata.acl.AclTCR;
 import org.apache.kylin.metadata.acl.AclTCRManager;
 import org.apache.kylin.metadata.cube.cuboid.NLayoutCandidate;
 import org.apache.kylin.metadata.cube.model.IndexEntity;
+import org.apache.kylin.metadata.cube.model.IndexPlan;
 import org.apache.kylin.metadata.cube.model.LayoutEntity;
 import org.apache.kylin.metadata.cube.model.NDataSegment;
 import org.apache.kylin.metadata.cube.model.NDataflow;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
 import org.apache.kylin.metadata.cube.model.NDataflowUpdate;
+import org.apache.kylin.metadata.cube.model.NIndexPlanManager;
 import org.apache.kylin.metadata.model.ColumnDesc;
 import org.apache.kylin.metadata.model.ComputedColumnDesc;
 import org.apache.kylin.metadata.model.NDataModel;
@@ -99,6 +101,7 @@ import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.metadata.query.NativeQueryRealization;
 import org.apache.kylin.metadata.query.QueryHistory;
+import org.apache.kylin.metadata.query.QueryMetrics;
 import org.apache.kylin.metadata.query.QueryMetricsContext;
 import org.apache.kylin.metadata.querymeta.ColumnMeta;
 import org.apache.kylin.metadata.querymeta.ColumnMetaWithType;
@@ -127,7 +130,9 @@ import org.apache.kylin.rest.constant.Constant;
 import org.apache.kylin.rest.exception.InternalErrorException;
 import org.apache.kylin.rest.model.Query;
 import org.apache.kylin.rest.request.PrepareSqlRequest;
+import org.apache.kylin.rest.request.QueryDetectRequest;
 import org.apache.kylin.rest.request.SQLRequest;
+import org.apache.kylin.rest.response.QueryDetectResponse;
 import org.apache.kylin.rest.response.SQLResponse;
 import org.apache.kylin.rest.security.AclEntityFactory;
 import org.apache.kylin.rest.security.AclEntityType;
@@ -169,7 +174,8 @@ import lombok.val;
  * @author xduo
  */
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ SpringContext.class, UserGroupInformation.class, SparkSession.class, QueryService.class })
+@PrepareForTest({ SpringContext.class, UserGroupInformation.class, SparkSession.class, QueryService.class,
+        NIndexPlanManager.class, QueryContext.class })
 @PowerMockIgnore({ "javax.management.*" })
 public class QueryServiceTest extends NLocalFileMetadataTestCase {
 
@@ -2742,5 +2748,275 @@ public class QueryServiceTest extends NLocalFileMetadataTestCase {
         Assert.assertTrue(result.isPresent());
         val queryEntry = result.get();
         Assert.assertTrue(queryEntry.getPlannerCancelFlag().isCancelRequested());
+    }
+
+    @Test
+    public void testQueryDetectException() {
+        QueryDetectRequest queryDetectRequest = new QueryDetectRequest("sql", "default", 0, 500);
+        // build sqlRequest
+        SQLRequest sqlRequest = new SQLRequest();
+        sqlRequest.setSql(queryDetectRequest.getSql());
+        String project = queryDetectRequest.getProject();
+        sqlRequest.setLimit(queryDetectRequest.getLimit());
+        sqlRequest.setOffset(queryDetectRequest.getOffset());
+        sqlRequest.setProject(project);
+        // build sqlResponse
+        SQLResponse sqlResponse = new SQLResponse();
+        sqlResponse.setException(true);
+        sqlResponse.setExceptionMessage("exceptionMessage");
+        sqlResponse.setQueryId("queryId");
+        // build excepted queryDetectVO
+        QueryDetectResponse exceptedQueryDetectResponse = new QueryDetectResponse().buildExceptionResponse(sqlResponse);
+
+        Mockito.doReturn(sqlResponse).when(queryService).queryWithCache(sqlRequest);
+
+        QueryDetectResponse queryDetectResponse = queryService.queryDetect(queryDetectRequest);
+
+        Assert.assertEquals(exceptedQueryDetectResponse, queryDetectResponse);
+    }
+
+    @Test
+    public void testQueryDetectPushDown() {
+        QueryDetectRequest queryDetectRequest = new QueryDetectRequest("sql", "default", 0, 500);
+        // build sqlRequest
+        SQLRequest sqlRequest = new SQLRequest();
+        sqlRequest.setSql(queryDetectRequest.getSql());
+        String project = queryDetectRequest.getProject();
+        sqlRequest.setLimit(queryDetectRequest.getLimit());
+        sqlRequest.setOffset(queryDetectRequest.getOffset());
+        sqlRequest.setProject(project);
+
+        // build sqlResponse
+        SQLResponse sqlResponse = new SQLResponse();
+        sqlResponse.setException(false);
+        sqlResponse.setQueryId("queryId");
+        sqlResponse.setQueryPushDown(true);
+        List<NativeQueryRealization> nativeRealizations = Lists.newArrayList();
+        sqlResponse.setNativeRealizations(nativeRealizations);
+
+        // build excepted queryDetectVO
+        QueryDetectResponse exceptedQueryDetectResponse = new QueryDetectResponse().buildResponse(project, sqlResponse,
+                QueryContext.current());
+
+        Mockito.doReturn(sqlResponse).when(queryService).queryWithCache(sqlRequest);
+
+        QueryDetectResponse queryDetectResponse = queryService.queryDetect(queryDetectRequest);
+
+        Assert.assertEquals(exceptedQueryDetectResponse, queryDetectResponse);
+    }
+
+    @Test
+    public void testQueryDetectAggIndex() {
+        QueryDetectRequest queryDetectRequest = new QueryDetectRequest("sql", "default", 0, 500);
+        // build sqlRequest
+        SQLRequest sqlRequest = new SQLRequest();
+        sqlRequest.setSql(queryDetectRequest.getSql());
+        String project = queryDetectRequest.getProject();
+        sqlRequest.setLimit(queryDetectRequest.getLimit());
+        sqlRequest.setOffset(queryDetectRequest.getOffset());
+        sqlRequest.setProject(project);
+
+        // build sqlResponse
+        SQLResponse sqlResponse = new SQLResponse();
+        sqlResponse.setException(false);
+        sqlResponse.setQueryId("queryId");
+        sqlResponse.setQueryPushDown(false);
+        NativeQueryRealization realization = new NativeQueryRealization();
+        realization.setModelId("modelId1");
+        realization.setLayoutId(1L);
+        realization.setModelAlias("modelAlias1");
+        realization.setIndexType(QueryMetrics.AGG_INDEX);
+        realization.setPartialMatchModel(false);
+        realization.setValid(true);
+        List<NativeQueryRealization> nativeRealizations = Lists.newArrayList(realization);
+        sqlResponse.setNativeRealizations(nativeRealizations);
+
+        // mock NIndexPlanManager and IndexPlan
+        PowerMockito.mockStatic(NIndexPlanManager.class);
+        NIndexPlanManager nIndexPlanManager = Mockito.mock(NIndexPlanManager.class);
+        IndexPlan indexPlan = Mockito.mock(IndexPlan.class);
+        LayoutEntity layoutEntity = new LayoutEntity();
+        layoutEntity.setBase(true);
+
+        // mock method return value
+        Mockito.when(NIndexPlanManager.getInstance(Mockito.any(), Mockito.any())).thenReturn(nIndexPlanManager);
+        Mockito.when(nIndexPlanManager.getIndexPlan(realization.getModelId())).thenReturn(indexPlan);
+        Mockito.when(indexPlan.getLayoutEntity(realization.getLayoutId())).thenReturn(layoutEntity);
+        Mockito.doReturn(sqlResponse).when(queryService).queryWithCache(sqlRequest);
+
+        // build excepted queryDetectVO
+        QueryDetectResponse exceptedQueryDetectResponse = new QueryDetectResponse().buildResponse(project, sqlResponse,
+                QueryContext.current());
+
+        QueryDetectResponse queryDetectResponse = queryService.queryDetect(queryDetectRequest);
+
+        Assert.assertEquals(exceptedQueryDetectResponse, queryDetectResponse);
+    }
+
+    @Test
+    public void testQueryDetectWhenIsConstants() {
+        QueryDetectRequest queryDetectRequest = new QueryDetectRequest("sql", "default", 0, 500);
+        // build sqlRequest
+        SQLRequest sqlRequest = new SQLRequest();
+        sqlRequest.setSql(queryDetectRequest.getSql());
+        String project = queryDetectRequest.getProject();
+        sqlRequest.setLimit(queryDetectRequest.getLimit());
+        sqlRequest.setOffset(queryDetectRequest.getOffset());
+        sqlRequest.setProject(project);
+
+        // build sqlResponse
+        SQLResponse sqlResponse = new SQLResponse();
+        sqlResponse.setException(false);
+        sqlResponse.setQueryId("queryId");
+        sqlResponse.setQueryPushDown(false);
+        List<NativeQueryRealization> nativeRealizations = Lists.newArrayList();
+        sqlResponse.setNativeRealizations(nativeRealizations);
+        sqlResponse.setEngineType(QueryHistory.EngineType.CONSTANTS.name());
+
+        // mock method return value
+        Mockito.doReturn(sqlResponse).when(queryService).queryWithCache(sqlRequest);
+
+        // build excepted queryDetectVO
+        QueryDetectResponse exceptedQueryDetectResponse = new QueryDetectResponse().buildResponse(project, sqlResponse,
+                QueryContext.current());
+
+        QueryDetectResponse queryDetectResponse = queryService.queryDetect(queryDetectRequest);
+
+        Assert.assertEquals(exceptedQueryDetectResponse, queryDetectResponse);
+    }
+
+    @Test
+    public void testQueryDetectWhenIsSnapshot() {
+        QueryDetectRequest queryDetectRequest = new QueryDetectRequest("sql", "default", 0, 500);
+        // build sqlRequest
+        SQLRequest sqlRequest = new SQLRequest();
+        sqlRequest.setSql(queryDetectRequest.getSql());
+        String project = queryDetectRequest.getProject();
+        sqlRequest.setLimit(queryDetectRequest.getLimit());
+        sqlRequest.setOffset(queryDetectRequest.getOffset());
+        sqlRequest.setProject(project);
+
+        // build sqlResponse
+        SQLResponse sqlResponse = new SQLResponse();
+        sqlResponse.setException(false);
+        sqlResponse.setQueryId("queryId");
+        sqlResponse.setQueryPushDown(false);
+        NativeQueryRealization realization = new NativeQueryRealization();
+        realization.setModelId("modelId1");
+        realization.setLayoutId(-1L);
+        realization.setModelAlias("modelAlias1");
+        realization.setIndexType(QueryMetrics.AGG_INDEX);
+        realization.setPartialMatchModel(false);
+        realization.setValid(true);
+        List<NativeQueryRealization> nativeRealizations = Lists.newArrayList(realization);
+        sqlResponse.setNativeRealizations(nativeRealizations);
+
+        // mock NIndexPlanManager and IndexPlan
+        PowerMockito.mockStatic(NIndexPlanManager.class);
+        NIndexPlanManager nIndexPlanManager = Mockito.mock(NIndexPlanManager.class);
+        IndexPlan indexPlan = Mockito.mock(IndexPlan.class);
+
+        // mock method return value
+        Mockito.when(NIndexPlanManager.getInstance(Mockito.any(), Mockito.any())).thenReturn(nIndexPlanManager);
+        Mockito.when(nIndexPlanManager.getIndexPlan(realization.getModelId())).thenReturn(indexPlan);
+        Mockito.when(indexPlan.getLayoutEntity(realization.getLayoutId())).thenReturn(null);
+        Mockito.doReturn(sqlResponse).when(queryService).queryWithCache(sqlRequest);
+
+        // build excepted queryDetectVO
+        QueryDetectResponse exceptedQueryDetectResponse = new QueryDetectResponse().buildResponse(project, sqlResponse,
+                QueryContext.current());
+
+        QueryDetectResponse queryDetectResponse = queryService.queryDetect(queryDetectRequest);
+
+        Assert.assertEquals(exceptedQueryDetectResponse, queryDetectResponse);
+    }
+
+    @Test
+    public void testQueryDetectWhenIndexPlanIsNull() {
+        QueryDetectRequest queryDetectRequest = new QueryDetectRequest("sql", "default", 0, 500);
+        // build sqlRequest
+        SQLRequest sqlRequest = new SQLRequest();
+        sqlRequest.setSql(queryDetectRequest.getSql());
+        String project = queryDetectRequest.getProject();
+        sqlRequest.setLimit(queryDetectRequest.getLimit());
+        sqlRequest.setOffset(queryDetectRequest.getOffset());
+        sqlRequest.setProject(project);
+
+        // build sqlResponse
+        SQLResponse sqlResponse = new SQLResponse();
+        sqlResponse.setException(false);
+        sqlResponse.setQueryId("queryId");
+        sqlResponse.setQueryPushDown(false);
+        NativeQueryRealization realization = new NativeQueryRealization();
+        realization.setModelId("modelId1");
+        realization.setLayoutId(-1L);
+        realization.setModelAlias("modelAlias1");
+        realization.setIndexType(QueryMetrics.AGG_INDEX);
+        realization.setPartialMatchModel(false);
+        realization.setValid(true);
+        List<NativeQueryRealization> nativeRealizations = Lists.newArrayList(realization);
+        sqlResponse.setNativeRealizations(nativeRealizations);
+
+        // mock NIndexPlanManager and IndexPlan
+        PowerMockito.mockStatic(NIndexPlanManager.class);
+        NIndexPlanManager nIndexPlanManager = Mockito.mock(NIndexPlanManager.class);
+
+        // mock method return value
+        Mockito.when(NIndexPlanManager.getInstance(Mockito.any(), Mockito.any())).thenReturn(nIndexPlanManager);
+        Mockito.when(nIndexPlanManager.getIndexPlan(realization.getModelId())).thenReturn(null);
+        Mockito.doReturn(sqlResponse).when(queryService).queryWithCache(sqlRequest);
+
+        // build excepted queryDetectVO
+        QueryDetectResponse exceptedQueryDetectResponse = new QueryDetectResponse().buildResponse(project, sqlResponse,
+                QueryContext.current());
+
+        QueryDetectResponse queryDetectResponse = queryService.queryDetect(queryDetectRequest);
+
+        Assert.assertEquals(exceptedQueryDetectResponse, queryDetectResponse);
+    }
+
+    @Test
+    public void testAddToQueryHistoryIsQueryDetect() throws Exception {
+        try (QueryContext queryContext = QueryContext.current()) {
+            queryContext.getQueryTagInfo().setQueryDetect(true);
+            Method method = QueryService.class.getDeclaredMethod("addToQueryHistory", SQLRequest.class,
+                    SQLResponse.class, String.class);
+            method.setAccessible(true);
+
+            // check void method is ok
+            method.invoke(queryService, null, null, null);
+        }
+    }
+
+    @Test
+    public void testIsQueryCacheEnabledIsQueryDetect() throws Exception {
+        try (QueryContext queryContext = QueryContext.current()) {
+            queryContext.getQueryTagInfo().setQueryDetect(true);
+            Method method = QueryService.class.getDeclaredMethod("isQueryCacheEnabled", KylinConfig.class);
+            method.setAccessible(true);
+            KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
+            boolean isQueryCacheEnabled = (boolean) method.invoke(queryService, kylinConfig);
+
+            Assert.assertFalse(isQueryCacheEnabled);
+        }
+    }
+
+    @Test
+    public void testNotHitCacheWhenIsAsyncQuery() {
+        try (QueryContext queryContext = QueryContext.current()) {
+            queryContext.getQueryTagInfo().setAsyncQuery(true);
+            String project = "default";
+            String sql = "select * from table";
+            SQLRequest sqlRequest = new SQLRequest();
+            sqlRequest.setProject(project);
+            sqlRequest.setSql(sql);
+
+            queryService.doQueryWithCache(sqlRequest);
+
+            // async query API can not search cache
+            Assert.assertFalse(queryContext.getQueryTagInfo().isStorageCacheUsed());
+            Assert.assertFalse(queryContext.getQueryTagInfo().isHitExceptionCache());
+            Assert.assertTrue(queryContext.getQueryTagInfo().isAsyncQuery());
+        }
     }
 }

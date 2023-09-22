@@ -54,6 +54,7 @@ import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.query.NativeQueryRealization;
 import org.apache.kylin.metadata.query.StructField;
 import org.apache.kylin.metadata.querymeta.SelectedColumnMeta;
+import org.apache.kylin.metadata.realization.NoRealizationFoundException;
 import org.apache.kylin.metadata.realization.NoStreamingRealizationFoundException;
 import org.apache.kylin.query.engine.data.QueryResult;
 import org.apache.kylin.query.exception.BusyQueryException;
@@ -260,6 +261,12 @@ public class QueryRoutingEngine {
     private QueryResult pushDownQuery(SQLException sqlException, QueryParams queryParams) throws SQLException {
         QueryContext.current().getMetrics().setOlapCause(sqlException);
         QueryContext.current().getQueryTagInfo().setPushdown(true);
+        if (QueryContext.current().getQueryTagInfo().isQueryDetect()) {
+            if (sqlException.getCause() instanceof NoRealizationFoundException) {
+                return new QueryResult();
+            }
+            throw sqlException;
+        }
         PushdownResult result = null;
         try {
             result = tryPushDownSelectQuery(queryParams, sqlException, BackdoorToggles.getPrepareOnly());

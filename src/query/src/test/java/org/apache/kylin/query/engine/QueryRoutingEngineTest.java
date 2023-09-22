@@ -21,6 +21,7 @@ package org.apache.kylin.query.engine;
 import static org.apache.kylin.query.engine.QueryRoutingEngine.SPARK_JOB_FAILED;
 import static org.apache.kylin.query.engine.QueryRoutingEngine.SPARK_MEM_LIMIT_EXCEEDED;
 
+import java.lang.reflect.Method;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -43,6 +44,7 @@ import org.apache.kylin.common.persistence.InMemResourceStore;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.transaction.TransactionException;
 import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
+import org.apache.kylin.metadata.realization.NoRealizationFoundException;
 import org.apache.kylin.metadata.realization.NoStreamingRealizationFoundException;
 import org.apache.kylin.query.QueryExtension;
 import org.apache.kylin.query.engine.data.QueryResult;
@@ -483,6 +485,38 @@ public class QueryRoutingEngineTest extends NLocalFileMetadataTestCase {
             }
         } finally {
             slowQueryDetector.queryEnd();
+        }
+    }
+
+    @Test
+    public void testPushDownQueryWhenIsQueryDetect() throws Exception {
+        try (QueryContext queryContext = QueryContext.current()) {
+            queryContext.getQueryTagInfo().setQueryDetect(true);
+            Method method = QueryRoutingEngine.class.getDeclaredMethod("pushDownQuery", SQLException.class,
+                    QueryParams.class);
+            method.setAccessible(true);
+
+            try {
+                method.invoke(queryRoutingEngine, new SQLException(), null);
+                Assert.fail();
+            } catch (Exception e) {
+                Assert.assertTrue(e.getCause() instanceof SQLException);
+                Assert.assertTrue(QueryContext.current().getQueryTagInfo().isPushdown());
+            }
+        }
+    }
+
+    @Test
+    public void testPushDownQueryWhenIsQueryDetectAndPushDown() throws Exception {
+        try (QueryContext queryContext = QueryContext.current()) {
+            queryContext.getQueryTagInfo().setQueryDetect(true);
+            Method method = QueryRoutingEngine.class.getDeclaredMethod("pushDownQuery", SQLException.class,
+                    QueryParams.class);
+            method.setAccessible(true);
+
+            Object result = method.invoke(queryRoutingEngine, new SQLException(new NoRealizationFoundException("")),
+                    null);
+            Assert.assertNotNull(result);
         }
     }
 }
