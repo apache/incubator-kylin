@@ -63,8 +63,8 @@ object QueryMetricUtils extends Logging {
           child => {
             if (child.isInstanceOf[SparkPlan]) {
               val result = collectAdaptiveSparkPlanExecMetrics(child, scanRow, scanBytes)
-              newScanRow = result._1
-              newScanBytes = result._2
+              newScanRow += result._1
+              newScanBytes += result._2
             } else {
               logTrace("Not sparkPlan in collectAdaptiveSparkPlanExecMetrics, child: " + child.getClass.getName)
             }

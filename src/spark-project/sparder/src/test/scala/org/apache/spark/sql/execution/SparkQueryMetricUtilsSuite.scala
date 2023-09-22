@@ -217,8 +217,8 @@ class SparkQueryMetricUtilsSuite extends QueryTest with SharedSparkSession {
     assert(0 == collectScanMetrics._1.get(0))
     assert(0 == collectScanMetrics._2.get(0))
     val collectScanMetrics2 = QueryMetricUtils.collectAdaptiveSparkPlanExecMetrics(dataWritingCommandExec, 1, 1)
-    assert(1 == collectScanMetrics2._1)
-    assert(1 == collectScanMetrics2._2)
+    assert(2 == collectScanMetrics2._1)
+    assert(2 == collectScanMetrics2._2)
 
   }
 
