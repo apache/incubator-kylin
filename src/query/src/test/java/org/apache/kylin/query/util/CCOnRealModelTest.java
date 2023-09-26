@@ -17,32 +17,20 @@
  */
 package org.apache.kylin.query.util;
 
-import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.apache.kylin.junit.annotation.MetadataInfo;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * test against real models
  */
-public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
-    private ConvertToComputedColumn converter;
-
-    @Before
-    public void setup() throws Exception {
-        this.createTestMetadata("../core-metadata/src/test/resources/ut_meta/ccjointest");
-        converter = new ConvertToComputedColumn();
-    }
-
-    @After
-    public void after() throws Exception {
-        super.cleanupTestMetadata();
-    }
+@MetadataInfo(overlay = "../core-metadata/src/test/resources/ut_meta/ccjointest")
+class CCOnRealModelTest {
+    private final ConvertToComputedColumn converter = new ConvertToComputedColumn();
 
     @Test
-    public void testConvertSingleTableCC() {
+    void testConvertSingleTableCC() {
         {
             String originSql = "select count(*), sum (price * item_count) from test_kylin_fact f left join test_order o on f.ORDER_ID = o.ORDER_ID"
                     + " left join test_account a on o.buyer_id = a.account_id group by ACCOUNT_COUNTRY";
@@ -79,11 +67,10 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
             check(converter, originSql, ccSql);
 
         }
-
     }
 
     @Test
-    public void testConvertCrossTableCC() {
+    void testConvertCrossTableCC() {
         {
             //buyer
             String originSql = "select count(*), sum (price * item_count) from test_kylin_fact f left join test_order o on f.ORDER_ID = o.ORDER_ID"
@@ -112,9 +99,9 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
         }
     }
 
-    @Ignore("historic ignored")
+    @Disabled("historic ignored")
     @Test
-    public void testSubquery() {
+    void testSubquery() {
         {
             String originSql = "select count(*), sum (price * item_count) as DEAL_AMOUNT from test_kylin_fact f left join test_order o on f.ORDER_ID = o.ORDER_ID"
                     + " left join test_account a on o.buyer_id = a.account_id  left join test_country c on a.account_country = c.country"
@@ -168,7 +155,7 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
-    public void testMixModel() {
+    void testMixModel() {
         String originSql = "select count(*), sum (price * item_count) from test_kylin_fact f"
                 + " left join test_order o on f.ORDER_ID = o.ORDER_ID"
                 + " left join test_account a on o.buyer_id = a.account_id "
@@ -197,12 +184,22 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
-    public void testJoinOnCC() {
+    void testJoinOnCC() {
         {
             String originSql = "select count(*) from TEST_KYLIN_FACT\n"
                     + "left join TEST_ORDER on TEST_KYLIN_FACT.ORDER_ID + 1 = TEST_ORDER.ORDER_ID + 1";
             String ccSql = "select count(*) from TEST_KYLIN_FACT\n"
                     + "left join TEST_ORDER on TEST_KYLIN_FACT.ORDER_ID_PLUS_1 = TEST_ORDER.ID_PLUS_1";
+            check(converter, originSql, ccSql);
+        }
+
+        {
+            String originSql = "select LSTG_FORMAT_NAME, LEAF_CATEG_ID from TEST_KYLIN_FACT\n"
+                    + "left join TEST_ORDER on TEST_KYLIN_FACT.ORDER_ID + 1 = TEST_ORDER.ORDER_ID + 1\n"
+                    + "group by LSTG_FORMAT_NAME, LEAF_CATEG_ID";
+            String ccSql = "select LSTG_FORMAT_NAME, LEAF_CATEG_ID from TEST_KYLIN_FACT\n"
+                    + "left join TEST_ORDER on TEST_KYLIN_FACT.ORDER_ID_PLUS_1 = TEST_ORDER.ID_PLUS_1\n"
+                    + "group by LSTG_FORMAT_NAME, LEAF_CATEG_ID";
             check(converter, originSql, ccSql);
         }
 
@@ -230,13 +227,13 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
-    public void testNoFrom() {
+    void testNoFrom() {
         check(converter, "select sum(price * item_count),(SELECT 1 as VERSION) from test_kylin_fact",
                 "select sum(TEST_KYLIN_FACT.DEAL_AMOUNT),(SELECT 1 as VERSION) from test_kylin_fact");
     }
 
     @Test
-    public void testFromValues() {
+    void testFromValues() {
         String originSql = "select sum(price * item_count),(SELECT 1 FROM (VALUES(1))) from test_kylin_fact";
         String ccSql = "select sum(TEST_KYLIN_FACT.DEAL_AMOUNT),(SELECT 1 FROM (VALUES(1))) from test_kylin_fact";
 
@@ -244,7 +241,7 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
-    public void testNestedCC() {
+    void testNestedCC() {
         String ccSql = "select count(*), sum (F.NEST4) from test_kylin_fact F";
 
         {
@@ -269,14 +266,14 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
-    public void testCcConvertedOnMultiModel() {
+    void testCcConvertedOnMultiModel() {
         String originSql = "select count(*), sum (price * item_count) from test_kylin_fact f";
         String ccSql = "select count(*), sum (F.DEAL_AMOUNT) from test_kylin_fact f";
         check(converter, originSql, ccSql);
     }
 
     @Test
-    public void testDateFamily() {
+    void testDateFamily() {
         String originSql = "select count( year(date0)), max(extract(year from date1)),\n"
                 + "       count( month(date0)), max(extract(month from date1)),\n"
                 + "       count( quarter(date0)), max(extract(quarter from date1)),\n"
@@ -303,7 +300,7 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
-    public void testBasicTimestampAddAndDiff() {
+    void testBasicTimestampAddAndDiff() {
         String originSql = "select sum(timestampdiff(second, time0, time1) ) as c1,\n" //
                 + "count(distinct timestampadd(minute, 1, time1)) as c2,\n" //
                 + "max(timestampdiff(hour, time1, time0)) as c3,\n" //
@@ -328,7 +325,7 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
-    public void testMoreTimestampAddAndDiff() {
+    void testMoreTimestampAddAndDiff() {
         String originSql, ccSql;
         originSql = "select sum((int1-int2)/(int1+int2)) as c1,\n"
                 + "sum((int1-int2)/timestampdiff(second, time0, time1) ) as c2,\n"
@@ -449,7 +446,7 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
     }
 
     @Test
-    public void testExplicitCcNameToInnerName() {
+    void testExplicitCcNameToInnerName() {
 
         // case 1. explicit query name in inner-most sub-query
         String originSql = "select max(CALCS.CC_AUTO_17)\n" + " - min(CALCS.CC_AUTO_17)\n"
@@ -493,7 +490,6 @@ public class CCOnRealModelTest extends NLocalFileMetadataTestCase {
 
     private void check(ConvertToComputedColumn converter, String originSql, String ccSql, String project) {
         String transform = converter.transform(originSql, project, "DEFAULT");
-        Assert.assertEquals(ccSql, transform);
+        Assertions.assertEquals(ccSql, transform);
     }
-
 }

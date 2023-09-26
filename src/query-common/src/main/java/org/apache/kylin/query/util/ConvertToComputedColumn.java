@@ -34,11 +34,13 @@ import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlAsOperator;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlIntervalQualifier;
+import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -100,10 +102,28 @@ public class ConvertToComputedColumn implements IQueryTransformer {
         List<SqlNode> inputNodes = new LinkedList<>();
         inputNodes.addAll(collectCandidateInputNodes(select.getSelectList(), select.getGroup()));
         inputNodes.addAll(collectCandidateInputNodes(select.getOrderList(), select.getGroup()));
+        if (select.getFrom() instanceof SqlJoin) {
+            SqlJoin join = (SqlJoin) select.getFrom();
+            collectJoinNodes(inputNodes, join);
+        }
         inputNodes.addAll(collectCandidateInputNode(select.getHaving(), select.getGroup()));
         inputNodes.addAll(getInputTreeNodes(select.getWhere()));
         inputNodes.addAll(getInputTreeNodes(select.getGroup()));
         return inputNodes;
+    }
+
+    private static void collectJoinNodes(List<SqlNode> inputNodes, SqlJoin join) {
+        if (join.getLeft() instanceof SqlJoin) {
+            collectJoinNodes(inputNodes, (SqlJoin) join.getLeft());
+        }
+        SqlNode condition = join.getCondition();
+        if (condition.getKind() == SqlKind.EQUALS) {
+            SqlBasicCall call = (SqlBasicCall) condition;
+            inputNodes.addAll(call.getOperandList());
+        }
+        if (join.getRight() instanceof SqlJoin) {
+            collectJoinNodes(inputNodes, (SqlJoin) join.getRight());
+        }
     }
 
     private static List<SqlNode> collectInputNodes(SqlOrderBy sqlOrderBy) {
