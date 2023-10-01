@@ -235,7 +235,7 @@ public class AclPermissionUtil {
     }
 
     public static QueryContext.AclInfo createAclInfo(String project, Set<String> groups) {
-        return new QueryContext.AclInfo(getCurrentUsername(), groups, isAdminInProject(project, groups));
+        return new QueryContext.AclInfo(getCurrentUsername(), groups, hasProjectAdminPermission(project, groups));
     }
 
     public static boolean hasExtPermission(Permission permission) {

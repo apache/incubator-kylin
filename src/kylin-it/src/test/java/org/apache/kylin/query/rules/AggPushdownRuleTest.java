@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.kylin.query.rules;
 
 import java.io.IOException;
@@ -28,11 +27,10 @@ import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.test.DiffRepository;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.Pair;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.clearspring.analytics.util.Lists;
 
 import io.kyligence.kap.query.optrule.KapAggFilterTransposeRule;
 import io.kyligence.kap.query.optrule.KapAggJoinTransposeRule;

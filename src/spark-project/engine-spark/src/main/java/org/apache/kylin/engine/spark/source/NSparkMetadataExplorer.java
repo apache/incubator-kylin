@@ -45,6 +45,7 @@ import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.common.util.RandomUtil;
 import org.apache.kylin.guava30.shaded.common.cache.Cache;
 import org.apache.kylin.guava30.shaded.common.cache.CacheBuilder;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.model.ColumnDesc;
 import org.apache.kylin.metadata.model.ISourceAware;
@@ -63,8 +64,6 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
 import org.apache.spark.sql.internal.SQLConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.clearspring.analytics.util.Lists;
 
 import lombok.val;
 

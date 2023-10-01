@@ -18,14 +18,16 @@
 
 package org.apache.kylin.engine.spark.job;
 
-import com.clearspring.analytics.util.Lists;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
-import lombok.val;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.RandomUtil;
 import org.apache.kylin.engine.spark.IndexDataConstructor;
 import org.apache.kylin.engine.spark.NLocalWithSparkSessionTest;
 import org.apache.kylin.engine.spark.merger.AfterMergeOrRefreshResourceMerger;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.job.engine.JobEngineConfig;
@@ -47,9 +49,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import lombok.val;
 
 public class NSparkMergingJobTest extends NLocalWithSparkSessionTest {
 

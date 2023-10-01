@@ -18,117 +18,50 @@
 package org.apache.kylin.query.security;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
-import org.apache.calcite.avatica.util.Quoting;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlExplain;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlJoin;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlWith;
+import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.QueryContext;
 import org.apache.kylin.common.exception.KylinRuntimeException;
 import org.apache.kylin.common.util.Pair;
+import org.apache.kylin.common.util.StringHelper;
 import org.apache.kylin.metadata.acl.AclTCR;
 import org.apache.kylin.metadata.acl.AclTCRManager;
 import org.apache.kylin.metadata.model.ColumnDesc;
 import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.kylin.metadata.model.TableDesc;
 import org.apache.kylin.metadata.model.tool.CalciteParser;
+import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.query.IQueryTransformer;
-import org.apache.kylin.query.exception.NoAuthorizedColsError;
 import org.apache.kylin.rest.constant.Constant;
 import org.apache.kylin.source.adhocquery.IPushDownConverter;
 
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import lombok.Getter;
 
 public class HackSelectStarWithColumnACL implements IQueryTransformer, IPushDownConverter {
-
-    private static final String SELECT_STAR = "*";
-
-    static String getNewSelectClause(SqlNode sqlNode, String project, String defaultSchema,
-            QueryContext.AclInfo aclInfo) {
-        StringBuilder newSelectClause = new StringBuilder();
-        List<String> allCols = getColsCanAccess(sqlNode, project, defaultSchema, aclInfo);
-        if (CollectionUtils.isEmpty(allCols)) {
-            throw new NoAuthorizedColsError();
-        }
-        for (String col : allCols) {
-            if (!col.equals(allCols.get(allCols.size() - 1))) {
-                newSelectClause.append(col).append(", ");
-            } else {
-                newSelectClause.append(col);
-            }
-        }
-        return newSelectClause.toString();
-    }
-
-    static List<String> getColsCanAccess(SqlNode sqlNode, String project, String defaultSchema,
-            QueryContext.AclInfo aclInfo) {
-        List<String> cols = new ArrayList<>();
-        String user = Objects.nonNull(aclInfo) ? aclInfo.getUsername() : null;
-        Set<String> groups = Objects.nonNull(aclInfo) ? aclInfo.getGroups() : null;
-        final List<AclTCR> aclTCRs = AclTCRManager.getInstance(KylinConfig.getInstanceFromEnv(), project)
-                .getAclTCRs(user, groups);
-        List<RowFilter.Table> tblWithAlias = RowFilter.getTblWithAlias(defaultSchema, getSingleSelect(sqlNode));
-        for (RowFilter.Table table : tblWithAlias) {
-            TableDesc tableDesc = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(), project)
-                    .getTableDesc(table.getName());
-            if (Objects.isNull(tableDesc)) {
-                throw new IllegalStateException(
-                        "Table " + table.getAlias() + " not found. Please add table " + table.getAlias()
-                                + " to data source. If this table does exist, mention it as DATABASE.TABLE.");
-            }
-
-            List<ColumnDesc> columns = Lists.newArrayList(tableDesc.getColumns());
-            Collections.sort(columns, Comparator.comparing(ColumnDesc::getZeroBasedIndex));
-            String quotingChar = Quoting.valueOf(KylinConfig.getInstanceFromEnv().getCalciteQuoting()).string;
-            for (ColumnDesc column : columns) {
-                if (aclTCRs.stream()
-                        .anyMatch(aclTCR -> aclTCR.isAuthorized(tableDesc.getIdentity(), column.getName()))) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(quotingChar).append(table.getAlias()).append(quotingChar) //
-                            .append('.') //
-                            .append(quotingChar).append(column.getName()).append(quotingChar);
-                    cols.add(sb.toString());
-                }
-            }
-        }
-        return cols;
-    }
-
-    private static boolean isSingleSelectStar(SqlNode sqlNode) {
-        if (SelectNumVisitor.getSelectNum(sqlNode) != 1 || sqlNode instanceof SqlExplain) {
-            return false;
-        }
-        SqlSelect singleSelect = getSingleSelect(sqlNode);
-        return singleSelect.getSelectList().toString().equals(SELECT_STAR);
-    }
-
-    private static int getSelectStarPos(String sql, SqlNode sqlNode) {
-        SqlSelect singleSelect = getSingleSelect(sqlNode);
-        Pair<Integer, Integer> replacePos = CalciteParser.getReplacePos(singleSelect.getSelectList(), sql);
-        Preconditions.checkState(replacePos.getSecond() - replacePos.getFirst() == 1);
-        return replacePos.getFirst();
-    }
-
-    private static SqlSelect getSingleSelect(SqlNode sqlNode) {
-        if (sqlNode instanceof SqlOrderBy) {
-            SqlOrderBy orderBy = (SqlOrderBy) sqlNode;
-            return (SqlSelect) orderBy.query;
-        } else {
-            return (SqlSelect) sqlNode;
-        }
-    }
 
     private static boolean hasAdminPermission(QueryContext.AclInfo aclInfo) {
         if (Objects.isNull(aclInfo) || Objects.isNull(aclInfo.getGroups())) {
@@ -153,49 +86,161 @@ public class HackSelectStarWithColumnACL implements IQueryTransformer, IPushDown
         try {
             sqlNode = CalciteParser.parse(sql, project);
         } catch (SqlParseException e) {
-            throw new KylinRuntimeException("Failed to parse SQL \'" + sql + "\', please make sure the SQL is valid");
+            throw new KylinRuntimeException("Failed to parse invalid SQL: " + sql);
         }
 
-        if (!isSingleSelectStar(sqlNode)) {
+        SelectStarAuthVisitor replacer = new SelectStarAuthVisitor(project, defaultSchema, aclLocal);
+        sqlNode.accept(replacer);
+        Map<SqlNode, String> resolved = replacer.getResolved();
+        if (resolved.isEmpty()) {
             return sql;
         }
-
-        String newSelectClause = getNewSelectClause(sqlNode, project, defaultSchema, aclLocal);
-        int selectStarPos = getSelectStarPos(sql, sqlNode);
-        StringBuilder result = new StringBuilder(sql);
-        result.replace(selectStarPos, selectStarPos + 1, newSelectClause);
-        return result.toString();
+        StringBuilder sb = new StringBuilder();
+        AtomicInteger offset = new AtomicInteger(0);
+        resolved.forEach((node, replaced) -> {
+            Pair<Integer, Integer> replacePos = CalciteParser.getReplacePos(node, sql);
+            sb.append(sql, offset.get(), replacePos.getKey());
+            sb.append(replaced);
+            offset.set(replacePos.getValue());
+        });
+        sb.append(sql.substring(offset.get()));
+        return sb.toString();
     }
 
-    static class SelectNumVisitor extends SqlBasicVisitor<SqlNode> {
-        int selectNum = 0;
+    static class SelectStarAuthVisitor extends SqlBasicVisitor<SqlNode> {
+        @Getter
+        Map<SqlNode, String> resolved = new LinkedHashMap<>();
+        /** A cache to avoid the same table generate the replaced sql twice. */
+        private final Map<String, String> tableToReplacedSubQuery = new HashMap<>();
+        private final Set<String> namesOfWithItems = new HashSet<>();
+        private final String defaultSchema;
+        private final List<AclTCR> aclTCRList;
+        private final NTableMetadataManager tableMgr;
 
-        static int getSelectNum(SqlNode sqlNode) {
-            SelectNumVisitor snv = new SelectNumVisitor();
-            sqlNode.accept(snv);
-            return snv.getNum();
+        SelectStarAuthVisitor(String project, String defaultSchema, QueryContext.AclInfo aclInfo) {
+            this.defaultSchema = defaultSchema;
+            KylinConfig config = NProjectManager.getProjectConfig(project);
+            this.tableMgr = NTableMetadataManager.getInstance(config, project);
+            // init aclTCR
+            String user = Objects.nonNull(aclInfo) ? aclInfo.getUsername() : null;
+            Set<String> groups = Objects.nonNull(aclInfo) ? aclInfo.getGroups() : null;
+            aclTCRList = AclTCRManager.getInstance(config, project).getAclTCRs(user, groups);
         }
 
         @Override
-        public SqlNode visit(SqlCall call) {
-            if (call instanceof SqlSelect) {
-                selectNum++;
-            }
-            if (call instanceof SqlOrderBy) {
-                SqlOrderBy sqlOrderBy = (SqlOrderBy) call;
-                sqlOrderBy.query.accept(this);
-            } else {
-                for (SqlNode operand : call.getOperandList()) {
-                    if (operand != null) {
-                        operand.accept(this);
-                    }
+        public SqlNode visit(SqlNodeList nodeList) {
+            for (SqlNode node : nodeList) {
+                if (node instanceof SqlWithItem) {
+                    SqlWithItem item = (SqlWithItem) node;
+                    item.query.accept(this);
+                    namesOfWithItems.add(item.name.toString());
                 }
             }
             return null;
         }
 
-        private int getNum() {
-            return selectNum;
+        @Override
+        public SqlNode visit(SqlCall call) {
+            if (call instanceof SqlSelect) {
+                SqlSelect select = (SqlSelect) call;
+                markCall(select.getFrom());
+            }
+            if (call instanceof SqlBasicCall) {
+                if (isCallWithAlias(call)) {
+                    markCall(call);
+                } else {
+                    SqlBasicCall basicCall = (SqlBasicCall) call;
+                    for (SqlNode node : basicCall.getOperands()) {
+                        markCall(node);
+                    }
+                }
+            }
+
+            if (call instanceof SqlJoin) {
+                markCall(((SqlJoin) call).getLeft());
+                markCall(((SqlJoin) call).getRight());
+            }
+            if (call instanceof SqlWith) {
+                SqlWith sqlWith = (SqlWith) call;
+                sqlWith.withList.accept(this);
+                sqlWith.body.accept(this);
+            }
+            if (call instanceof SqlOrderBy) {
+                call.getOperandList().stream().filter(Objects::nonNull).forEach(node -> node.accept(this));
+            }
+            return null;
+        }
+
+        private void markCall(SqlNode operand) {
+            if (operand instanceof SqlIdentifier) {
+                String replaced = markTableIdentifier((SqlIdentifier) operand, null);
+                resolved.put(operand, replaced);
+                return;
+            } else if (isCallWithAlias(operand)) {
+                SqlNode[] operands = ((SqlBasicCall) operand).getOperands();
+                SqlNode tableNode = operands[0];
+                if (tableNode instanceof SqlIdentifier) {
+                    String replaced = markTableIdentifier((SqlIdentifier) tableNode, operands[1]);
+                    resolved.put(operand, replaced);
+                } else {
+                    tableNode.accept(this);
+                }
+                return;
+            }
+
+            // a sub-query, continue to mark
+            operand.accept(this);
+        }
+
+        private boolean isCallWithAlias(SqlNode from) {
+            return from instanceof SqlBasicCall && from.getKind() == SqlKind.AS;
+        }
+
+        private String markTableIdentifier(SqlIdentifier operand, SqlNode alias) {
+            if (namesOfWithItems.contains(operand.toString())) {
+                return operand.toString();
+            }
+            List<String> names = operand.names;
+            String schema = names.size() == 1 ? defaultSchema : names.get(0);
+            String table = names.size() == 1 ? names.get(0) : names.get(1);
+            TableDesc tableDesc = tableMgr.getTableDesc(schema + '.' + table);
+            if (tableDesc == null) {
+                throw new KylinRuntimeException("Failed to parse table: " + operand);
+            }
+
+            String tableIdentity = tableDesc.getDoubleQuoteIdentity();
+            if (tableToReplacedSubQuery.containsKey(tableIdentity)) {
+                return tableToReplacedSubQuery.get(tableIdentity);
+            } else {
+                List<String> authorizedCols = getAuthorizedCols(tableDesc);
+                String subQueryAlias = alias == null ? StringHelper.doubleQuote(table)
+                        : StringHelper.doubleQuote(alias.toString());
+                String replacedSubQuery = "( select " + String.join(", ", authorizedCols) //
+                        + " from " + tableIdentity + ") as " + subQueryAlias;
+                tableToReplacedSubQuery.put(tableIdentity, replacedSubQuery);
+                return replacedSubQuery;
+            }
+        }
+
+        List<String> getAuthorizedCols(TableDesc tableDesc) {
+            List<String> colList = new ArrayList<>();
+            List<ColumnDesc> columns = Arrays.stream(tableDesc.getColumns()) //
+                    .sorted(Comparator.comparing(ColumnDesc::getZeroBasedIndex)) //
+                    .collect(Collectors.toList());
+            for (ColumnDesc column : columns) {
+                for (AclTCR aclTCR : aclTCRList) {
+                    if (aclTCR.isAuthorized(tableDesc.getIdentity(), column.getName())) {
+                        colList.add(getQuotedColName(column));
+                        break;
+                    }
+                }
+            }
+            return colList;
+        }
+
+        String getQuotedColName(ColumnDesc column) {
+            return StringHelper.doubleQuote(column.getTable().getName()) + "."
+                    + StringHelper.doubleQuote(column.getName());
         }
     }
 }

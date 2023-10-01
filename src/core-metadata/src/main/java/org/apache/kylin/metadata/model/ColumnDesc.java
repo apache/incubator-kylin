@@ -23,6 +23,7 @@ import java.io.Serializable;
 import org.apache.calcite.avatica.util.Quoting;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.util.StringHelper;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.metadata.datatype.DataType;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -30,7 +31,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -231,8 +231,7 @@ public class ColumnDesc implements Serializable {
     // for test mainly
     public static ColumnDesc mockup(TableDesc table, int oneBasedColumnIndex, String name, String datatype) {
         ColumnDesc desc = new ColumnDesc();
-        String id = "" + oneBasedColumnIndex;
-        desc.setId(id);
+        desc.setId(String.valueOf(oneBasedColumnIndex));
         desc.setName(name);
         desc.setDatatype(datatype);
         desc.init(table);

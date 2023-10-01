@@ -18,61 +18,281 @@
 
 package org.apache.kylin.query.security;
 
-import java.util.ArrayList;
+import static org.apache.kylin.common.util.TestUtils.getTestConfig;
+
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.kylin.common.QueryContext;
-import org.apache.kylin.metadata.model.ColumnDesc;
-import org.apache.kylin.metadata.model.TableDesc;
-import org.apache.kylin.metadata.model.tool.CalciteParser;
-import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
-import org.apache.kylin.metadata.acl.AclTCR;
-import org.apache.kylin.metadata.acl.AclTCRManager;
-import org.apache.kylin.metadata.model.NTableMetadataManager;
-import org.apache.kylin.query.exception.NoAuthorizedColsError;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.junit.annotation.MetadataInfo;
+import org.apache.kylin.metadata.acl.AclTCR;
+import org.apache.kylin.metadata.acl.AclTCRManager;
+import org.apache.kylin.metadata.model.ColumnDesc;
+import org.apache.kylin.metadata.model.NTableMetadataManager;
+import org.apache.kylin.metadata.model.TableDesc;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class HackSelectStarWithColumnACLTest extends NLocalFileMetadataTestCase {
-    private final static String PROJECT = "default";
-    private final static String SCHEMA = "DEFAULT";
+@MetadataInfo
+class HackSelectStarWithColumnACLTest {
+    private static final String PROJECT = "default";
+    private static final String SCHEMA = "DEFAULT";
+    private static final HackSelectStarWithColumnACL TRANSFORMER = new HackSelectStarWithColumnACL();
+    QueryContext current = QueryContext.current();
 
-    @Before
-    public void setup() throws Exception {
-        createTestMetadata();
+    @BeforeEach
+    void setup() {
         getTestConfig().setProperty("kylin.query.security.acl-tcr-enabled", "true");
+        prepareBasic();
+        current.setAclInfo(new QueryContext.AclInfo("u1", Sets.newHashSet("g1"), false));
     }
 
-    @After
-    public void after() {
-        cleanupTestMetadata();
+    @AfterAll
+    static void afterAll() {
+        QueryContext.current().close();
     }
 
     @Test
-    public void testTransform() {
-        prepareBasic();
-        HackSelectStarWithColumnACL transformer = new HackSelectStarWithColumnACL();
-        QueryContext.current().setAclInfo(new QueryContext.AclInfo("u1", Sets.newHashSet("g1"), false));
-        String sql = transformer.convert(
-                "select * from TEST_KYLIN_FACT t1 join TEST_ORDER t2 on t1.ORDER_ID = t2.ORDER_ID", PROJECT, SCHEMA);
-        String expectSQL = "select \"T1\".\"PRICE\", \"T1\".\"ITEM_COUNT\", \"T1\".\"ORDER_ID\", "
-                + "\"T2\".\"ORDER_ID\", \"T2\".\"BUYER_ID\", \"T2\".\"TEST_DATE_ENC\" "
-                + "from TEST_KYLIN_FACT t1 join TEST_ORDER t2 on t1.ORDER_ID = t2.ORDER_ID";
-        assertRoughlyEquals(expectSQL, sql);
+    void testJoin() {
+        // without alias
+        {
+            String sql = "select * from TEST_KYLIN_FACT join TEST_ORDER "
+                    + "on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "select * from ( " //
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\" "
+                    + "join ( select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\" "
+                    + "on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            Assertions.assertEquals(expected, converted);
+        }
+        // with alias
+        {
+            String sql = "select * from TEST_KYLIN_FACT t1 join TEST_ORDER t2 on t1.ORDER_ID = t2.ORDER_ID";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "select * from ( " //
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"T1\" "
+                    + "join ( select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"T2\" "
+                    + "on t1.ORDER_ID = t2.ORDER_ID";
+            Assertions.assertEquals(expected, converted);
+        }
+        // nested select star
+        {
+            String sql = "select * from (select * from TEST_KYLIN_FACT) t1 join TEST_ORDER t2 "
+                    + "on t1.ORDER_ID = t2.ORDER_ID";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "select * from (" //
+                    + "select * from ( " //
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\""
+                    + ") t1 join ( select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\""
+                    + ") as \"T2\" on t1.ORDER_ID = t2.ORDER_ID";
+            Assertions.assertEquals(expected, converted);
+        }
     }
 
     @Test
-    public void testTransformColumnStartWithNumberOrKeyword() {
-        getTestConfig().setProperty("kylin.query.calcite.extras-props.quoting", "DOUBLE_QUOTE");
-        prepareBasic();
+    void testWithSubQuery() {
+        // simple case
+        {
+            String sql = "with test_order as (select * from test_order)\n"
+                    + "select * from TEST_KYLIN_FACT join TEST_ORDER "
+                    + "on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "with test_order as (select * from ( "
+                    + "select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\")\n"
+                    + "select * from ( " //
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\" "
+                    + "join TEST_ORDER on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            Assertions.assertEquals(expected, converted);
+        }
+        // some content of with-body reuse with-items
+        {
+            String sql = "with test_order as (select * from test_order)\n"
+                    + "select * from TEST_KYLIN_FACT join (select * from TEST_ORDER) TEST_ORDER "
+                    + "on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "with test_order as (select * from ( "
+                    + "select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\")\n"
+                    + "select * from ( " //
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\" "
+                    + "join (select * from TEST_ORDER) TEST_ORDER on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            Assertions.assertEquals(expected, converted);
+        }
+        // all contexts of with-body do not reuse any with-items
+        {
+            String sql = "with test_order as (select * from test_order)\n"
+                    + "select * from TEST_KYLIN_FACT join (select * from \"DEFAULT\".\"TEST_ORDER\") TEST_ORDER "
+                    + "on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "with test_order as (select * from ( "
+                    + "select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\")\n"
+                    + "select * from ( " //
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\" " //
+                    + "join (select * from ( " //
+                    + "select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" "
+                    + "from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\") TEST_ORDER "
+                    + "on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            Assertions.assertEquals(expected, converted);
+        }
+        // all contexts of with-body reuse with-items
+        {
+            String sql = "with test_order as (select * from test_order), "
+                    + "test_kylin_fact as (select * from test_kylin_fact)\n"
+                    + "select * from TEST_KYLIN_FACT join (select * from TEST_ORDER) TEST_ORDER "
+                    + "on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "with test_order as (" //
+                    + "select * from ( select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" " //
+                    + "from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\"), " //
+                    + "test_kylin_fact as ("
+                    + "select * from ( select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\")\n"
+                    + "select * from TEST_KYLIN_FACT join (select * from TEST_ORDER) TEST_ORDER "
+                    + "on TEST_KYLIN_FACT.ORDER_ID = TEST_ORDER.ORDER_ID";
+            Assertions.assertEquals(expected, converted);
+        }
+    }
+
+    @Test
+    void testUnion() {
+        // without outer select
+        {
+            String sql = "select * from test_order union select * from test_order";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "select * from ( " //
+                    + "select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\" "
+                    + "union select * from ( " //
+                    + "select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\"";
+            Assertions.assertEquals(expected, converted);
+        }
+        // with outer select
+        {
+            String sql = "select * from (select * from test_order union select * from test_order)";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            String expected = "select * from (select * from ( " //
+                    + "select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\" "
+                    + "union select * from ( " //
+                    + "select \"TEST_ORDER\".\"ORDER_ID\", \"TEST_ORDER\".\"BUYER_ID\", "
+                    + "\"TEST_ORDER\".\"TEST_DATE_ENC\" from \"DEFAULT\".\"TEST_ORDER\") as \"TEST_ORDER\")";
+            Assertions.assertEquals(expected, converted);
+        }
+    }
+
+    @Test
+    void testInSubQuery() {
+        String sql = "select * from TEST_KYLIN_FACT "
+                + "where ITEM_COUNT in (select ITEM_COUNT from (select * from TEST_KYLIN_FACT) )";
+        String expected = "select * from ( "
+                + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\" "
+                + "where ITEM_COUNT in (select ITEM_COUNT from (select * from TEST_KYLIN_FACT) )";
+        String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+        Assertions.assertEquals(expected, converted);
+    }
+
+    @Test
+    void testCaseWhen() {
+        {
+            String sql = "select (case when ITEM_COUNT > 0 " //
+                    + "then (case when order_id > 0 then order_id else 1 end)  " //
+                    + "else null end)\n" //
+                    + "from TEST_KYLIN_FACT";
+            String expected = "select (case when ITEM_COUNT > 0 " //
+                    + "then (case when order_id > 0 then order_id else 1 end)  " //
+                    + "else null end)\n" //
+                    + "from ( select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", " //
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" " //
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\"";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            Assertions.assertEquals(expected, converted);
+        }
+
+        {
+            String sql = "select * from test_kylin_fact " //
+                    + "where case when ITEM_COUNT > 10 then item_count else 0 end";
+            String expected = "select * from ( " //
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", " //
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" " //
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\" "
+                    + "where case when ITEM_COUNT > 10 then item_count else 0 end";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            Assertions.assertEquals(expected, converted);
+        }
+    }
+
+    @Test
+    void testSingleTable() {
+        // without limit
+        {
+            String sql = "select * from \"DEFAULT\".\"TEST_KYLIN_FACT\"";
+            String expected = "select * from ( "
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\"";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            Assertions.assertEquals(expected, converted);
+        }
+        // with alias
+        {
+            String sql = "select * from test_kylin_fact as test_kylin_fact";
+            String expected = "select * from ( "
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\"";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            Assertions.assertEquals(expected, converted);
+        }
+        // with limit-offset
+        {
+            String sql = "select * from test_kylin_fact as test_kylin_fact limit 10 offset 2";
+            String expected = "select * from ( "
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\" limit 10 offset 2";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            Assertions.assertEquals(expected, converted);
+        }
+        // agg
+        {
+            String sql = "select count(*) from \"DEFAULT\".\"TEST_KYLIN_FACT\"";
+            String expected = "select count(*) from ( "
+                    + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                    + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\" "
+                    + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\"";
+            String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+            Assertions.assertEquals(expected, converted);
+        }
+    }
+
+    @Test
+    void testKeywordAsColName() {
         prepareMore();
         NTableMetadataManager tableMetadataManager = NTableMetadataManager.getInstance(getTestConfig(), PROJECT);
         TableDesc tableDesc = tableMetadataManager.getTableDesc("DEFAULT.TEST_KYLIN_FACT");
@@ -87,122 +307,61 @@ public class HackSelectStarWithColumnACLTest extends NLocalFileMetadataTestCase 
         colWithKeyword.setDatatype("date");
         colWithKeyword.setName("YEAR");
 
-        ArrayList<ColumnDesc> columnDescs = Lists.newArrayList(columns);
+        List<ColumnDesc> columnDescs = Lists.newArrayList(columns);
         columnDescs.add(colStartsWithNumber);
         columnDescs.add(colWithKeyword);
 
         tableDesc.setColumns(columnDescs.toArray(new ColumnDesc[0]));
         tableMetadataManager.updateTableDesc(tableDesc);
-        HackSelectStarWithColumnACL transformer = new HackSelectStarWithColumnACL();
-        QueryContext.current().setAclInfo(new QueryContext.AclInfo("u1", Sets.newHashSet("g1"), false));
-        String transformed = transformer.convert("select * from TEST_KYLIN_FACT", PROJECT, SCHEMA);
-        String expected = "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", " //
+
+        String sql = "select * from TEST_KYLIN_FACT";
+        String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+        String expected = "select * from ( " //
+                + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", \"TEST_KYLIN_FACT\".\"PRICE\", "
+                + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\", \"TEST_KYLIN_FACT\".\"2D\", \"TEST_KYLIN_FACT\".\"YEAR\" "
+                + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\"";
+        Assertions.assertEquals(expected, converted);
+    }
+
+    @Test
+    void testColumnNameStartsWithNumber() {
+        prepareMore();
+        NTableMetadataManager tableMetadataManager = NTableMetadataManager.getInstance(getTestConfig(), PROJECT);
+        TableDesc tableDesc = tableMetadataManager.getTableDesc("DEFAULT.TEST_KYLIN_FACT");
+        ColumnDesc[] columns = tableDesc.getColumns();
+
+        ColumnDesc colStartsWithNumber = new ColumnDesc(columns[0]);
+        colStartsWithNumber.setId("13");
+        colStartsWithNumber.setDatatype("date");
+        colStartsWithNumber.setName("2D");
+        ColumnDesc colWithKeyword = new ColumnDesc(columns[0]);
+        colWithKeyword.setId("14");
+        colWithKeyword.setDatatype("date");
+        colWithKeyword.setName("YEAR");
+
+        List<ColumnDesc> columnDescs = Lists.newArrayList(columns);
+        columnDescs.add(colStartsWithNumber);
+        columnDescs.add(colWithKeyword);
+
+        tableDesc.setColumns(columnDescs.toArray(new ColumnDesc[0]));
+        tableMetadataManager.updateTableDesc(tableDesc);
+
+        String sql = "select * from TEST_KYLIN_FACT";
+        String converted = TRANSFORMER.convert(sql, PROJECT, SCHEMA);
+        String expected = "select * from ( " //
+                + "select \"TEST_KYLIN_FACT\".\"ORDER_ID\", " //
                 + "\"TEST_KYLIN_FACT\".\"PRICE\", " //
                 + "\"TEST_KYLIN_FACT\".\"ITEM_COUNT\", " //
                 + "\"TEST_KYLIN_FACT\".\"2D\", " //
                 + "\"TEST_KYLIN_FACT\".\"YEAR\" " //
-                + "from TEST_KYLIN_FACT";
-        Assert.assertEquals(expected, transformed);
+                + "from \"DEFAULT\".\"TEST_KYLIN_FACT\") as \"TEST_KYLIN_FACT\"";
+        Assertions.assertEquals(expected, converted);
     }
 
     @Test
-    public void testTransformColumnStartWithNumberOrKeyword2() {
-        getTestConfig().setProperty("kylin.query.calcite.extras-props.quoting", "BACK_TICK");
-        prepareBasic();
-        prepareMore();
-        NTableMetadataManager tableMetadataManager = NTableMetadataManager.getInstance(getTestConfig(), PROJECT);
-        TableDesc tableDesc = tableMetadataManager.getTableDesc("DEFAULT.TEST_KYLIN_FACT");
-        ColumnDesc[] columns = tableDesc.getColumns();
-
-        ColumnDesc colStartsWithNumber = new ColumnDesc(columns[0]);
-        colStartsWithNumber.setId("13");
-        colStartsWithNumber.setDatatype("date");
-        colStartsWithNumber.setName("2D");
-        ColumnDesc colWithKeyword = new ColumnDesc(columns[0]);
-        colWithKeyword.setId("14");
-        colWithKeyword.setDatatype("date");
-        colWithKeyword.setName("YEAR");
-
-        ArrayList<ColumnDesc> columnDescs = Lists.newArrayList(columns);
-        columnDescs.add(colStartsWithNumber);
-        columnDescs.add(colWithKeyword);
-
-        tableDesc.setColumns(columnDescs.toArray(new ColumnDesc[0]));
-        tableMetadataManager.updateTableDesc(tableDesc);
-        HackSelectStarWithColumnACL transformer = new HackSelectStarWithColumnACL();
-        QueryContext.current().setAclInfo(new QueryContext.AclInfo("u1", Sets.newHashSet("g1"), false));
-        String transformed = transformer.convert("select * from TEST_KYLIN_FACT", PROJECT, SCHEMA);
-        String expected = "select `TEST_KYLIN_FACT`.`ORDER_ID`, " //
-                + "`TEST_KYLIN_FACT`.`PRICE`, " //
-                + "`TEST_KYLIN_FACT`.`ITEM_COUNT`, " //
-                + "`TEST_KYLIN_FACT`.`2D`, " //
-                + "`TEST_KYLIN_FACT`.`YEAR` " //
-                + "from TEST_KYLIN_FACT";
-        Assert.assertEquals(expected, transformed);
-    }
-
-    @Test
-    public void testExplainSyntax() {
-        HackSelectStarWithColumnACL transformer = new HackSelectStarWithColumnACL();
+    void testExplainSyntax() {
         String sql = "explain plan for select * from t";
-        assertRoughlyEquals(sql, transformer.convert("explain plan for select * from t", PROJECT, SCHEMA));
-    }
-
-    @Test
-    public void testGetNewSelectClause() {
-        prepareBasic();
-        final String sql = "select * from TEST_KYLIN_FACT t1 join TEST_ORDER t2 on t1.ORDER_ID = t2.ORDER_ID ";
-        final SqlNode sqlNode = getSqlNode(sql);
-        QueryContext.AclInfo aclInfo = new QueryContext.AclInfo("u1", Sets.newHashSet("g1"), false);
-        String newSelectClause = HackSelectStarWithColumnACL.getNewSelectClause(sqlNode, PROJECT, SCHEMA, aclInfo);
-        String expect = "\"T1\".\"PRICE\", \"T1\".\"ITEM_COUNT\", \"T1\".\"ORDER_ID\", "
-                + "\"T2\".\"ORDER_ID\", \"T2\".\"BUYER_ID\", \"T2\".\"TEST_DATE_ENC\"";
-        assertRoughlyEquals(expect, newSelectClause);
-
-        AclTCR empty = new AclTCR();
-        empty.setTable(new AclTCR.Table());
-        AclTCRManager manager = AclTCRManager.getInstance(getTestConfig(), PROJECT);
-        manager.updateAclTCR(empty, "u1", true);
-        manager.updateAclTCR(empty, "g1", false);
-
-        try {
-            HackSelectStarWithColumnACL.getNewSelectClause(sqlNode, PROJECT, SCHEMA, aclInfo);
-        } catch (Exception e) {
-            Assert.assertEquals(NoAuthorizedColsError.class, e.getClass());
-        }
-    }
-
-    @Test
-    public void testGetColsCanAccess() {
-
-        final String sql = "select * from TEST_KYLIN_FACT t1 join TEST_ORDER t2 on t1.ORDER_ID = t2.ORDER_ID";
-        final SqlNode sqlNode = getSqlNode(sql);
-        QueryContext.AclInfo aclInfo = new QueryContext.AclInfo("u1", Sets.newHashSet("g1"), false);
-        List<String> colsCanAccess = HackSelectStarWithColumnACL.getColsCanAccess(sqlNode, PROJECT, SCHEMA, aclInfo);
-        Assert.assertEquals(0, colsCanAccess.size());
-
-        prepareBasic();
-        colsCanAccess = HackSelectStarWithColumnACL.getColsCanAccess(sqlNode, PROJECT, SCHEMA, aclInfo);
-        Assert.assertEquals(6, colsCanAccess.size());
-    }
-
-    private SqlNode getSqlNode(String sql) {
-        SqlNode sqlNode;
-        try {
-            sqlNode = CalciteParser.parse(sql);
-        } catch (SqlParseException e) {
-            throw new RuntimeException("Failed to parse SQL \'" + sql + "\', please make sure the SQL is valid");
-        }
-        return sqlNode;
-    }
-
-    private void assertRoughlyEquals(String expect, String actual) {
-        String[] expectSplit = expect.split("\\s+");
-        String[] actualSplit = actual.split("\\s+");
-        Arrays.sort(expectSplit);
-        Arrays.sort(actualSplit);
-
-        Assert.assertArrayEquals(expectSplit, actualSplit);
+        Assertions.assertEquals(sql, TRANSFORMER.convert("explain plan for select * from t", PROJECT, SCHEMA));
     }
 
     private void prepareMore() {
@@ -241,7 +400,7 @@ public class HackSelectStarWithColumnACLTest extends NLocalFileMetadataTestCase 
         AclTCR.Table g1t1 = new AclTCR.Table();
         AclTCR.ColumnRow g1cr1 = new AclTCR.ColumnRow();
         AclTCR.Column g1c1 = new AclTCR.Column();
-        g1c1.addAll(Arrays.asList("ORDER_ID"));
+        g1c1.add("ORDER_ID");
         g1cr1.setColumn(g1c1);
         g1t1.put("DEFAULT.TEST_KYLIN_FACT", g1cr1);
         g1a1.setTable(g1t1);

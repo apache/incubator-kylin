@@ -20,7 +20,6 @@ package org.apache.kylin.query.rules;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -42,6 +41,8 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
 import org.apache.kylin.common.util.Pair;
+import org.apache.kylin.guava30.shaded.common.base.Strings;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.query.engine.QueryExec;
 import org.apache.kylin.query.engine.QueryOptimizer;
 import org.apache.kylin.query.util.HepUtils;
@@ -52,9 +53,6 @@ import org.apache.kylin.util.ExecAndComp;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.clearspring.analytics.util.Lists;
-import org.apache.kylin.guava30.shaded.common.base.Strings;
 
 public class CalciteRuleTestBase extends NLocalFileMetadataTestCase {
     private static final Logger logger = LoggerFactory.getLogger(CalciteRuleTestBase.class);
@@ -183,13 +181,13 @@ public class CalciteRuleTestBase extends NLocalFileMetadataTestCase {
     }
 
     protected void checkPlanning(RelNode relBefore, RelNode relAfter, String prefix, boolean unchanged) {
-        assertThat(relBefore, notNullValue());
-        assertThat(relAfter, notNullValue());
+        Assert.assertThat(relBefore, notNullValue());
+        Assert.assertThat(relAfter, notNullValue());
         final String planBefore = NL + RelOptUtil.toString(relBefore);
         final String planAfter = NL + RelOptUtil.toString(relAfter);
 
         if (unchanged) {
-            assertThat(planAfter, is(planBefore));
+            Assert.assertThat(planAfter, is(planBefore));
         } else {
             checkDiff(relBefore, relAfter, prefix);
         }

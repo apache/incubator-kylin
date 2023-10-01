@@ -20,10 +20,9 @@ package org.apache.kylin.rest.service.params;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.job.dao.ExecutablePO;
 import org.apache.kylin.rest.aspect.TransactionProjectUnit;
-
-import com.clearspring.analytics.util.Lists;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -27,6 +27,7 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.engine.spark.NLocalWithSparkSessionTest;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableSet;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.cube.cuboid.NLayoutCandidate;
@@ -50,8 +51,6 @@ import org.apache.kylin.util.MetadataTestUtils;
 import org.apache.kylin.util.OlapContextTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.clearspring.analytics.util.Lists;
 
 public class DataflowCapabilityCheckerTest extends NLocalWithSparkSessionTest {
 

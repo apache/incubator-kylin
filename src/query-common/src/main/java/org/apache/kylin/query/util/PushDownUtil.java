@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
@@ -58,6 +59,9 @@ import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.metadata.acl.AclTCR;
+import org.apache.kylin.metadata.acl.AclTCRManager;
+import org.apache.kylin.metadata.model.ColumnDesc;
 import org.apache.kylin.metadata.model.ComputedColumnDesc;
 import org.apache.kylin.metadata.model.ISourceAware;
 import org.apache.kylin.metadata.model.JoinDesc;
@@ -87,7 +91,7 @@ public class PushDownUtil {
 
     private static final Logger logger = LoggerFactory.getLogger("query");
 
-    // sql hint "/*+ MODEL_PRIORITY({cube_name}) */" 
+    // sql hint "/*+ MODEL_PRIORITY({cube_name}) */"
     private static final Pattern SQL_HINT_PATTERN = Pattern
             .compile("/\\*\\s*\\+\\s*(?i)MODEL_PRIORITY\\s*\\([\\s\\S]*\\)\\s*\\*/");
     public static final String DEFAULT_SCHEMA = "DEFAULT";
@@ -244,7 +248,9 @@ public class PushDownUtil {
         StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("SELECT ").append(sep);
 
-        List<TblColRef> tblColRefs = Lists.newArrayList(model.getEffectiveCols().values());
+        List<TblColRef> originTblColRefs = Lists.newArrayList(model.getEffectiveCols().values());
+        List<TblColRef> tblColRefs = getAuthorizedCols(model.getProject(), originTblColRefs);
+
         if (tblColRefs.isEmpty()) {
             sqlBuilder.append("1 ").append(sep);
         } else {
@@ -270,6 +276,28 @@ public class PushDownUtil {
         }
 
         return new EscapeTransformer().transform(sqlBuilder.toString());
+    }
+
+    private static List<TblColRef> getAuthorizedCols(String project, List<TblColRef> tableColRefs) {
+        QueryContext.AclInfo aclInfo = QueryContext.current().getAclInfo();
+        if (aclInfo != null && aclInfo.isHasAdminPermission()) {
+            return tableColRefs;
+        }
+        String user = Objects.nonNull(aclInfo) ? aclInfo.getUsername() : null;
+        Set<String> groups = Objects.nonNull(aclInfo) ? aclInfo.getGroups() : null;
+        KylinConfig config = NProjectManager.getProjectConfig(project);
+        List<AclTCR> aclTCRList = AclTCRManager.getInstance(config, project).getAclTCRs(user, groups);
+        List<TblColRef> result = Lists.newArrayList();
+        for (TblColRef tableColRef : tableColRefs) {
+            ColumnDesc column = tableColRef.getColumnDesc();
+            for (AclTCR aclTCR : aclTCRList) {
+                if (aclTCR.isAuthorized(tableColRef.getTableWithSchema(), column.getName())) {
+                    result.add(tableColRef);
+                    break;
+                }
+            }
+        }
+        return result;
     }
 
     public static String expandComputedColumnExp(NDataModel model, String project, String expression) {
