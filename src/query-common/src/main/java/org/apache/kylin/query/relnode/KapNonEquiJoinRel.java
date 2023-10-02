@@ -63,6 +63,8 @@ import org.apache.kylin.query.util.ICutContextStrategy;
 import org.apache.kylin.query.util.RexToTblColRefTranslator;
 import org.apache.kylin.query.util.RexUtils;
 
+import lombok.Getter;
+
 public class KapNonEquiJoinRel extends EnumerableThetaJoin implements KapRel {
 
     private OLAPContext context;
@@ -75,6 +77,7 @@ public class KapNonEquiJoinRel extends EnumerableThetaJoin implements KapRel {
     // record left input size before rewrite for runtime join expression parsing
     private int leftInputSizeBeforeRewrite = -1;
 
+    @Getter
     private final boolean isScd2Rel;
 
     public KapNonEquiJoinRel(RelOptCluster cluster, RelTraitSet traits, RelNode left, RelNode right, RexNode condition,
