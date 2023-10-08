@@ -401,6 +401,7 @@
         <nimbus-jose-jwt.version>9.23</nimbus-jose-jwt.version>
         <system-lambda.version>1.2.1</system-lambda.version>
         <snappy-java.version>1.1.10.4</snappy-java.version>
+        <avro.version>1.11.3</avro.version>
     </properties>
 
     <modules>
@@ -3002,6 +3003,12 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty</artifactId>
                 <version>${netty3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.avro</groupId>
+                <artifactId>avro</artifactId>
+                <version>${avro.version}</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
