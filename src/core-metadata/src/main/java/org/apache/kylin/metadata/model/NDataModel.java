@@ -286,9 +286,6 @@ public class NDataModel extends RootPersistentEntity {
     // mark this model as used for model save checking
     private boolean saveCheck = false;
 
-    // mark this model has invoked init() function
-    private boolean initAlready = false;
-
     public enum ColumnStatus {
         TOMB, EXIST, DIMENSION
     }
@@ -1040,7 +1037,6 @@ public class NDataModel extends RootPersistentEntity {
             throw new KylinException(TABLE_JOIN_RELATIONSHIP_ERROR,
                     MsgPicker.getMsg().getDimensionTableUsedInThisModel());
         }
-        this.setInitAlready(true);
     }
 
     public ComputedColumnUtil.CCConflictInfo checkCCFailAtEnd(KylinConfig config, String project,

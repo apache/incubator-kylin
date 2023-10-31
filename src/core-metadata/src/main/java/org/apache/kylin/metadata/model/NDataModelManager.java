@@ -331,10 +331,6 @@ public class NDataModelManager {
         return crud.copyForWrite(nDataModel);
     }
 
-    public NDataModel copy(NDataModel nDataModel) {
-        return copyBySerialization(nDataModel);
-    }
-
     /**
      * copyBySerialization will not use cache
      */

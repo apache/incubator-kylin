@@ -29,12 +29,11 @@ import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
-import org.apache.kylin.metadata.project.NProjectManager;
-import org.apache.kylin.metadata.project.ProjectInstance;
-
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.metadata.project.NProjectManager;
+import org.apache.kylin.metadata.project.ProjectInstance;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -84,11 +83,13 @@ public class ColExcludedChecker {
         collectExcludedComputedColumns(config, project, model);
     }
 
-    private void collectExcludedComputedColumns(KylinConfig config, String project, NDataModel model) {
-        if (model == null || model.isBroken()) {
+    private void collectExcludedComputedColumns(KylinConfig config, String project, NDataModel originModel) {
+        if (originModel == null || originModel.isBroken()) {
             return;
         }
-        if (!model.isInitAlready()) {
+        NDataModel model = originModel;
+        if (originModel.getAllTables().isEmpty() || originModel.getEffectiveCols() == null) {
+            model = NDataModelManager.getInstance(config, project).copyForWrite(originModel);
             model.init(config, project, Lists.newArrayList());
         }
         model.getAllTables().stream().filter(Objects::nonNull) //

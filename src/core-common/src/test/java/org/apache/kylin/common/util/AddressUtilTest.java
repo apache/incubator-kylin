@@ -72,6 +72,7 @@ public class AddressUtilTest {
         val old = getTestConfig().getServerIpAddress();
         val mockIp = "192.168.1.101";
         getTestConfig().setProperty("kylin.env.ip-address", mockIp);
+        AddressUtil.clearLocalIpAddressCache();
         val servIp = AddressUtil.getLocalHostExactAddress();
         Assert.assertEquals(servIp, mockIp);
         if (!StringUtils.isEmpty(old)) {
