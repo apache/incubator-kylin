@@ -173,4 +173,33 @@ OlapToEnumerableConverter
 ]]>
         </Resource>
     </TestCase>
+    <TestCase name="testSelectConstantSimplify">
+        <Resource name="query01.planBefore">
+            <![CDATA[
+LogicalAggregate(group=[{}], TOTAL=[COUNT()])
+  LogicalProject($f0=[0])
+    LogicalProject(D1=[$0], D2=[$1], D3=[$2])
+      LogicalAggregate(group=[{0, 1, 2}])
+        LogicalProject(D1=[$0], D2=[$2], D3=[$18])
+          LogicalFilter(condition=[IN(CAST(2):INTEGER, $2, $18)])
+            LogicalJoin(condition=[=($2, $18)], joinType=[left])
+              OlapTableScan(table=[[SSB, P_LINEORDER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]])
+              OlapTableScan(table=[[SSB, CUSTOMER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7]])
+]]>
+        </Resource>
+        <Resource name="query01.planAfter">
+            <![CDATA[
+OlapToEnumerableConverter
+  OlapAggregateRel(group-set=[[]], groups=[null], TOTAL=[COUNT()], ctx=[])
+    OlapProjectRel(ctx=[])
+      OlapAggregateRel(group-set=[[0, 1, 2]], groups=[null], ctx=[])
+        OlapFilterRel(condition=[IN(CAST(2):INTEGER, $1, $2)], ctx=[])
+          OlapJoinRel(condition=[=($1, $2)], joinType=[left], ctx=[])
+            OlapProjectRel(LO_ORDERKEY=[$0], LO_CUSTKEY=[$2], ctx=[])
+              OlapTableScan(table=[[SSB, P_LINEORDER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]])
+            OlapProjectRel(C_CUSTKEY=[$0], ctx=[])
+              OlapTableScan(table=[[SSB, CUSTOMER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7]])
+]]>
+        </Resource>
+    </TestCase>
 </Root>

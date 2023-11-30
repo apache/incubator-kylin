@@ -160,4 +160,11 @@ public class SqlToRelNodeTest extends CalciteRuleTestBase {
             }
         }
     }
+
+    @Test
+    public void testSelectConstantSimplify() throws Exception {
+        overwriteSystemProp("calcite.keep-in-clause", config.isCalciteInClauseEnabled() + "");
+        Pair<String, String> sql = readOneSQL(config, "ssb", "query/sql_sqlnode", "query01.sql");
+        checkSQLOptimize("ssb", sql.getSecond(), "query01");
+    }
 }

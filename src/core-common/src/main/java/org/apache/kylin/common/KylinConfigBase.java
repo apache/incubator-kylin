@@ -2715,7 +2715,7 @@ public abstract class KylinConfigBase implements Serializable {
     }
 
     public boolean isAggregatePushdownEnabled() {
-        return Boolean.parseBoolean(getOptional("kylin.query.calcite.aggregate-pushdown-enabled", FALSE));
+        return Boolean.parseBoolean(getOptional("kylin.query.calcite.aggregate-pushdown-enabled", TRUE));
     }
 
     public boolean isScalarSubqueryJoinEnabled() {

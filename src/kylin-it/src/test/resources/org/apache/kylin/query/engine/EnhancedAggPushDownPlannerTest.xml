@@ -475,7 +475,7 @@ OlapToEnumerableConverter
                   OlapProjectRel(SELLER_ID=[$0], CATEG_LVL3_ID0=[$1], CATEG_LVL3_ID1=[$2], TRANS_ID=[$3], EXPR$3=[$4], SUM_CASE$0$0=[$5], $f6=[CAST(*(1, $6)):DECIMAL(19, 4) NOT NULL], ctx=[])
                     OlapProjectRel(SELLER_ID=[$1], CATEG_LVL3_ID0=[$2], CATEG_LVL3_ID1=[$3], TRANS_ID=[$0], EXPR$3=[$4], SUM_CASE$0$0=[$5], SUM_CONST$2=[$6], ctx=[])
                       OlapAggregateRel(group-set=[[0, 2, 3, 7]], groups=[null], EXPR$3=[SUM($9)], SUM_CASE$0$0=[SUM($10)], SUM_CONST$2=[$SUM0($11)], ctx=[])
-                        OlapProjectRel(TRANS_ID=[$0], LEAF_CATEG_ID=[$1], SELLER_ID=[$2], CATEG_LVL3_ID0=[$3], EXPR$3=[$4], SUM_CONST$2=[$5], LEAF_CATEG_ID0=[$6], CATEG_LVL3_ID=[$7], $f2=[$8], $f9=[CAST(*($4, COALESCE($8, 1))):DECIMAL(19, 4)], $f10=[CAST(*($4, COALESCE($8, 1))):DECIMAL(19, 4)], $f11=[*(COALESCE($5, 1), $8)], ctx=[])
+                        OlapProjectRel(TRANS_ID=[$0], LEAF_CATEG_ID=[$1], SELLER_ID=[$2], CATEG_LVL3_ID0=[$3], EXPR$3=[$4], SUM_CONST$2=[$5], LEAF_CATEG_ID0=[$6], CATEG_LVL3_ID=[$7], $f2=[$8], $f9=[CAST(*(COALESCE($4, 1), COALESCE($8, 1))):DECIMAL(19, 4)], $f10=[CAST(*(COALESCE($4, 1), COALESCE($8, 1))):DECIMAL(19, 4)], $f11=[*(COALESCE($5, 1), COALESCE($8, 1))], ctx=[])
                           OlapJoinRel(condition=[=($1, $6)], joinType=[left], ctx=[])
                             OlapAggregateRel(group-set=[[0, 4, 7, 122]], groups=[null], EXPR$3=[SUM($8)], SUM_CONST$2=[COUNT()], ctx=[])
                               OlapJoinRel(condition=[=($4, $107)], joinType=[inner], ctx=[])
@@ -568,7 +568,7 @@ OlapToEnumerableConverter
             <![CDATA[
 OlapToEnumerableConverter
   OlapAggregateRel(group-set=[[1]], groups=[null], EXPR$1=[SUM($5)], ctx=[])
-    OlapProjectRel(LEAF_CATEG_ID=[$0], SELLER_ID=[$1], EXPR$1=[$2], LEAF_CATEG_ID0=[$3], $f1=[$4], $f5=[CAST(*($2, COALESCE($4, 1))):DECIMAL(19, 4)], ctx=[])
+    OlapProjectRel(LEAF_CATEG_ID=[$0], SELLER_ID=[$1], EXPR$1=[$2], LEAF_CATEG_ID0=[$3], $f1=[$4], $f5=[CAST(*(COALESCE($2, 1), COALESCE($4, 1))):DECIMAL(19, 4)], ctx=[])
       OlapJoinRel(condition=[=($0, $3)], joinType=[left], ctx=[])
         OlapAggregateRel(group-set=[[4, 7]], groups=[null], EXPR$1=[SUM($8)], ctx=[])
           OlapJoinRel(condition=[=($4, $71)], joinType=[inner], ctx=[])
@@ -599,7 +599,7 @@ OlapToEnumerableConverter
             <![CDATA[
 OlapToEnumerableConverter
   OlapAggregateRel(group-set=[[1]], groups=[null], EXPR$1=[SUM($7)], EXPR$2=[SUM($8)], ctx=[])
-    OlapProjectRel(LEAF_CATEG_ID=[$0], SELLER_ID=[$1], $f2=[$2], EXPR$2=[$3], LEAF_CATEG_ID0=[$4], EXPR$1=[$5], $f20=[$6], $f7=[CAST(*(COALESCE($2, 1), $5)):BIGINT], $f8=[CAST(*($3, COALESCE($6, 1))):DECIMAL(19, 4)], ctx=[])
+    OlapProjectRel(LEAF_CATEG_ID=[$0], SELLER_ID=[$1], $f2=[$2], EXPR$2=[$3], LEAF_CATEG_ID0=[$4], EXPR$1=[$5], $f20=[$6], $f7=[CAST(*(COALESCE($2, 1), COALESCE($5, 1))):BIGINT], $f8=[CAST(*(COALESCE($3, 1), COALESCE($6, 1))):DECIMAL(19, 4)], ctx=[])
       OlapJoinRel(condition=[=($0, $4)], joinType=[left], ctx=[])
         OlapAggregateRel(group-set=[[4, 7]], groups=[null], agg#0=[COUNT()], EXPR$2=[SUM($8)], ctx=[])
           OlapJoinRel(condition=[=($4, $71)], joinType=[inner], ctx=[])
@@ -643,7 +643,7 @@ OlapToEnumerableConverter
     OlapProjectRel(SELLER_ID=[$0], EXPR$1=[$1], ctx=[])
       OlapUnionRel(all=[true], ctx=[], all=[true])
         OlapAggregateRel(group-set=[[1]], groups=[null], EXPR$1=[SUM($5)], ctx=[])
-          OlapProjectRel(LEAF_CATEG_ID=[$0], SELLER_ID=[$1], EXPR$1=[$2], LEAF_CATEG_ID0=[$3], $f1=[$4], $f5=[CAST(*($2, COALESCE($4, 1))):DECIMAL(19, 4)], ctx=[])
+          OlapProjectRel(LEAF_CATEG_ID=[$0], SELLER_ID=[$1], EXPR$1=[$2], LEAF_CATEG_ID0=[$3], $f1=[$4], $f5=[CAST(*(COALESCE($2, 1), COALESCE($4, 1))):DECIMAL(19, 4)], ctx=[])
             OlapJoinRel(condition=[=($0, $3)], joinType=[left], ctx=[])
               OlapAggregateRel(group-set=[[4, 7]], groups=[null], EXPR$1=[SUM($8)], ctx=[])
                 OlapJoinRel(condition=[=($4, $71)], joinType=[inner], ctx=[])
@@ -732,7 +732,7 @@ OlapToEnumerableConverter
       OlapSortRel(sort0=[$0], sort1=[$1], dir0=[ASC-nulls-first], dir1=[DESC-nulls-last], ctx=[])
         OlapAggregateRel(group-set=[[1, 2, 3]], groups=[null], EXPR$3=[SUM($4)], EXPR$4=[COUNT(DISTINCT $0)], ctx=[])
           OlapAggregateRel(group-set=[[0, 2, 3, 6]], groups=[null], EXPR$3=[SUM($8)], ctx=[])
-            OlapProjectRel(ORDER_ID=[$0], LEAF_CATEG_ID=[$1], SELLER_ID=[$2], CATEG_LVL3_ID0=[$3], EXPR$3=[$4], LEAF_CATEG_ID0=[$5], CATEG_LVL3_ID=[$6], $f2=[$7], $f8=[CAST(*($4, COALESCE($7, 1))):DECIMAL(19, 4)], ctx=[])
+            OlapProjectRel(ORDER_ID=[$0], LEAF_CATEG_ID=[$1], SELLER_ID=[$2], CATEG_LVL3_ID0=[$3], EXPR$3=[$4], LEAF_CATEG_ID0=[$5], CATEG_LVL3_ID=[$6], $f2=[$7], $f8=[CAST(*(COALESCE($4, 1), COALESCE($7, 1))):DECIMAL(19, 4)], ctx=[])
               OlapJoinRel(condition=[=($1, $5)], joinType=[left], ctx=[])
                 OlapAggregateRel(group-set=[[1, 4, 7, 122]], groups=[null], EXPR$3=[SUM($8)], ctx=[])
                   OlapJoinRel(condition=[=($4, $107)], joinType=[inner], ctx=[])
@@ -822,7 +822,7 @@ OlapToEnumerableConverter
                 OlapProjectRel(SELLER_ID=[$0], CATEG_LVL3_ID0=[$1], TRANS_ID=[$2], SUM_CASE$0$0=[$3], $f4=[CAST(*(1, $4)):DECIMAL(19, 4) NOT NULL], ctx=[])
                   OlapProjectRel(SELLER_ID=[$1], CATEG_LVL3_ID0=[$2], TRANS_ID=[$0], SUM_CASE$0$0=[$3], SUM_CONST$1=[$4], ctx=[])
                     OlapAggregateRel(group-set=[[0, 2, 6]], groups=[null], SUM_CASE$0$0=[SUM($8)], SUM_CONST$1=[$SUM0($9)], ctx=[])
-                      OlapProjectRel(TRANS_ID=[$0], LEAF_CATEG_ID=[$1], SELLER_ID=[$2], SUM_CASE$0$0=[$3], SUM_CONST$1=[$4], LEAF_CATEG_ID0=[$5], CATEG_LVL3_ID=[$6], $f2=[$7], $f8=[CAST(*($3, COALESCE($7, 1))):DECIMAL(19, 4)], $f9=[*(COALESCE($4, 1), $7)], ctx=[])
+                      OlapProjectRel(TRANS_ID=[$0], LEAF_CATEG_ID=[$1], SELLER_ID=[$2], SUM_CASE$0$0=[$3], SUM_CONST$1=[$4], LEAF_CATEG_ID0=[$5], CATEG_LVL3_ID=[$6], $f2=[$7], $f8=[CAST(*(COALESCE($3, 1), COALESCE($7, 1))):DECIMAL(19, 4)], $f9=[*(COALESCE($4, 1), COALESCE($7, 1))], ctx=[])
                         OlapJoinRel(condition=[=($1, $5)], joinType=[left], ctx=[])
                           OlapAggregateRel(group-set=[[0, 4, 7]], groups=[null], SUM_CASE$0$0=[SUM($8)], SUM_CONST$1=[COUNT()], ctx=[])
                             OlapJoinRel(condition=[=($4, $71)], joinType=[inner], ctx=[])

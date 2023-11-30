@@ -23,8 +23,10 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptRule;
@@ -41,8 +43,10 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -57,7 +61,6 @@ import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.query.relnode.OlapAggregateRel;
 import org.apache.kylin.query.relnode.OlapJoinRel;
 import org.apache.kylin.query.util.RuleUtils;
@@ -137,11 +140,14 @@ public class OlapAggJoinTransposeRule extends RelOptRule {
         // Push each aggregate function down to each side that contains all of its
         // arguments. Note that COUNT(*), because it has no arguments, can go to
         // both sides.
-        aggPushDown(aggregate, join, belowAggregateColumns, mq, relBuilder, allColumnsInAggregate);
-        call.transformTo(relBuilder.build());
+        boolean aggPushDown = aggPushDown(aggregate, join, belowAggregateColumns, mq, relBuilder,
+                allColumnsInAggregate);
+        if (aggPushDown) {
+            call.transformTo(relBuilder.build());
+        }
     }
 
-    private void aggPushDown(OlapAggregateRel aggregate, OlapJoinRel join, ImmutableBitSet belowAggregateColumns,
+    private boolean aggPushDown(OlapAggregateRel aggregate, OlapJoinRel join, ImmutableBitSet belowAggregateColumns,
             RelMetadataQuery mq, RelBuilder relBuilder, boolean allColumnsInAggregate) {
         final Map<Integer, Integer> map = new HashMap<>();
         final List<Side> sides = new ArrayList<>();
@@ -172,15 +178,27 @@ public class OlapAggJoinTransposeRule extends RelOptRule {
             belowOffset += side.newInput.getRowType().getFieldCount();
             sides.add(side);
         }
-        if (uniqueCount == 2) {
+        if (uniqueCount == 2 || isJoinInputNotChanged(join, sides)) {
             // Both inputs to the join are unique. There is nothing to be gained by
             // this rule. In fact, this aggregate+join may be the result of a previous
             // invocation of this rule; if we continue we might loop forever.
-            return;
+            // Fix OlapAggJoinTransposeRule infinite loop
+            return false;
         }
 
         // Update condition
         updateCondition(sides, map, aggregate, join, belowOffset, relBuilder, allColumnsInAggregate);
+        return true;
+    }
+
+    private boolean isJoinInputNotChanged(OlapJoinRel join, List<Side> sides) {
+        List<RelNode> newInputs = sides.stream().map(side -> side.newInput).collect(Collectors.toList());
+        for (int i = 0; i < newInputs.size(); i++) {
+            if (!Objects.equals(newInputs.get(i), join.getInput(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void processUnique(Side side, RelBuilder relBuilder, RelNode joinInput, OlapAggregateRel aggregate,
@@ -200,7 +218,13 @@ public class OlapAggJoinTransposeRule extends RelOptRule {
                 final RexNode singleton = splitter.singleton(rexBuilder, joinInput.getRowType(),
                         aggCall.e.transform(mapping));
                 if (singleton instanceof RexInputRef) {
-                    side.split.put(aggCall.i, ((RexInputRef) singleton).getIndex());
+                    final int index = ((RexInputRef) singleton).getIndex();
+                    if (!belowAggregateKey.get(index)) {
+                        projects.add(singleton);
+                        side.split.put(aggCall.i, projects.size() - 1);
+                    } else {
+                        side.split.put(aggCall.i, index);
+                    }
                 } else {
                     projects.add(singleton);
                     side.split.put(aggCall.i, projects.size() - 1);
@@ -251,8 +275,7 @@ public class OlapAggJoinTransposeRule extends RelOptRule {
         final List<AggregateCall> newAggCalls = new ArrayList<>();
         final int groupIndicatorCount = aggregate.getGroupCount() + aggregate.getIndicatorCount();
         final int newLeftWidth = sides.get(0).newInput.getRowType().getFieldCount();
-        final List<RexNode> projects = new ArrayList<>(rexBuilder.identityProjects(relBuilder.peek().getRowType()));
-        Map<Integer, Boolean> leftJoinAggCallMap = new HashMap<>();
+        List<RexNode> projects = new ArrayList<>(rexBuilder.identityProjects(relBuilder.peek().getRowType()));
         for (Ord<AggregateCall> aggCall : Ord.zip(aggregate.getAggCallList())) {
             final SqlAggFunction aggregation = aggCall.e.getAggregation();
             final SqlSplittableAggFunction splitter = Preconditions
@@ -262,13 +285,12 @@ public class OlapAggJoinTransposeRule extends RelOptRule {
             newAggCalls.add(splitter.topSplit(rexBuilder, registry(projects), groupIndicatorCount,
                     relBuilder.peek().getRowType(), aggCall.e, leftSubTotal == null ? -1 : leftSubTotal,
                     rightSubTotal == null ? -1 : rightSubTotal + newLeftWidth));
-            if (join.getJoinType() == JoinRelType.LEFT) {
-                leftJoinAggCallMap.put(projects.size() - 1, isLeftAgg(aggCall.getValue(), join));
-            }
         }
 
-        final List<RexNode> newProjects = createNewProjects(rexBuilder, projects, leftJoinAggCallMap);
-        relBuilder.project(newProjects);
+        if (join.getJoinType() == JoinRelType.LEFT) {
+            projects = createNewProjects(rexBuilder, projects);
+        }
+        relBuilder.project(projects);
 
         boolean aggConvertedToProjects = false;
         if (allColumnsInAggregate) {
@@ -298,44 +320,65 @@ public class OlapAggJoinTransposeRule extends RelOptRule {
         }
     }
 
-    private static List<RexNode> createNewProjects(RexBuilder rexBuilder, List<RexNode> projects,
-            Map<Integer, Boolean> leftJoinAggCallMap) {
-        Map<Integer, RelDataType> projectsMap = Maps.newHashMap();
+    private static List<RexNode> createNewProjects(RexBuilder rexBuilder, List<RexNode> projects) {
+        List<RexNode> converted = new ArrayList<>();
+        Map<Integer, RexInputRef> rexInpufRefMap = new HashMap<>();
         for (RexNode rexNode : projects) {
             if (rexNode instanceof RexInputRef) {
-                RexInputRef rexInputRef = (RexInputRef) rexNode;
-                projectsMap.put(rexInputRef.getIndex(), rexInputRef.getType());
-            }
-        }
-        final List<RexNode> newProjects = new ArrayList<>();
-        for (int i = 0; i < projects.size(); i++) {
-            RexNode rexNode = projects.get(i);
-            if (leftJoinAggCallMap.get(i) == null) {
-                newProjects.add(rexNode);
+                RexInputRef inputRef = (RexInputRef) rexNode;
+                converted.add(inputRef);
+                rexInpufRefMap.put(inputRef.getIndex(), inputRef);
             } else {
-                newProjects.add(rewriteRexNode(rexNode, rexBuilder, leftJoinAggCallMap.get(i), projectsMap));
+                OriginInputRefReplacer visitor = new OriginInputRefReplacer(rexInpufRefMap);
+                RexNode newRexNode = rewriteRexNode(rexNode, rexBuilder).accept(visitor);
+                converted.add(newRexNode);
             }
         }
-        return newProjects;
+        return converted;
     }
 
-    private static RexNode rewriteRexNode(RexNode rexNode, RexBuilder rexBuilder, boolean isLeft,
-            Map<Integer, RelDataType> projectsRelDataTypeMap) {
+    private static class OriginInputRefReplacer extends RexVisitorImpl<RexNode> {
+        final Map<Integer, RexInputRef> rexInpufRefMap;
+
+        protected OriginInputRefReplacer(Map<Integer, RexInputRef> rexInpufRefMap) {
+            super(true);
+            this.rexInpufRefMap = rexInpufRefMap;
+        }
+
+        @Override
+        public RexNode visitInputRef(RexInputRef inputRef) {
+            RexNode rexNode = rexInpufRefMap.get(inputRef.getIndex());
+            return rexNode == null ? inputRef : rexNode;
+        }
+
+        @Override
+        public RexNode visitCall(RexCall call) {
+            List<RexNode> rexNodes = call.getOperands();
+            List<RexNode> converted = rexNodes.stream() //
+                    .map(rex -> rex.accept(this)) //
+                    .collect(Collectors.toList());
+            return call.clone(call.getType(), converted);
+        }
+
+        @Override
+        public RexNode visitLiteral(RexLiteral literal) {
+            return literal;
+        }
+    }
+
+    private static RexNode rewriteRexNode(RexNode rexNode, RexBuilder rexBuilder) {
         if (rexNode instanceof RexCall) {
-            RelDataType dataType = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT).createSqlType(SqlTypeName.INTEGER);
             RexCall rexCall = (RexCall) rexNode;
             SqlOperator sqlOperator = rexCall.getOperator();
             if (isMultiplicationRexCall(rexCall)) {
-                List<RexNode> rewriteRexNodeList = rewriteRexNodeList(rexCall, rexBuilder, dataType, isLeft,
-                        projectsRelDataTypeMap);
+                List<RexNode> rewriteRexNodeList = rewriteRexNodeList(rexCall, rexBuilder);
                 return rexBuilder.makeCall(rexCall.type, SqlStdOperatorTable.MULTIPLY, rewriteRexNodeList);
             } else if (sqlOperator.getKind() == SqlKind.CAST && rexCall.getOperands().size() == 1
                     && rexCall.getOperands().get(0) instanceof RexCall
                     && isMultiplicationRexCall((RexCall) rexCall.getOperands().get(0))) {
 
                 RexCall innerRexCall = (RexCall) rexCall.getOperands().get(0);
-                List<RexNode> rewriteRexNodeList = rewriteRexNodeList(innerRexCall, rexBuilder, dataType, isLeft,
-                        projectsRelDataTypeMap);
+                List<RexNode> rewriteRexNodeList = rewriteRexNodeList(innerRexCall, rexBuilder);
                 RexNode rewriteInnerRexCall = rexBuilder.makeCall(innerRexCall.type, SqlStdOperatorTable.MULTIPLY,
                         rewriteRexNodeList);
                 return rexBuilder.makeCast(rexCall.type, rewriteInnerRexCall);
@@ -344,55 +387,19 @@ public class OlapAggJoinTransposeRule extends RelOptRule {
         return rexNode;
     }
 
-    private static List<RexNode> rewriteRexNodeList(RexCall rexCall, RexBuilder rexBuilder, RelDataType dataType,
-            boolean isLeft, Map<Integer, RelDataType> projectsRelDataTypeMap) {
-        List<RexNode> rexNodeList = rexCall.getOperands();
+    private static List<RexNode> rewriteRexNodeList(RexCall rexCall, RexBuilder rexBuilder) {
         List<RexNode> rewriteRexNodeList = new ArrayList<>();
-        rexNodeList = rewriteRefInputList(rexNodeList, projectsRelDataTypeMap, rexBuilder);
-        if (isLeft) {
-            rewriteRexNodeList.add(rexBuilder.makeCall(SqlStdOperatorTable.COALESCE, rexNodeList.get(0),
-                    rexBuilder.makeLiteral(1, dataType, false)));
-            rewriteRexNodeList.add(rexNodeList.get(1));
-        } else {
-            rewriteRexNodeList.add(rexNodeList.get(0));
-            rewriteRexNodeList.add(rexBuilder.makeCall(SqlStdOperatorTable.COALESCE, rexNodeList.get(1),
-                    rexBuilder.makeLiteral(1, dataType, false)));
-        }
-        return rewriteRexNodeList;
-    }
+        RelDataType dataType = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT).createSqlType(SqlTypeName.INTEGER);
 
-    private static List<RexNode> rewriteRefInputList(List<RexNode> rexNodeList,
-            Map<Integer, RelDataType> projectsRelDataTypeMap, RexBuilder rexBuilder) {
-        List<RexNode> rewriteRexNodeList = new ArrayList<>();
-        for (RexNode rexNode : rexNodeList) {
-            if (rexNode instanceof RexInputRef) {
-                RexInputRef rexInputRef = (RexInputRef) rexNode;
-                RelDataType originalRelDataType = projectsRelDataTypeMap.get(rexInputRef.getIndex());
-                if (originalRelDataType != null && rexInputRef.getType() != originalRelDataType) {
-                    rexNode = rexBuilder.makeInputRef(originalRelDataType, rexInputRef.getIndex());
-                }
-            }
-            rewriteRexNodeList.add(rexNode);
+        for (RexNode rexNode : rexCall.getOperands()) {
+            rewriteRexNodeList.add(rexBuilder.makeCall(SqlStdOperatorTable.COALESCE, rexNode,
+                    rexBuilder.makeLiteral(1, dataType, false)));
         }
         return rewriteRexNodeList;
     }
 
     private static boolean isMultiplicationRexCall(RexCall rexCall) {
         return rexCall.getOperator().getName().equals(STAR_TOKEN) && rexCall.getOperands().size() == 2;
-    }
-
-    private static boolean isLeftAgg(AggregateCall aggregateCall, OlapJoinRel joinRel) {
-        List<Integer> argList = aggregateCall.getArgList();
-        if (argList.isEmpty()) {
-            return true;
-        }
-        int maxIndex = argList.get(0);
-        for (Integer index : argList) {
-            if (maxIndex < index) {
-                maxIndex = index;
-            }
-        }
-        return maxIndex >= joinRel.getLeft().getRowType().getFieldList().size();
     }
 
     /** Computes the closure of a set of columns according to a given list of
