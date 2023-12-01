@@ -268,6 +268,19 @@ public class DataType implements Serializable {
         return value1.compareTo(value2);
     }
 
+    public Object parseValue(String value) {
+        if (isDateTimeFamily()) {
+            return DateFormat.stringToMillis(value);
+        } else if (isIntegerFamily()) {
+            return Long.parseLong(value);
+        } else if (isNumberFamily()) {
+            return new BigDecimal(value);
+        } else if (isBoolean()) {
+            return Boolean.parseBoolean(value);
+        }
+        return value;
+    }
+
     private String replaceLegacy(String str) {
         String replace = LEGACY_TYPE_MAP.get(str);
         return replace == null ? str : replace;

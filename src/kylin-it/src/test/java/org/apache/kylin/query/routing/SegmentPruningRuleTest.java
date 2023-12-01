@@ -622,6 +622,48 @@ public class SegmentPruningRuleTest extends NLocalWithSparkSessionTest {
         Assert.assertEquals(0, selectSegmentList.size());
     }
 
+    @Test
+    public void testPruningByDimRange() throws Exception {
+        KylinConfig kylinConfig = getTestConfig();
+        String project = getProject();
+        val dataflowId = "1e12e297-ae63-4019-5e05-f571174ea157";
+        NDataflowManager dataflowManager = NDataflowManager.getInstance(kylinConfig, project);
+
+        // happy pass
+        String sql = "SELECT ID2 from TEST_DB.TEST_MEASURE WHERE ID2 = 332342343";
+        List<NDataSegment> selectSegmentList = startRealizationPruner(dataflowManager, dataflowId, sql, project,
+                kylinConfig);
+        Assert.assertEquals(5, selectSegmentList.size());
+
+        overwriteSystemProp("kylin.query.dimension-range-filter-enabled", "true");
+        selectSegmentList = startRealizationPruner(dataflowManager, dataflowId, sql, project, kylinConfig);
+        // because dimension_range_info_map is empty, its segments will not be pruned
+        Assert.assertEquals(2, selectSegmentList.size());
+
+        // test filter column is empty
+        sql = "SELECT * from TEST_DB.TEST_MEASURE";
+        selectSegmentList = startRealizationPruner(dataflowManager, dataflowId, sql, project, kylinConfig);
+        Assert.assertEquals(5, selectSegmentList.size());
+
+        // test min max is null, the condition {FLAG = 'TRUE'} will be ignored
+        // Since the min and max of the FLAG column in the specified segment are null
+        sql = "SELECT * from TEST_DB.TEST_MEASURE WHERE TIME1 = '2012-03-31' AND FLAG = 'TRUE'";
+        selectSegmentList = startRealizationPruner(dataflowManager, dataflowId, sql, project, kylinConfig);
+        Assert.assertEquals(1, selectSegmentList.size());
+
+        // test time partition filter is always false
+        sql = "SELECT * from TEST_DB.TEST_MEASURE WHERE time1 > '2014-04-04'";
+        selectSegmentList = startRealizationPruner(dataflowManager, dataflowId, sql, project, kylinConfig);
+        Assert.assertEquals(0, selectSegmentList.size());
+
+        sql = "SELECT * from TEST_DB.TEST_MEASURE WHERE ID1 = 10000000172 AND ID2 = 332342344 AND ID3 = 1243 AND "
+                + "ID4 = 19 AND PRICE1 = 31.336 AND PRICE2 = 123424.246 AND PRICE3 = 1436.24222343 AND PRICE5 = 7 AND "
+                + "PRICE6 = 13 AND PRICE7 = 5 AND NAME1 = 'China' AND NAME2 = '中国深圳' AND NAME3 = '中国北京' AND "
+                + "NAME4 = 14 AND TIME1 = '2014-04-03' AND TIME2 = '2012-04-02' AND FLAG = FALSE";
+        selectSegmentList = startRealizationPruner(dataflowManager, dataflowId, sql, project, kylinConfig);
+        Assert.assertEquals(0, selectSegmentList.size());
+    }
+
     @Override
     public String getProject() {
         return "multi_partition_date_type";

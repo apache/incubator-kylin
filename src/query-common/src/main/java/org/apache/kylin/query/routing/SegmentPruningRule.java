@@ -18,8 +18,11 @@
 
 package org.apache.kylin.query.routing;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -28,6 +31,7 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSimplify;
+import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -35,9 +39,10 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.exception.KylinRuntimeException;
 import org.apache.kylin.common.exception.KylinTimeoutException;
 import org.apache.kylin.common.util.DateFormat;
-import org.apache.kylin.common.util.Pair;
+import org.apache.kylin.guava30.shaded.common.collect.BiMap;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.cube.cuboid.NLayoutCandidate;
+import org.apache.kylin.metadata.cube.model.DimensionRangeInfo;
 import org.apache.kylin.metadata.cube.model.NDataSegment;
 import org.apache.kylin.metadata.cube.model.NDataflow;
 import org.apache.kylin.metadata.datatype.DataType;
@@ -58,7 +63,6 @@ import org.apache.kylin.query.util.QueryInterruptChecker;
 import org.apache.kylin.query.util.RexUtils;
 
 import lombok.val;
-import lombok.var;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -90,7 +94,8 @@ public class SegmentPruningRule extends PruningRule {
 
     public Segments<NDataSegment> pruneSegments(NDataflow dataflow, OlapContext olapContext) {
         Segments<NDataSegment> allReadySegments = dataflow.getQueryableSegments();
-        if (!NProjectManager.getProjectConfig(dataflow.getProject()).isHeterogeneousSegmentEnabled()) {
+        KylinConfig projectConfig = NProjectManager.getProjectConfig(dataflow.getProject());
+        if (!projectConfig.isHeterogeneousSegmentEnabled()) {
             return allReadySegments;
         }
 
@@ -105,89 +110,86 @@ public class SegmentPruningRule extends PruningRule {
         val relOptCluster = olapContext.getFirstTableScan().getCluster();
         val rexSimplify = new RexSimplify(relOptCluster.getRexBuilder(), RelOptPredicateList.EMPTY, true,
                 relOptCluster.getPlanner().getExecutor());
-
-        // this step may spend too long time, should be handled by https://olapio.atlassian.net/browse/KE-42295
-        RexNode simplifiedSqlFilter = rexSimplify.simplifyAnds(olapContext.getExpandedFilterConditions());
-        if (simplifiedSqlFilter.isAlwaysFalse()) {
+        RexNode simplifiedFilter = rexSimplify.simplifyAnds(olapContext.getExpandedFilterConditions());
+        if (simplifiedFilter.isAlwaysFalse()) {
             log.info("SQL filter condition is always false, pruning all ready segments");
             olapContext.getStorageContext().setFilterCondAlwaysFalse(true);
             return Segments.empty();
         }
 
         // pruner segment by customized scene optimize
-        val partitionColRef = partitionCol.getPartitionDateColumnRef();
-        if (canPruneSegmentsForMaxMeasure(dataflow, olapContext, partitionColRef)) {
+        TblColRef partition = partitionCol.getPartitionDateColumnRef();
+        if (canPruneSegmentsForMaxMeasure(dataflow, olapContext, partition)) {
             return selectSegmentsForMaxMeasure(dataflow);
         }
 
-        if (!olapContext.getFilterColumns().contains(partitionColRef)) {
-            log.info("Filter columns do not contain partition column");
-            return allReadySegments;
-        }
-
-        if (simplifiedSqlFilter.isAlwaysTrue()) {
+        if (simplifiedFilter.isAlwaysTrue()) {
             log.info("SQL filter condition is always true, pruning no segment");
             return allReadySegments;
         }
 
-        // prune segments by partition filter
-        RexInputRef partitionColInputRef = RexUtils.transformColumn2RexInputRef(partitionColRef,
-                olapContext.getAllTableScans());
-        Segments<NDataSegment> selectedSegments = pruneSegmentsByPartitionFilter(dataflow, olapContext, rexSimplify,
-                partitionColInputRef, simplifiedSqlFilter);
-        log.info("Scan segment.size: {} after segment pruning", selectedSegments.size());
-        return selectedSegments;
+        // prune segments by dimensions
+        List<TblColRef> dimColRefs = Lists.newArrayList();
+        if (projectConfig.isQueryDimensionRangeFilterEnabled()) {
+            BiMap<Integer, TblColRef> effectiveDims = dataflow.getIndexPlan().getEffectiveDimCols();
+            List<TblColRef> collect = olapContext.getFilterColumns().stream() //
+                    .filter(tblColRef -> !tblColRef.equals(partition) && effectiveDims.containsValue(tblColRef))
+                    .collect(Collectors.toList());
+            dimColRefs.addAll(collect);
+        }
+        return prune(dataflow, olapContext, rexSimplify, partition, dimColRefs, simplifiedFilter);
     }
 
-    private Segments<NDataSegment> pruneSegmentsByPartitionFilter(NDataflow dataflow, OlapContext olapContext,
-            RexSimplify rexSimplify, RexInputRef partitionColInputRef, RexNode simplifiedSqlFilter) {
-        Segments<NDataSegment> selectedSegments = new Segments<>();
-        PartitionDesc partitionCol = getPartitionDesc(dataflow, olapContext);
-        RexBuilder rexBuilder = olapContext.getFirstTableScan().getCluster().getRexBuilder();
+    private Segments<NDataSegment> prune(NDataflow dataflow, OlapContext olapContext, RexSimplify rexSimplify,
+            TblColRef partitionColRef, List<TblColRef> dimTblColRefs, RexNode simplifiedFilter) {
+        if (CollectionUtils.isEmpty(olapContext.getExpandedFilterConditions())
+                || CollectionUtils.isEmpty(olapContext.getFilterColumns())) {
+            log.info("There is no filter for pruning segments.");
+            return dataflow.getQueryableSegments();
+        }
 
-        for (NDataSegment dataSegment : dataflow.getQueryableSegments()) {
+        Segments<NDataSegment> selectedSegments = new Segments<>();
+        RexInputRef partitionColInputRef = olapContext.getFilterColumns().contains(partitionColRef)
+                ? RexUtils.transformColumn2RexInputRef(partitionColRef, olapContext.getAllTableScans())
+                : null;
+        String partitionDateFormat = getPartitionDesc(dataflow, olapContext).getPartitionDateFormat();
+        Map<TblColRef, RexInputRef> dimTblInputRefMap = dimTblColRefs.stream().collect(Collectors.toMap(tcr -> tcr,
+                tcr -> RexUtils.transformColumn2RexInputRef(tcr, olapContext.getAllTableScans())));
+
+        for (NDataSegment segment : dataflow.getQueryableSegments()) {
             try {
                 QueryInterruptChecker.checkQueryCanceledOrThreadInterrupted(
-                        "Interrupted during pruning segments by partition filter!",
-                        "pruning segments by partition filter");
+                        "Interrupted during pruning segments by filter!", "pruning segments by filter");
+
+                // evaluate partition column range [startTime, endTime) and normal dimension range [min, max]
+                List<RexNode> allPredicates = Lists.newArrayList();
+                allPredicates.addAll(collectPartitionPredicates(rexSimplify.rexBuilder, segment, partitionColInputRef,
+                        partitionDateFormat, partitionColRef.getType()));
+                allPredicates.addAll(collectDimensionPredicates(rexSimplify.rexBuilder, segment, dimTblInputRefMap));
+                RelOptPredicateList predicateList = RelOptPredicateList.of(rexSimplify.rexBuilder, allPredicates);
 
                 // To improve this simplification after fixed https://olapio.atlassian.net/browse/KE-42295
-                // evaluate segment range [startTime, endTime)
-                val segmentRanges = transformSegment2RexCall(dataSegment, partitionCol.getPartitionDateFormat(),
-                        rexBuilder, partitionColInputRef, partitionCol.getPartitionDateColumnRef().getType(),
-                        dataflow.isStreaming());
-                // compare with segment start
-                val segmentStartPredicate = RelOptPredicateList.of(rexBuilder,
-                        Lists.newArrayList(segmentRanges.getFirst()));
-                var simplifiedWithPredicate = rexSimplify.withPredicates(segmentStartPredicate)
-                        .simplify(simplifiedSqlFilter);
-                if (simplifiedWithPredicate.isAlwaysFalse()) {
-                    continue;
+                RexNode simplifiedWithPredicates = rexSimplify.withPredicates(predicateList).simplify(simplifiedFilter);
+                if (!simplifiedWithPredicates.isAlwaysFalse()) {
+                    selectedSegments.add(segment);
                 }
-                // compare with segment end
-                val segmentEndPredicate = RelOptPredicateList.of(rexBuilder,
-                        Lists.newArrayList(segmentRanges.getSecond()));
-                simplifiedWithPredicate = rexSimplify.withPredicates(segmentEndPredicate)
-                        .simplify(simplifiedWithPredicate);
-                if (!simplifiedWithPredicate.isAlwaysFalse()) {
-                    selectedSegments.add(dataSegment);
-                }
-
             } catch (InterruptedException ie) {
-                log.error(
-                        String.format(Locale.ROOT, "Interrupted on pruning segments from %s!", dataSegment.toString()),
+                log.error(String.format(Locale.ROOT, "Interrupted on pruning segments from %s!", segment.toString()),
                         ie);
                 Thread.currentThread().interrupt();
                 throw new KylinRuntimeException(ie);
             } catch (UserStopQueryException | KylinTimeoutException e) {
-                log.error(String.format(Locale.ROOT, "Stop pruning segments from %s!", dataSegment.toString()), e);
+                log.error(String.format(Locale.ROOT, "Stop pruning segments from %s!", segment.toString()), e);
                 throw e;
             } catch (Exception ex) {
-                log.warn(String.format(Locale.ROOT, "To skip the exception on pruning segment %s!",
-                        dataSegment.toString()), ex);
-                selectedSegments.add(dataSegment);
+                log.warn(String.format(Locale.ROOT, "To skip the exception on pruning segment %s!", segment.toString()),
+                        ex);
+                selectedSegments.add(segment);
             }
         }
+
+        log.info("Scan segments {}/{} after time partition and dimension range pruning by[{}]", selectedSegments.size(),
+                dataflow.getQueryableSegments().size(), simplifiedFilter);
         return selectedSegments;
     }
 
@@ -257,38 +259,66 @@ public class SegmentPruningRule extends PruningRule {
                 .getDataModelDesc(model.getFusionId()).getPartitionDesc();
     }
 
-    private Pair<RexNode, RexNode> transformSegment2RexCall(NDataSegment dataSegment, String dateFormat,
-            RexBuilder rexBuilder, RexInputRef partitionColInputRef, DataType partitionColType, boolean isStreaming) {
-        String start;
-        String end;
-        if (dataSegment.isOffsetCube()) {
-            start = DateFormat.formatToDateStr(dataSegment.getKSRange().getStart(), dateFormat);
-            end = DateFormat.formatToDateStr(dataSegment.getKSRange().getEnd(), dateFormat);
-        } else {
-            Pair<String, String> pair = transformDateType(dataSegment, partitionColType, dateFormat);
-            start = pair.getFirst();
-            end = pair.getSecond();
-        }
-
-        val startRexLiteral = RexUtils.transformValue2RexLiteral(rexBuilder, start, partitionColType);
-        val endRexLiteral = RexUtils.transformValue2RexLiteral(rexBuilder, end, partitionColType);
-        val greaterThanOrEqualCall = rexBuilder.makeCall(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                Lists.newArrayList(partitionColInputRef, startRexLiteral));
-
-        // the right side of streaming segments is closed, like [start, end], while batch segment is [start, end)
-        val sqlOperator = isStreaming ? SqlStdOperatorTable.LESS_THAN_OR_EQUAL : SqlStdOperatorTable.LESS_THAN;
-        val lessCall = rexBuilder.makeCall(sqlOperator, Lists.newArrayList(partitionColInputRef, endRexLiteral));
-        return Pair.newPair(greaterThanOrEqualCall, lessCall);
+    private List<RexNode> transformValue2RexCall(RexBuilder rexBuilder, RexInputRef colInputRef, DataType colType,
+            String left, String right, boolean closedRight) {
+        RexNode startRexLiteral = RexUtils.transformValue2RexLiteral(rexBuilder, left, colType);
+        RexNode endRexLiteral = RexUtils.transformValue2RexLiteral(rexBuilder, right, colType);
+        RexNode greaterThanOrEqualCall = rexBuilder.makeCall(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
+                Lists.newArrayList(colInputRef, startRexLiteral));
+        SqlBinaryOperator sqlOperator = closedRight ? SqlStdOperatorTable.LESS_THAN_OR_EQUAL
+                : SqlStdOperatorTable.LESS_THAN;
+        RexNode lessCall = rexBuilder.makeCall(sqlOperator, Lists.newArrayList(colInputRef, endRexLiteral));
+        return Lists.newArrayList(greaterThanOrEqualCall, lessCall);
     }
 
-    private Pair<String, String> transformDateType(NDataSegment dataSegment, DataType colType, String dateFormat) {
-        long segmentStartTs = dataSegment.getTSRange().getStart();
-        long segmentEndTs = dataSegment.getTSRange().getEnd();
-        String formattedStart = DateFormat.formatToDateStr(segmentStartTs, dateFormat);
-        String formattedEnd = DateFormat.formatToDateStr(segmentEndTs, dateFormat);
-        String start = checkAndReformatDateType(formattedStart, segmentStartTs, colType);
-        String end = checkAndReformatDateType(formattedEnd, segmentEndTs, colType);
-        return Pair.newPair(start, end);
+    private List<RexNode> collectDimensionPredicates(RexBuilder rexBuilder, NDataSegment dataSegment,
+            Map<TblColRef, RexInputRef> dimTblInputRefMap) {
+        Map<String, DimensionRangeInfo> dimRangeInfoMap = dataSegment.getDimensionRangeInfoMap();
+        if (dimRangeInfoMap.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<RexNode> allPredicts = Lists.newArrayList();
+        BiMap<TblColRef, Integer> inverse = dataSegment.getDataflow().getIndexPlan().getEffectiveDimCols().inverse();
+        dimTblInputRefMap.forEach(((tblColRef, inputRef) -> {
+            int index = inverse.get(tblColRef);
+            DimensionRangeInfo dimRangeInfo = dimRangeInfoMap.get(String.valueOf(index));
+            if (Objects.isNull(dimRangeInfo)) {
+                log.warn("There is no values for the column[{}] in this segment.", tblColRef.getName());
+                return;
+            }
+
+            List<RexNode> rexNodes = transformValue2RexCall(rexBuilder, inputRef, tblColRef.getType(),
+                    dimRangeInfo.getMin(), dimRangeInfo.getMax(), true);
+            allPredicts.addAll(rexNodes);
+        }));
+        return allPredicts;
+    }
+
+    private List<RexNode> collectPartitionPredicates(RexBuilder rexBuilder, NDataSegment segment,
+            RexInputRef partitionColInputRef, String dateFormat, DataType partitionColType) {
+        if (partitionColInputRef == null) {
+            return Collections.emptyList();
+        }
+
+        List<RexNode> allPredicts = Lists.newArrayList();
+        String start;
+        String end;
+        if (segment.isOffsetCube()) {
+            start = DateFormat.formatToDateStr(segment.getKSRange().getStart(), dateFormat);
+            end = DateFormat.formatToDateStr(segment.getKSRange().getEnd(), dateFormat);
+        } else {
+            long segmentStartTs = segment.getTSRange().getStart();
+            long segmentEndTs = segment.getTSRange().getEnd();
+            String formattedStart = DateFormat.formatToDateStr(segmentStartTs, dateFormat);
+            String formattedEnd = DateFormat.formatToDateStr(segmentEndTs, dateFormat);
+            start = checkAndReformatDateType(formattedStart, segmentStartTs, partitionColType);
+            end = checkAndReformatDateType(formattedEnd, segmentEndTs, partitionColType);
+        }
+        List<RexNode> rexNodes = transformValue2RexCall(rexBuilder, partitionColInputRef, partitionColType, start, end,
+                segment.getDataflow().isStreaming());
+        allPredicts.addAll(rexNodes);
+        return allPredicts;
     }
 
     private static String checkAndReformatDateType(String formattedValue, long segmentTs, DataType colType) {

@@ -264,6 +264,7 @@ public class RexUtils {
     public static RexNode transformValue2RexLiteral(RexBuilder rexBuilder, String value, DataType colType) {
         RelDataType relDataType;
         String[] splits;
+        Object parsedValue = colType.parseValue(value);
         switch (colType.getName()) {
         case DataType.DATE:
             // In order to support the column type is date, but the value is timestamp string.
@@ -274,44 +275,70 @@ public class RexUtils {
             splits = StringUtils.split(value.trim(), " ");
             Preconditions.checkArgument(splits.length >= 1, "split %s with error", value);
             return rexBuilder.makeDateLiteral(new DateString(splits[0]));
+        case DataType.DATETIME:
         case DataType.TIMESTAMP:
             relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.TIMESTAMP);
             // If the value with format yyyy-MM-dd, then pad with ` 00:00:00`,
             // if with format `yyyy-MM-dd HH:mm:ss`, use this value directly,
-            // otherwise, wrong format, making literal will throw exception by Calcite
+            // otherwise, wrong format, making literal will throw exception by Calcite.
+            // Convert yyyy-MM-dd HH:mm:ss.0 to yyyy-MM-dd HH:mm:ss
+            // because this format is not supported in calcite TimestampString
+            int dotIndex = value.indexOf(".");
+            if (dotIndex != -1 && Integer.parseInt(value.substring(dotIndex + 1)) == 0) {
+                value = value.substring(0, dotIndex);
+            }
             splits = StringUtils.split(value.trim(), " ");
             String ts = splits.length == 1 ? value + " 00:00:00" : value;
             return rexBuilder.makeTimestampLiteral(new TimestampString(ts), relDataType.getPrecision());
-        case DataType.VARCHAR:
         case DataType.STRING:
             relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.VARCHAR, colType.getPrecision());
-            return rexBuilder.makeLiteral(value, relDataType, false);
-        case DataType.INTEGER:
-            relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.INTEGER);
-            return rexBuilder.makeLiteral(Integer.parseInt(value), relDataType, false);
-        case DataType.BIGINT:
-            relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.BIGINT);
-            return rexBuilder.makeLiteral(Long.parseLong(value), relDataType, false);
+            return rexBuilder.makeLiteral(parsedValue, relDataType, false);
+        case DataType.NUMERIC:
+        case DataType.DECIMAL:
+            relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.DECIMAL, colType.getPrecision());
+            return rexBuilder.makeLiteral(parsedValue, relDataType, false);
+        case DataType.BYTE:
+            relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.TINYINT, colType.getPrecision());
+            return rexBuilder.makeLiteral(parsedValue, relDataType, false);
+        case DataType.INT:
+        case DataType.INT4:
+            relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.INTEGER, colType.getPrecision());
+            return rexBuilder.makeLiteral(parsedValue, relDataType, false);
+        case DataType.SHORT:
+            relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.SMALLINT, colType.getPrecision());
+            return rexBuilder.makeLiteral(parsedValue, relDataType, false);
+        case DataType.LONG:
+        case DataType.LONG8:
+            relDataType = rexBuilder.getTypeFactory().createSqlType(SqlTypeName.BIGINT, colType.getPrecision());
+            return rexBuilder.makeLiteral(parsedValue, relDataType, false);
         default:
-            throw new IllegalArgumentException(
-                    String.format(Locale.ROOT, "%s data type is not supported for partition column", colType));
+            try {
+                SqlTypeName sqlTypeName = SqlTypeName.get(colType.getName().toUpperCase(Locale.ROOT));
+                int precision = colType.getPrecision();
+                relDataType = precision == -1 ? rexBuilder.getTypeFactory().createSqlType(sqlTypeName)
+                        : rexBuilder.getTypeFactory().createSqlType(sqlTypeName, precision);
+                return rexBuilder.makeLiteral(parsedValue, relDataType, false);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        String.format(Locale.ROOT, "%s data type is not supported for filter column", colType), e);
+            }
         }
     }
 
-    public static RexInputRef transformColumn2RexInputRef(TblColRef partitionCol, Set<OlapTableScan> tableScans) {
+    public static RexInputRef transformColumn2RexInputRef(TblColRef tblColRef, Set<OlapTableScan> tableScans) {
         for (OlapTableScan tableScan : tableScans) {
             val tableIdentity = tableScan.getTableName();
-            if (tableIdentity.equals(partitionCol.getTable())) {
-                val index = tableScan.getColumnRowType().getAllColumns().indexOf(partitionCol);
+            if (tableIdentity.equals(tblColRef.getTable())) {
+                val index = tableScan.getColumnRowType().getAllColumns().indexOf(tblColRef);
                 if (index >= 0) {
                     return ContextUtil.createUniqueInputRefAmongTables(tableScan, index, tableScans);
                 }
-                throw new IllegalStateException(String.format(Locale.ROOT, "Cannot find column %s in all tableScans",
-                        partitionCol.getIdentity()));
+                throw new IllegalStateException(
+                        String.format(Locale.ROOT, "Cannot find column %s in all tableScans", tblColRef.getIdentity()));
             }
         }
 
         throw new IllegalStateException(
-                String.format(Locale.ROOT, "Cannot find column %s in all tableScans", partitionCol.getIdentity()));
+                String.format(Locale.ROOT, "Cannot find column %s in all tableScans", tblColRef.getIdentity()));
     }
 }

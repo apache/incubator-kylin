@@ -3674,6 +3674,10 @@ public abstract class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(getOptional("kylin.storage.columnar.dimension-range-filter-enabled", TRUE));
     }
 
+    public boolean isQueryDimensionRangeFilterEnabled() {
+        return Boolean.parseBoolean(getOptional("kylin.query.dimension-range-filter-enabled", FALSE));
+    }
+
     public int getSegmentExecMaxThreads() {
         return Integer.parseInt(getOptional("kylin.engine.segment-exec-max-threads", "200"));
     }
