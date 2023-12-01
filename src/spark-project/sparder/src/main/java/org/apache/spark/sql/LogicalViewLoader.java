@@ -33,9 +33,13 @@ import org.apache.kylin.common.util.NamedThreadFactory;
 import org.apache.kylin.common.util.StringHelper;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.metadata.project.NProjectManager;
+import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.metadata.view.LogicalView;
 import org.apache.kylin.metadata.view.LogicalViewManager;
+import org.apache.kylin.source.ISourceMetadataExplorer;
 import org.apache.kylin.source.SourceFactory;
+import org.apache.kylin.source.SupportsSparkCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +81,7 @@ public class LogicalViewLoader {
             }
             if (loadBySpark) {
                 dropLogicalViewIfExist(toLoadView.getTableName(), spark);
-                spark.sql(toLoadView.getCreatedSql());
+                createLogicalView(toLoadView.getCreatedSql(), toLoadView.getCreatedProject(), spark);
             }
             LOADED_LOGICAL_VIEWS.put(toLoadView.getTableName().toUpperCase(Locale.ROOT), toLoadView);
             LOGGER.info("The new table loaded successfully is {}", viewName);
@@ -122,7 +126,7 @@ public class LogicalViewLoader {
         toLoadViews.forEach(view -> {
             try {
                 dropLogicalViewIfExist(view.getTableName(), spark);
-                spark.sql(view.getCreatedSql());
+                createLogicalView(view.getCreatedSql(), view.getCreatedProject(), spark);
                 LOADED_LOGICAL_VIEWS.put(view.getTableName(), view);
                 successLoadViews.add(view.getTableName());
             } catch (Throwable e) {
@@ -132,7 +136,7 @@ public class LogicalViewLoader {
         toReplaceViews.forEach(view -> {
             try {
                 dropLogicalViewIfExist(view.getTableName(), spark);
-                spark.sql(view.getCreatedSql());
+                createLogicalView(view.getCreatedSql(), view.getCreatedProject(), spark);
                 LOADED_LOGICAL_VIEWS.put(view.getTableName(), view);
                 successReplaceViews.add(view.getTableName());
             } catch (Throwable e) {
@@ -159,6 +163,38 @@ public class LogicalViewLoader {
         String quotedDatabase = StringHelper.backtickQuote(KylinConfig.getInstanceFromEnv().getDDLLogicalViewDB());
         String quotedTableName = StringHelper.backtickQuote(tableName);
         spark.sql("DROP LOGICAL VIEW IF EXISTS " + quotedDatabase + "." + quotedTableName);
+    }
+
+    private static void createLogicalView(String sql, String project, SparkSession spark) {
+        String logicalSql = addCatalog(sql, project, spark);
+        spark.sql(logicalSql);
+    }
+
+    public static String addCatalog(String sql, String project, SparkSession spark) {
+        if (project == null) {
+            return sql;
+        }
+
+        ProjectInstance projectInstance = KylinConfig.getInstanceFromEnv().getManager(NProjectManager.class)
+                .getProject(project);
+        ISourceMetadataExplorer explorer = SourceFactory.getSource(projectInstance).getSourceMetadataExplorer();
+        if (explorer instanceof SupportsSparkCatalog) {
+            SupportsSparkCatalog sparkCatalog = (SupportsSparkCatalog) explorer;
+            sparkCatalog.getSourceCatalogConf(projectInstance.getConfig(), project)
+                    .forEach(spark.sqlContext()::setConf);
+            return sparkCatalog.addCatalog(projectInstance.getConfig(), sql, project);
+        }
+        return sql;
+    }
+
+    public static void addCatalogConfByJdbc(SparkSession ss, String project) {
+        ProjectInstance projectInstance = KylinConfig.getInstanceFromEnv().getManager(NProjectManager.class)
+                .getProject(project);
+        ISourceMetadataExplorer explorer = SourceFactory.getSource(projectInstance).getSourceMetadataExplorer();
+        if (explorer instanceof SupportsSparkCatalog) {
+            SupportsSparkCatalog sparkCatalog = (SupportsSparkCatalog) explorer;
+            sparkCatalog.getSourceCatalogConf(projectInstance.getConfig(), project).forEach(ss.sqlContext()::setConf);
+        }
     }
 
     public static void checkConfigIfNeed() {

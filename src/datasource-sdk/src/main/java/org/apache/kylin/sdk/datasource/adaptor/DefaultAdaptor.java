@@ -380,5 +380,4 @@ public class DefaultAdaptor extends AbstractJdbcAdaptor {
 
         return new String[] { dropView, dropTable, createSql };
     }
-
 }

@@ -314,4 +314,13 @@ public class SparkDDLTest extends NLocalFileMetadataTestCase {
     tableExtService.filterAccessTables(failedLoadTables, canLoadTables, tableResponse, "ssb");
     Assert.assertEquals(2, canLoadTables.size());
   }
+
+  @Test
+  public void testAddCatalogConfByJdbc() throws Exception {
+    SparkDDLTestUtils.prepare();
+    SparkSession session = SparderEnv.getSparkSession();
+    String database = session.catalog().currentDatabase();
+    LogicalViewLoader.addCatalogConfByJdbc(session, "ssb");
+    Assert.assertEquals(database, session.catalog().currentDatabase());
+  }
 }

@@ -50,6 +50,7 @@ import org.apache.spark.ddl.DDLCheckContext;
 import org.apache.spark.sql.LogicalViewLoader;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparderEnv;
+import org.apache.spark.sql.SparkSession;
 import org.springframework.stereotype.Service;
 
 import lombok.val;
@@ -76,7 +77,9 @@ public class SparkDDLService extends BasicService {
             checker.check(context);
         }
         final StringBuilder result = new StringBuilder();
-        List<Row> rows = SparderEnv.getSparkSession().sql(request.getSql()).collectAsList();
+        SparkSession session = SparderEnv.getSparkSession();
+        String sql = LogicalViewLoader.addCatalog(request.getSql(), context.getProject(), session);
+        List<Row> rows = session.sql(sql).collectAsList();
         rows.forEach(row -> result.append(row.get(0).toString()).append("\n"));
         if (context.isLogicalViewCommand()) {
             /**

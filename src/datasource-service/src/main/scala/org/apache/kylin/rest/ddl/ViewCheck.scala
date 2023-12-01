@@ -19,7 +19,6 @@ package org.apache.kylin.rest.ddl
 
 import java.security.PrivilegedExceptionAction
 import java.util.Locale
-
 import org.apache.commons.lang3.StringUtils
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.kylin.common.KylinConfig
@@ -29,7 +28,7 @@ import org.apache.kylin.metadata.model.NTableMetadataManager
 import org.apache.kylin.metadata.view.LogicalViewManager
 import org.apache.kylin.rest.security.KerberosLoginManager
 import org.apache.spark.ddl.{DDLCheck, DDLCheckContext, DDLConstant}
-import org.apache.spark.sql.SparderEnv
+import org.apache.spark.sql.{LogicalViewLoader, SparderEnv}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.{CommandExecutionMode, CommandResultExec, SparkPlan}
@@ -90,12 +89,13 @@ class ViewCheck extends DDLCheck {
 
   override def check(context: DDLCheckContext): Unit = {
     LOGGER.info("start checking DDL view name")
-    val sql = context.getSql
+    var sql = context.getSql
     val project = context.getProject
     val spark = SparderEnv.getSparkSession
     val config = KylinConfig.getInstanceFromEnv
     var plan: SparkPlan = null
     try {
+      sql = LogicalViewLoader.addCatalog(context.getSql, context.getProject, SparderEnv.getSparkSession)
       val logicalPlan = spark.sessionState.sqlParser.parsePlan(sql)
       plan = stripRootCommandResult(spark.sessionState.executePlan(
         logicalPlan, CommandExecutionMode.SKIP).executedPlan)

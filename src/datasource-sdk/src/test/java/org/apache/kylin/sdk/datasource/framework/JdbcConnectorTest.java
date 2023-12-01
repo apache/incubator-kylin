@@ -121,4 +121,11 @@ public class JdbcConnectorTest extends NLocalFileMetadataTestCase {
         connector.close();
 
     }
+
+    @Test
+    public void testCatalog() {
+        connector = SourceConnectorFactory.getJdbcConnector(getTestConfig());
+        Assert.assertNotNull(connector.addCatalog(getTestConfig(), "select 1", "default"));
+        Assert.assertNotNull(connector.getSourceCatalogConf(getTestConfig(), "default"));
+    }
 }

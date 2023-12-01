@@ -42,13 +42,14 @@ import org.apache.kylin.sdk.datasource.framework.conv.DefaultConfigurer;
 import org.apache.kylin.sdk.datasource.framework.conv.SqlConverter;
 import org.apache.kylin.sdk.datasource.framework.def.DataSourceDef;
 import org.apache.kylin.sdk.datasource.framework.def.DataSourceDefProvider;
+import org.apache.kylin.source.SupportsSparkCatalog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Extends this Abstract class to create Adaptors for new jdbc data source.
  */
-public abstract class AbstractJdbcAdaptor implements Closeable {
+public abstract class AbstractJdbcAdaptor implements Closeable, SupportsSparkCatalog {
 
     protected static final Logger logger = LoggerFactory.getLogger(DefaultAdaptor.class);
     protected final BasicDataSource dataSource;

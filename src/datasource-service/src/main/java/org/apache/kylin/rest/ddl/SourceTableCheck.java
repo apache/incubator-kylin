@@ -86,7 +86,8 @@ public class SourceTableCheck implements DDLCheck {
                     throwException(MsgPicker.getMsg().getDDLTableNotLoad(tableName));
                 }
                 TableDesc table = loadTable.get(0);
-                if (ISourceAware.ID_HIVE != table.getSourceType() && ISourceAware.ID_SPARK != table.getSourceType()) {
+                if (ISourceAware.ID_HIVE != table.getSourceType() && ISourceAware.ID_SPARK != table.getSourceType()
+                        && ISourceAware.ID_JDBC != table.getSourceType()) {
                     throwException(MsgPicker.getMsg().getDDLTableNotSupport(tableName));
                 }
                 if (context.isLogicalViewCommand()
