@@ -230,25 +230,28 @@ public class UnitOfWork {
     private static <T> UnitOfWorkContext initUnitOfContext(UnitOfWorkParams<T> params, String unitName,
             boolean readonly) {
         val unitOfWork = new UnitOfWorkContext(unitName);
-        TransactionLock lock;
-        if (params.isUseProjectLock()) {
-            lock = TransactionManagerInstance.INSTANCE.getProjectLock(unitName);
-        } else if (params.getTempLockName() != null) {
-            lock = TransactionManagerInstance.INSTANCE.getTempLock(params.getTempLockName(), readonly);
-        } else {
-            lock = TransactionManagerInstance.INSTANCE.getLock(unitName, readonly);
-            if (lock.transactionUnit().equals(unitName)) {
-                params.setUseProjectLock(true);
+        if (!params.isTransparent()) {
+            TransactionLock lock;
+            if (params.isUseProjectLock()) {
+                lock = TransactionManagerInstance.INSTANCE.getProjectLock(unitName);
+            } else if (params.getTempLockName() != null) {
+                lock = TransactionManagerInstance.INSTANCE.getTempLock(params.getTempLockName(), readonly);
+            } else {
+                lock = TransactionManagerInstance.INSTANCE.getLock(unitName, readonly);
+                if (lock.transactionUnit().equals(unitName)) {
+                    params.setUseProjectLock(true);
+                }
             }
+            try (SetLogCategory ignored = new SetLogCategory(LogConstant.METADATA_CATEGORY)) {
+                log.info("get lock for project {}, lock is held by current thread: {}", unitName,
+                        lock.isHeldByCurrentThread());
+            }
+            // re-entry is not encouraged (because it indicates complex handling logic, bad smell),
+            // let's abandon it first
+            Preconditions.checkState(!lock.isHeldByCurrentThread());
+            lock.lock();
+            unitOfWork.getCurrentLock().add(lock);
         }
-        try (SetLogCategory ignored = new SetLogCategory(LogConstant.METADATA_CATEGORY)) {
-            log.info("get lock for project {}, lock is held by current thread: {}", unitName,
-                    lock.isHeldByCurrentThread());
-        }
-        // re-entry is not encouraged (because it indicates complex handling logic, bad smell), let's abandon it first
-        Preconditions.checkState(!lock.isHeldByCurrentThread());
-        lock.lock();
-        unitOfWork.getCurrentLock().add(lock);
 
         unitOfWork.setParams(params);
         threadLocals.set(unitOfWork);

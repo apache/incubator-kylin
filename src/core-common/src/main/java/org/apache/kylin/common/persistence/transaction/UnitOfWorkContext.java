@@ -87,6 +87,9 @@ public class UnitOfWorkContext {
     }
 
     void checkLockStatus() {
+        if (params.isTransparent()) {
+            return;
+        }
         Preconditions.checkState(CollectionUtils.isNotEmpty(currentLock));
         // Some readLocks have been released when upgrade to writeLock.
         Preconditions.checkState(currentLock.stream().anyMatch(TransactionLock::isHeldByCurrentThread));

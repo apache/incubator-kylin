@@ -286,7 +286,10 @@ public class OpsService {
                     try {
                         future.get();
                         OpsService.deleteMetadataBackup(rootPath, project);
-                    } catch (Throwable e) {
+                    } catch (InterruptedException e) {
+                        log.error(e.getMessage(), e);
+                        Thread.currentThread().interrupt();
+                    } catch (Exception e) {
                         log.error(e.getMessage(), e);
                     }
                 });
@@ -422,7 +425,7 @@ public class OpsService {
             init();
         }
 
-        public static boolean hasMetadataRestoreRunning() {
+        public static synchronized boolean hasMetadataRestoreRunning() {
             return runningTask != null;
         }
 

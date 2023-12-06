@@ -255,7 +255,7 @@
                         </include>
                     </includes>
                     <layout>ZIP</layout>
-                    <outputDirectory>target</outputDirectory>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
                 </configuration>
                 <executions>
                     <execution>

@@ -44,6 +44,7 @@ public class JobLockMapperTest {
     @BeforeEach
     public void setup() throws Exception {
         KylinConfig config = getTestConfig();
+        JobContextUtil.cleanUp();
         ReflectionTestUtils.invokeMethod(JobContextUtil.class, "initMappers", config);
         config.setProperty("kylin.job.slave-lock-renew-sec", "3");
         jobLockMapper = (JobLockMapper) ReflectionTestUtils.getField(JobContextUtil.class, "jobLockMapper");

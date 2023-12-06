@@ -169,7 +169,7 @@ public class JobInfoServiceTest extends LogOutputTestCase {
 
     @Test
     public void testListJobs() throws Exception {
-        val mockJobs = mockDetailJobs(false);
+        val mockJobs = mockDetailJobs(true);
         getTestConfig().setProperty("kylin.streaming.enabled", "false");
         // test size
         List<String> jobNames = Lists.newArrayList();
@@ -195,7 +195,14 @@ public class JobInfoServiceTest extends LogOutputTestCase {
         jobFilter.setSortBy("duration");
         jobFilter.setReverse(true);
         List<ExecutableResponse> jobs7 = jobInfoService.listJobs(jobFilter);
-        Assert.assertTrue(jobs7.size() == 3 && jobs7.get(0).getId().equals("sparkjob1"));
+        long maxDuration = 0;
+        for (ExecutableResponse response : jobs7) {
+            long duration = response.getDuration();
+            if (duration >= maxDuration) {
+                maxDuration = duration;
+            }
+        }
+        Assert.assertTrue(jobs7.size() == 3 && jobs7.get(0).getDuration() == maxDuration);
 
         jobFilter.setSortBy("create_time");
         jobFilter.setReverse(true);

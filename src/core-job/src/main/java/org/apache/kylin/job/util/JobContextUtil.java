@@ -71,17 +71,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JobContextUtil {
 
-    private static JobInfoMapper jobInfoMapper;
+    private static volatile JobInfoMapper jobInfoMapper;
 
-    private static JobLockMapper jobLockMapper;
+    private static volatile JobLockMapper jobLockMapper;
 
-    private static JobInfoDao jobInfoDao;
+    private static volatile JobInfoDao jobInfoDao;
 
-    private static JobContext jobContext;
+    private static volatile JobContext jobContext;
 
-    private static SqlSessionTemplate sqlSessionTemplate;
+    private static volatile SqlSessionTemplate sqlSessionTemplate;
 
-    private static DataSourceTransactionManager transactionManager;
+    private static volatile DataSourceTransactionManager transactionManager;
 
     private static final JobTableInterceptor jobTableInterceptor = new JobTableInterceptor();
 

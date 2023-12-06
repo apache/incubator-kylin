@@ -27,6 +27,11 @@
             <fileMode>0755</fileMode>
         </fileSet>
         <fileSet>
+            <directory>${basedir}/../../../build/async-profiler-lib</directory>
+            <outputDirectory>lib</outputDirectory>
+            <fileMode>0644</fileMode>
+        </fileSet>
+        <fileSet>
             <directory>${basedir}/../../../build/spark</directory>
             <outputDirectory>spark</outputDirectory>
             <excludes>
@@ -49,7 +54,7 @@
             <destName>newten.jar</destName>
         </file>
         <file>
-            <source>../assembly/target/ke-assembly-${project.version}-job.jar</source>
+            <source>../assembly/target/kylin-assembly-${project.version}-job.jar</source>
             <outputDirectory>lib/</outputDirectory>
             <destName>newten-job.jar</destName>
         </file>

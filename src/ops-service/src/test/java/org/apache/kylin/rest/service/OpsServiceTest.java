@@ -206,6 +206,8 @@ public class OpsServiceTest extends NLocalFileMetadataTestCase {
             MetadataRestoreStatus status = opsService.getMetadataRestoreStatus(uuid, UnitOfWork.GLOBAL_UNIT);
             return status != null && !status.equals(MetadataRestoreStatus.IN_PROGRESS);
         });
+        await().atMost(1, TimeUnit.MINUTES).until(() -> !OpsService.MetadataRestore.hasMetadataRestoreRunning());
+
         Assert.assertEquals(MetadataRestoreStatus.SUCCEED,
                 opsService.getMetadataRestoreStatus(uuid, UnitOfWork.GLOBAL_UNIT));
 

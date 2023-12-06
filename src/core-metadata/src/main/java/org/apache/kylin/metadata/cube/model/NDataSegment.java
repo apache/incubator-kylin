@@ -367,7 +367,8 @@ public class NDataSegment implements ISegment, Serializable {
             IndexPlan indexPlan = dataflow.getIndexPlan();
             if (!indexPlan.isBroken()) {
                 List<NDataLayout> filteredCuboids = segDetails.getAllLayouts().stream()
-                        .filter(dataLayout -> dataLayout.getLayout() != null).collect(Collectors.toList());
+                        .filter(dataLayout -> indexPlan.getLayoutEntity(dataLayout.getLayoutId()) != null)
+                        .collect(Collectors.toList());
                 segDetails.setLayouts(filteredCuboids);
             }
 
