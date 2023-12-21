@@ -52,6 +52,7 @@ import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.rest.constant.ModelAttributeEnum;
 import org.apache.kylin.rest.controller.NBasicController;
 import org.apache.kylin.rest.controller.NModelController;
+import org.apache.kylin.rest.request.ModelCloneRequest;
 import org.apache.kylin.rest.request.ModelParatitionDescRequest;
 import org.apache.kylin.rest.request.ModelRequest;
 import org.apache.kylin.rest.request.ModelUpdateRequest;
@@ -110,6 +111,8 @@ public class OpenModelController extends NBasicController {
     public static final String MODEL_ID = "modelId";
 
     public static final String FACT_TABLE = "fact_table";
+
+    private static final String MODEL_NAME = "model_name";
 
     @Autowired
     private NModelController modelController;
@@ -492,5 +495,16 @@ public class OpenModelController extends NBasicController {
         synchronizedCommentsResponse.syncComment(modelRequest);
         modelService.checkBeforeModelSave(synchronizedCommentsResponse.getModelRequest());
         return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, synchronizedCommentsResponse, "");
+    }
+
+    @ApiOperation(value = "cloneModel", tags = { "AI" })
+    @PostMapping(value = "/{model_name:.+}/clone")
+    @ResponseBody
+    public EnvelopeResponse<String> cloneModel(@PathVariable("model_name") String modelAlias,
+            @RequestBody ModelCloneRequest request) {
+        String projectName = checkProjectName(request.getProject());
+        checkRequiredArg(MODEL_NAME, modelAlias);
+        String modelId = modelService.getModel(modelAlias, projectName).getId();
+        return modelController.cloneModel(modelId, request);
     }
 }

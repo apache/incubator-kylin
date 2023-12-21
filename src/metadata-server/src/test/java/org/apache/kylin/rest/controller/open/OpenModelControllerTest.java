@@ -46,6 +46,7 @@ import org.apache.kylin.metadata.model.NDataModelManager;
 import org.apache.kylin.metadata.model.Segments;
 import org.apache.kylin.rest.constant.Constant;
 import org.apache.kylin.rest.controller.NModelController;
+import org.apache.kylin.rest.request.ModelCloneRequest;
 import org.apache.kylin.rest.request.ModelParatitionDescRequest;
 import org.apache.kylin.rest.request.ModelRequest;
 import org.apache.kylin.rest.request.ModelUpdateRequest;
@@ -675,5 +676,22 @@ public class OpenModelControllerTest extends NLocalFileMetadataTestCase {
                         .accept(MediaType.parseMediaType(HTTP_VND_APACHE_KYLIN_V4_PUBLIC_JSON)))
                 .andExpect(MockMvcResultMatchers.status().isOk());
         Mockito.verify(openModelController).deleteModel(modelName, project);
+    }
+
+    @Test
+    public void testCloneModel() throws Exception {
+        String project = "default";
+        String modelAlias = "model1";
+        String cloneModelAlias = "model1_clone";
+        mockGetModelName(modelAlias, project, RandomUtil.randomUUIDStr());
+
+        ModelCloneRequest request = new ModelCloneRequest();
+        request.setNewModelName(cloneModelAlias);
+        request.setProject(project);
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/models/{model_name:.+}/clone", modelAlias)
+                .contentType(MediaType.APPLICATION_JSON).content(JsonUtil.writeValueAsString(request))
+                .accept(MediaType.parseMediaType(HTTP_VND_APACHE_KYLIN_V4_PUBLIC_JSON)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        Mockito.verify(openModelController).cloneModel(modelAlias, request);
     }
 }
