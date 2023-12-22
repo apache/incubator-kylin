@@ -273,7 +273,10 @@ object ExpressionConverter {
             concat_ws(children.head.toString, k_lit(children.apply(1)))
           case "split_part" =>
             val args = Seq(k_lit(children.head), lit(children.apply(1)), lit(children.apply(2).asInstanceOf[Int])).toArray
-            callUDF("split_part", args: _*)
+            call_udf("split_part", args: _*)
+          case "_ymdint_between" =>
+            val args = Seq(k_lit(children.head), k_lit(children.apply(1))).toArray
+            call_udf("_ymdint_between", args: _*)
           // time_funcs
           case "current_date" =>
             current_date()

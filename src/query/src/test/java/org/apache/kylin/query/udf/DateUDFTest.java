@@ -19,13 +19,14 @@
 package org.apache.kylin.query.udf;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.sql.Date;
 import java.sql.Timestamp;
 
+import org.apache.kylin.junit.annotation.MultiTimezoneTest;
 import org.apache.kylin.query.udf.dateUdf.DateDiffUDF;
 import org.apache.kylin.query.udf.dateUdf.DatePartUDF;
-import org.apache.kylin.junit.annotation.MultiTimezoneTest;
 
 public class DateUDFTest {
 
@@ -48,5 +49,13 @@ public class DateUDFTest {
         assertEquals(2019, (long) datePartUDF.DATE_PART("year", Date.valueOf("2019-05-09")));
         assertEquals(5, (long) datePartUDF.DATE_PART("month", Date.valueOf("2019-05-09")));
         assertEquals(9, (long) datePartUDF.DATE_PART("day", Date.valueOf("2019-05-09")));
+    }
+
+    @MultiTimezoneTest(timezones = { "GMT+8", "GMT+12", "GMT+0" })
+    public void testYmdintBetween() {
+        DateDiffUDF dateDiffUDF = new DateDiffUDF();
+        assertEquals("120906", dateDiffUDF._ymdint_between(Date.valueOf("1990-04-30"), Date.valueOf("2003-02-05")));
+        assertThrows(IllegalArgumentException.class,
+                () -> dateDiffUDF._ymdint_between("1990-04-30 00:00:00", "2003-02-05 00:00:00"));
     }
 }

@@ -19,8 +19,12 @@
 package org.apache.kylin.query.udf.dateUdf;
 
 import java.sql.Date;
+import java.text.ParseException;
 
 import org.apache.calcite.linq4j.function.Parameter;
+import org.apache.commons.lang3.time.DateUtils;
+import org.apache.kylin.common.util.DateFormat;
+import org.apache.kylin.common.util.TimeUtil;
 
 public class DateDiffUDF {
 
@@ -28,7 +32,17 @@ public class DateDiffUDF {
         return (date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24);
     }
 
-    public Long dateDiff(@Parameter(name = "date") String date1, @Parameter(name = "date") String date2){
+    public Long dateDiff(@Parameter(name = "date") String date1, @Parameter(name = "date") String date2) {
         return (Date.valueOf(date1).getTime() - Date.valueOf(date2).getTime()) / (1000 * 60 * 60 * 24);
+    }
+
+    public String _ymdint_between(@Parameter(name = "date1") Object date1, @Parameter(name = "date2") Object date2) {
+        try {
+            long d1 = DateUtils.parseDate(date1.toString(), DateFormat.DEFAULT_DATE_PATTERN).getTime();
+            long d2 = DateUtils.parseDate(date2.toString(), DateFormat.DEFAULT_DATE_PATTERN).getTime();
+            return TimeUtil.ymdintBetween(d1, d2);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException("Only dates in yyyy-MM-dd format are supported!", e);
+        }
     }
 }
