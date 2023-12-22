@@ -53,6 +53,8 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.util.Pair;
 import org.apache.kylin.common.QueryContext;
+import org.apache.kylin.query.calcite.KylinRelDataTypeSystem;
+import org.apache.kylin.query.schema.KylinJavaTypeFactoryImpl;
 import org.apache.kylin.query.schema.KylinSqlValidator;
 import org.apache.kylin.query.engine.view.ModelViewExpander;
 
@@ -169,7 +171,7 @@ public class SQLConverter {
     }
 
     private JavaTypeFactory javaTypeFactory() {
-        return TypeSystem.javaTypeFactory();
+        return new KylinJavaTypeFactoryImpl(new KylinRelDataTypeSystem());
     }
 
     private SqlNode parseSQL(String sql) throws SqlParseException {

@@ -27,6 +27,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.test.DiffRepository;
 import org.apache.calcite.util.Litmus;
 import org.apache.kylin.common.KylinConfig;
@@ -129,6 +132,19 @@ public class SqlToRelNodeTest extends CalciteRuleTestBase {
             String realPlan = NL + RelOptUtil.toString(rel);
             diff.assertEquals("bloat_merge_sql.bloat_disabled", "${bloat_merge_sql.bloat_disabled}", realPlan);
         }
+    }
+
+    @Test
+    public void testBigDecimalQuotientWithScale() throws SqlParseException {
+        String SQL = "select sum(a1/3.000000000000005) as a2 from ("
+                + "select sum(price/2.000000000000000001) as a1 from TEST_KYLIN_FACT group by LSTG_FORMAT_NAME" + ") t";
+        RelRoot relRoot = queryExec.sqlToRelRoot(SQL);
+        RelNode rel = queryExec.optimize(relRoot).rel;
+        Assert.assertEquals(1, rel.getRowType().getFieldList().size());
+        RelDataType relDataType = rel.getRowType().getFieldList().get(0).getValue();
+        Assert.assertEquals(SqlTypeName.DECIMAL, relDataType.getSqlTypeName());
+        Assert.assertEquals(38, relDataType.getPrecision());
+        Assert.assertEquals(6, relDataType.getScale());
     }
 
     /**
