@@ -1704,6 +1704,10 @@ public abstract class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(getOptional("kylin.engine.dynamic-resource-plan-enabled", FALSE));
     }
 
+    public boolean useQueueElasticResource() {
+        return Boolean.parseBoolean(getOptional("kylin.engine.queue-elastic-resource-enabled", FALSE));
+    }
+
     public boolean isSanityCheckEnabled() {
         return Boolean.parseBoolean(getOptional("kylin.engine.sanity-check-enabled", TRUE));
     }
