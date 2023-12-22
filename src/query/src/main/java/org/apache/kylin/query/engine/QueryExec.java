@@ -44,7 +44,9 @@ import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexExecutorImpl;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.kylin.cache.kylin.KylinCacheFileSystem;
 import org.apache.kylin.common.KapConfig;
 import org.apache.kylin.common.KylinConfig;
@@ -174,6 +176,7 @@ public class QueryExec {
 
     /**
      * parse, optimize sql and execute the sql physically
+     *
      * @param sql
      * @return query result data with column infos
      */
@@ -328,6 +331,7 @@ public class QueryExec {
 
     /**
      * get metadata of columns of the query result
+     *
      * @param sql
      * @return
      * @throws SQLException
@@ -374,6 +378,7 @@ public class QueryExec {
 
     /**
      * set prepare params
+     *
      * @param idx 0-based index
      * @param val
      */
@@ -383,6 +388,7 @@ public class QueryExec {
 
     /**
      * get default schema used in this query
+     *
      * @return
      */
     public String getDefaultSchemaName() {
@@ -395,6 +401,7 @@ public class QueryExec {
 
     /**
      * execute query plan physically
+     *
      * @param rels list of alternative relNodes to execute.
      *             relNodes will be executed one by one and return on the first successful execution
      * @return
@@ -498,6 +505,7 @@ public class QueryExec {
 
     /**
      * search rel node tree to see if there is any table scan node
+     *
      * @param rel
      * @return
      */
@@ -524,6 +532,10 @@ public class QueryExec {
                     .anyMatch(pRelNode -> pRelNode.accept(new CalcitePlanRouterVisitor()))) {
                 return false;
             }
+            if (projectRelNode.getChildExps() != null
+                    && projectRelNode.getChildExps().stream().anyMatch(this::isPlusString)) {
+                return false;
+            }
         }
 
         if (rel instanceof OlapAggregateRel) {
@@ -539,6 +551,28 @@ public class QueryExec {
         }
 
         return rel.getInputs().stream().allMatch(this::isCalciteEngineCapable);
+    }
+
+    /**
+     * calcite not support 'number' + number/'number'
+     *
+     * @param node
+     * @return
+     */
+    private boolean isPlusString(RexNode node) {
+        if (node instanceof RexCall) {
+            RexCall rexCall = (RexCall) node;
+            if ("plus".equals(rexCall.getOperator().getKind().lowerName)) {
+                for (RexNode operand : rexCall.operands) {
+                    if (operand.getType().getFamily() == SqlTypeFamily.STRING
+                            || operand.getType().getFamily() == SqlTypeFamily.CHARACTER) {
+                        return true;
+                    }
+                }
+            }
+            return rexCall.getOperands().stream().anyMatch(this::isPlusString);
+        }
+        return false;
     }
 
     private SQLException newSqlException(String sql, String msg, Throwable e) {
@@ -614,7 +648,7 @@ public class QueryExec {
         }
     }
 
-    public static final String SEP = System.getProperty("line.separator");
+    public static final String SEP = System.lineSeparator();
     public static final String DRY_RUN_TIP = SEP
             + "Tip : Dryrun is a experimental feature for user to create proper model." + SEP
             + "To enable/disable dry run, please set 'kylin.query.dryrun-enabled=true/false'" + SEP
