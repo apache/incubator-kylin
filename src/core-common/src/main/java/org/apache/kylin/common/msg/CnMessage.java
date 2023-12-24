@@ -1739,4 +1739,19 @@ public class CnMessage extends Message {
     public String getRedisInitFailed() {
         return "Redis初始化失败";
     }
+
+    @Override
+    public String getModelConfigExist() {
+        return "'%s' 模型参数配置不存在, 请检查模型类型.";
+    }
+
+    @Override
+    public String getModelConfigKeyNotExist() {
+        return "未设置{%s}, 请添加后重试.";
+    }
+
+    @Override
+    public String getModelConfigKeyExist() {
+        return "参数 {%s} 已存在, 请修改后重试.";
+    }
 }

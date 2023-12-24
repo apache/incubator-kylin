@@ -1646,4 +1646,16 @@ public class Message {
     public String getRedisInitFailed() {
         return "Redis init failed";
     }
+
+    public String getModelConfigExist() {
+        return "'%s' model config not exist, please check model type.";
+    }
+
+    public String getModelConfigKeyNotExist() {
+        return "{%s} is not set, please add and try again.";
+    }
+
+    public String getModelConfigKeyExist() {
+        return "The parameter {%s} already exists, please modify and try again.";
+    }
 }

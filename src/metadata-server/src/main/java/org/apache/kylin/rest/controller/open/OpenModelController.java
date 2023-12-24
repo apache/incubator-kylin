@@ -19,15 +19,21 @@
 package org.apache.kylin.rest.controller.open;
 
 import static org.apache.kylin.common.constant.HttpConstant.HTTP_VND_APACHE_KYLIN_V4_PUBLIC_JSON;
+import static org.apache.kylin.common.exception.ServerErrorCode.EMPTY_PARAMETER;
 import static org.apache.kylin.common.exception.ServerErrorCode.FAILED_UPDATE_MODEL;
 import static org.apache.kylin.common.exception.ServerErrorCode.INVALID_PARAMETER;
+import static org.apache.kylin.common.exception.ServerErrorCode.MODEL_CONFIG_KEY_EXIST;
+import static org.apache.kylin.common.exception.ServerErrorCode.MODEL_CONFIG_KEY_NOT_EXIST;
+import static org.apache.kylin.common.exception.ServerErrorCode.MODEL_CONFIG_NOT_EXIST;
 import static org.apache.kylin.common.exception.ServerErrorCode.UNSUPPORTED_STREAMING_OPERATION;
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.INDEX_PARAMETER_INVALID;
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.PROJECT_MULTI_PARTITION_DISABLE;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -53,10 +59,12 @@ import org.apache.kylin.rest.constant.ModelAttributeEnum;
 import org.apache.kylin.rest.controller.NBasicController;
 import org.apache.kylin.rest.controller.NModelController;
 import org.apache.kylin.rest.request.ModelCloneRequest;
+import org.apache.kylin.rest.request.ModelConfigRequest;
 import org.apache.kylin.rest.request.ModelParatitionDescRequest;
 import org.apache.kylin.rest.request.ModelRequest;
 import org.apache.kylin.rest.request.ModelUpdateRequest;
 import org.apache.kylin.rest.request.MultiPartitionMappingRequest;
+import org.apache.kylin.rest.request.OpenModelConfigRequest;
 import org.apache.kylin.rest.request.OpenModelRequest;
 import org.apache.kylin.rest.request.PartitionColumnRequest;
 import org.apache.kylin.rest.request.UpdateMultiPartitionValueRequest;
@@ -65,6 +73,7 @@ import org.apache.kylin.rest.response.ComputedColumnConflictResponse;
 import org.apache.kylin.rest.response.DataResult;
 import org.apache.kylin.rest.response.EnvelopeResponse;
 import org.apache.kylin.rest.response.IndexResponse;
+import org.apache.kylin.rest.response.ModelConfigResponse;
 import org.apache.kylin.rest.response.NModelDescResponse;
 import org.apache.kylin.rest.response.OpenGetIndexResponse;
 import org.apache.kylin.rest.response.OpenGetIndexResponse.IndexDetail;
@@ -507,4 +516,112 @@ public class OpenModelController extends NBasicController {
         String modelId = modelService.getModel(modelAlias, projectName).getId();
         return modelController.cloneModel(modelId, request);
     }
+
+    @ApiOperation(value = "getModelConfig", tags = { "AI" }, notes = "AI")
+    @GetMapping(value = "/config")
+    @ResponseBody
+    public EnvelopeResponse<ModelConfigResponse> getModelConfig(@RequestParam(value = "model") String modelAlias,
+            @RequestParam(value = "project") String project) {
+        String projectName = checkProjectName(project);
+        ModelConfigResponse modelConfig = checkModelConfig(modelAlias, projectName);
+        return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, modelConfig, "");
+    }
+
+    @ApiOperation(value = "add ModelConfig", tags = { "AI" })
+    @PostMapping(value = "/config")
+    @ResponseBody
+    public EnvelopeResponse<ModelConfigResponse> addModelConfig(@RequestBody OpenModelConfigRequest request) {
+        String projectName = checkProjectName(request.getProject());
+        ModelConfigResponse modelConfig = checkModelConfig(request.getModel(), projectName);
+
+        checkConfigWhetherExist(modelConfig.getOverrideProps(), request.getCustomSettings().keySet(), true);
+        modelConfig.getOverrideProps().putAll(request.getCustomSettings());
+        
+        ModelConfigRequest modelConfigRequest = newModelConfigRequestByConfig(modelConfig, projectName);
+        modelService.updateModelConfig(projectName, modelConfig.getModel(), modelConfigRequest);
+        return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, modelConfig, "");
+    }
+
+    @ApiOperation(value = "update ModelConfig", tags = { "AI" })
+    @PutMapping(value = "/config")
+    @ResponseBody
+    public EnvelopeResponse<ModelConfigResponse> updateModelConfig(@RequestBody OpenModelConfigRequest request) {
+        String projectName = checkProjectName(request.getProject());
+        ModelConfigResponse modelConfig = checkModelConfig(request.getModel(), projectName);
+
+        checkConfigWhetherExist(modelConfig.getOverrideProps(), request.getCustomSettings().keySet(), false);
+        modelConfig.getOverrideProps().putAll(request.getCustomSettings());
+
+        ModelConfigRequest modelConfigRequest = newModelConfigRequestByConfig(modelConfig, projectName);
+        modelService.updateModelConfig(projectName, modelConfig.getModel(), modelConfigRequest);
+        return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, modelConfig, "");
+    }
+
+    @ApiOperation(value = "delete ModelConfig", tags = { "AI" })
+    @DeleteMapping(value = "/config")
+    @ResponseBody
+    public EnvelopeResponse<ModelConfigResponse> deleteModelConfig(@RequestBody OpenModelConfigRequest request) {
+        String projectName = checkProjectName(request.getProject());
+        ModelConfigResponse modelConfig = checkModelConfig(request.getModel(), projectName);
+
+        checkConfigWhetherExist(modelConfig.getOverrideProps(), request.getDeleteCustomSettings(), false);
+        request.getDeleteCustomSettings().forEach(key -> modelConfig.getOverrideProps().remove(key));
+
+        ModelConfigRequest modelConfigRequest = newModelConfigRequestByConfig(modelConfig, projectName);
+        modelService.updateModelConfig(projectName, modelConfig.getModel(), modelConfigRequest);
+        return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, modelConfig, "");
+    }
+
+    /**
+     * @param exist {true} when overrideProps exist throw first param exist,{false} when overrideProps not exist throw first param not exist
+     * @return
+     */
+    private void checkConfigWhetherExist(LinkedHashMap<String, String> overrideProps,
+            Collection<String> customSettingKeys, boolean exist) {
+        String key = null;
+        for (String customSettingKey : customSettingKeys) {
+            if (exist == overrideProps.containsKey(customSettingKey)) {
+                key = customSettingKey;
+                break;
+            }
+        }
+
+        if (key != null) {
+            if (exist) {
+                throw new KylinException(MODEL_CONFIG_KEY_EXIST,
+                        String.format(Locale.ROOT, MsgPicker.getMsg().getModelConfigKeyExist(), key));
+            } else {
+                throw new KylinException(MODEL_CONFIG_KEY_NOT_EXIST,
+                        String.format(Locale.ROOT, MsgPicker.getMsg().getModelConfigKeyNotExist(), key));
+            }
+        }
+        if (customSettingKeys.isEmpty()) {
+            throw new KylinException(EMPTY_PARAMETER,
+                    String.format(Locale.ROOT, MsgPicker.getMsg().getConfigMapEmpty()));
+        }
+    }
+
+    public ModelConfigResponse checkModelConfig(String modelAlias, String projectName) {
+        NDataModel model = modelService.getModel(modelAlias, projectName);
+        String modelName = model.getAlias();
+        ModelConfigResponse modelConfig = modelService.getModelConfig(projectName, modelName).stream()
+                .filter(config -> modelName.equalsIgnoreCase(config.getAlias())).findFirst().orElse(null);
+        if (modelConfig == null) {
+            throw new KylinException(MODEL_CONFIG_NOT_EXIST, String.format(Locale.ROOT,
+                    String.format(Locale.ROOT, MsgPicker.getMsg().getModelConfigExist(), modelName)));
+        }
+        return modelConfig;
+    }
+
+    private ModelConfigRequest newModelConfigRequestByConfig(ModelConfigResponse modelConfig, String project) {
+        ModelConfigRequest modelConfigRequest = new ModelConfigRequest();
+        modelConfigRequest.setProject(project);
+        modelConfigRequest.setAutoMergeEnabled(modelConfig.getAutoMergeEnabled());
+        modelConfigRequest.setRetentionRange(modelConfig.getRetentionRange());
+        modelConfigRequest.setVolatileRange(modelConfig.getVolatileRange());
+        modelConfigRequest.setAutoMergeTimeRanges(modelConfig.getAutoMergeTimeRanges());
+        modelConfigRequest.setOverrideProps(modelConfig.getOverrideProps());
+        return modelConfigRequest;
+    }
+
 }
