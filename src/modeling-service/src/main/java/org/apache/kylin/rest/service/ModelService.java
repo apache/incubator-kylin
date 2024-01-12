@@ -313,7 +313,7 @@ public class ModelService extends AbstractModelService
     private static final Logger logger = LoggerFactory.getLogger(ModelService.class);
 
     private static final String LAST_MODIFY = "last_modify";
-    public static final String REC_COUNT = "recommendations_count";
+    public static final String RECOMMENDATIONS_COUNT_LOWER_UNDERSCORE = "recommendations_count";
 
     public static final Pattern VALID_NAME_FOR_DIMENSION = Pattern.compile("^[\\u4E00-\\u9FA5a-zA-Z0-9 _\\-()%?（）]+$");
 
@@ -849,9 +849,10 @@ public class ModelService extends AbstractModelService
 
         if ("expansionrate".equalsIgnoreCase(sortBy)) {
             return sortExpansionRate(reverse, filterModels);
-        } else if (getManager(NProjectManager.class).getProject(projectName).isSemiAutoMode()) {
-            Comparator<NDataModelResponse> comparator = BasicService
-                    .propertyComparator(StringUtils.isEmpty(sortBy) ? ModelService.REC_COUNT : sortBy, !reverse);
+        } else if (getManager(NProjectManager.class).getProject(projectName).isSemiAutoMode()
+                || RECOMMENDATIONS_COUNT_LOWER_UNDERSCORE.equalsIgnoreCase(sortBy)) {
+            Comparator<NDataModelResponse> comparator = BasicService.propertyComparator(
+                    StringUtils.isEmpty(sortBy) ? RECOMMENDATIONS_COUNT_LOWER_UNDERSCORE : sortBy, !reverse);
             filterModels.sort(comparator);
             return filterModels;
         } else {
@@ -4611,7 +4612,6 @@ public class ModelService extends AbstractModelService
             }
         }
     }
-
 
     public Pair<ModelRequest, ComputedColumnConflictResponse> checkCCConflict(ModelRequest modelRequest) {
         String project = modelRequest.getProject();

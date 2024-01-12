@@ -61,6 +61,7 @@ public class ModelQueryService extends BasicService implements ModelQuerySupport
     public static final String STORAGE = "storage";
     public static final String QUERY_HIT_COUNT = "queryHitCount";
     public static final String EXPANSION_RATE = "expansionrate";
+    private static final String RECOMMENDATIONS_COUNT_LOWER_CAMEL = "recommendationsCount";
 
     @Autowired
     public AclEvaluate aclEvaluate;
@@ -148,8 +149,8 @@ public class ModelQueryService extends BasicService implements ModelQuerySupport
             boolean reverse) {
         if (StringUtils.isEmpty(sortBy)) {
             if (getManager(NProjectManager.class).getProject(projectName).isSemiAutoMode()) {
-                return modelTripleList.parallelStream()
-                        .sorted(new ModelTripleComparator(ModelService.REC_COUNT, !reverse, SORT_KEY_DATA_MODEL))
+                return modelTripleList.parallelStream().sorted(
+                        new ModelTripleComparator(RECOMMENDATIONS_COUNT_LOWER_CAMEL, !reverse, SORT_KEY_DATA_MODEL))
                         .collect(Collectors.toList());
             } else {
                 return modelTripleList.parallelStream()
@@ -157,10 +158,15 @@ public class ModelQueryService extends BasicService implements ModelQuerySupport
                         .collect(Collectors.toList());
             }
         }
+
         switch (sortBy) {
         case USAGE:
             return modelTripleList.parallelStream()
                     .sorted(new ModelTripleComparator(QUERY_HIT_COUNT, !reverse, SORT_KEY_DATAFLOW))
+                    .collect(Collectors.toList());
+        case ModelService.RECOMMENDATIONS_COUNT_LOWER_UNDERSCORE:
+            return modelTripleList.parallelStream()
+                    .sorted(new ModelTripleComparator(RECOMMENDATIONS_COUNT_LOWER_CAMEL, !reverse, SORT_KEY_DATA_MODEL))
                     .collect(Collectors.toList());
         case STORAGE:
             return sortByStorage(modelTripleList, projectName, reverse);

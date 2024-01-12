@@ -162,6 +162,28 @@ public class ModelServiceQueryTest extends SourceTestCase {
         Assert.assertEquals(11, modelList.getTotalSize());
         Assert.assertEquals(8, modelList.getValue().size());
 
+        ModelQueryParams requestSortByRecCountReverse = new ModelQueryParams(null, null, true, project, "ADMIN",
+                Lists.newArrayList(), "", 0, 8, "recommendations_count", true, null,
+                Arrays.asList(ModelAttributeEnum.BATCH, ModelAttributeEnum.STREAMING, ModelAttributeEnum.HYBRID), null,
+                null, true, false);
+        val modelListSortByRecCountReverse = modelService.getModels(requestSortByRecCountReverse);
+        Assert.assertEquals("fusion_model", modelListSortByRecCountReverse.getValue().get(0).getAlias());
+
+        ModelQueryParams requestSortByRecCount = new ModelQueryParams(null, null, true, project, "ADMIN",
+                Lists.newArrayList(), "", 0, 8, "recommendations_count", false, null,
+                Arrays.asList(ModelAttributeEnum.BATCH, ModelAttributeEnum.STREAMING, ModelAttributeEnum.HYBRID), null,
+                null, true, false);
+        val modelListSortByRecCount = modelService.getModels(requestSortByRecCount);
+        Assert.assertEquals("fusion_model", modelListSortByRecCount.getValue().get(0).getAlias());
+
+        // test model list is empty
+        ModelQueryParams requestSortByRecCount2 = new ModelQueryParams(null, "not_exist", true, project, "ADMIN",
+                Lists.newArrayList(), "", 0, 8, "recommendations_count", true, null,
+                Arrays.asList(ModelAttributeEnum.BATCH, ModelAttributeEnum.STREAMING, ModelAttributeEnum.HYBRID), null,
+                null, true, false);
+        val modelListSortByRecCount2 = modelService.getModels(requestSortByRecCount2);
+        Assert.assertEquals(0, modelListSortByRecCount2.getTotalSize());
+
         ModelQueryParams liteRequest = new ModelQueryParams(null, null, true, project, "ADMIN", Lists.newArrayList(),
                 "", 0, 8, "last_modify", true, null,
                 Arrays.asList(ModelAttributeEnum.BATCH, ModelAttributeEnum.STREAMING, ModelAttributeEnum.HYBRID), null,
@@ -223,6 +245,15 @@ public class ModelServiceQueryTest extends SourceTestCase {
                 null, null, false, false);
         val modelList6 = modelService.getModels(request6);
         Assert.assertEquals(5, modelList6.getValue().size());
+
+        // test model list and sortBy is empty when kylin.metadata.semi-automatic-mode=true
+        ModelQueryParams requestSortByEmpty = new ModelQueryParams(null, "not_exist", true, project, "ADMIN",
+                Lists.newArrayList(), "", 0, 8, null, false, null,
+                Arrays.asList(ModelAttributeEnum.BATCH, ModelAttributeEnum.STREAMING, ModelAttributeEnum.HYBRID), null,
+                null, true, false);
+        val modelListSortByEmpty = modelService.getModels(requestSortByEmpty);
+        Assert.assertEquals(0, modelListSortByEmpty.getTotalSize());
+
         getTestConfig().setProperty("kylin.metadata.semi-automatic-mode", "false");
 
         // used for getModels without sortBy field
