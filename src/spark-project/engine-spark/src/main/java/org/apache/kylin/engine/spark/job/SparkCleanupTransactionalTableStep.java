@@ -56,7 +56,7 @@ public class SparkCleanupTransactionalTableStep extends NSparkExecutable {
 
     @Override
     public ExecuteResult doWork(JobContext context) throws ExecuteException {
-        KylinConfig config = KylinConfig.getInstanceFromEnv();
+        KylinConfig config = getConfig();
         String jobId = getParam(NBatchConstants.P_JOB_ID);
         String dir = config.getJobTmpTransactionalTableDir(getProject(), jobId);
         logger.info("should clean dir :{} ", dir);

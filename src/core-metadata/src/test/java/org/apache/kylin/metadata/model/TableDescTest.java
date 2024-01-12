@@ -67,4 +67,28 @@ public class TableDescTest extends NLocalFileMetadataTestCase {
         final TableDesc tableDesc = tableMetadataManager.getTableDesc(tableName);
         Assert.assertFalse(tableDesc.isRangePartition());
     }
+
+    @Test
+    public void testGetBackTickTransactionalTableIdentity() {
+        TableDesc tableDesc = new TableDesc();
+        tableDesc.setDatabase("TESTDB");
+        tableDesc.setName("TEST_KYLIN_FACT");
+
+        // Test returned identity keeping original db
+        Assert.assertEquals("`TESTDB`.`TEST_KYLIN_FACT_HIVE_TX_INTERMEDIATE123`", tableDesc.getBackTickTransactionalTableIdentity(null, "123"));
+        // Test returned identity using config db
+        Assert.assertEquals("`ANOTHER_DB`.`TEST_KYLIN_FACT_HIVE_TX_INTERMEDIATE123`", tableDesc.getBackTickTransactionalTableIdentity("another_db", "123"));
+    }
+
+    @Test
+    public void testGetTransactionalTableIdentity() {
+        TableDesc tableDesc = new TableDesc();
+        tableDesc.setDatabase("TESTDB");
+        tableDesc.setName("TEST_KYLIN_FACT");
+
+        // Test returned identity keeping original db
+        Assert.assertEquals("TESTDB.TEST_KYLIN_FACT_HIVE_TX_INTERMEDIATE", tableDesc.getTransactionalTableIdentity(null));
+        // Test returned identity using config db
+        Assert.assertEquals("ANOTHER_DB.TEST_KYLIN_FACT_HIVE_TX_INTERMEDIATE", tableDesc.getTransactionalTableIdentity("another_db"));
+    }
 }
