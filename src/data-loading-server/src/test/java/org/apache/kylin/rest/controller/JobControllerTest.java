@@ -125,18 +125,24 @@ public class JobControllerTest extends NLocalFileMetadataTestCase {
         status.add(JobStatusEnum.NEW);
         List<ExecutableResponse> jobs = new ArrayList<>();
         List<String> jobNames = Lists.newArrayList();
+        List<String> types = Lists.newArrayList();
         List<JobStatusEnum> statuses = Lists.newArrayList(JobStatusEnum.NEW, JobStatusEnum.RUNNING);
         JobFilter jobFilter = new JobFilter(statuses, jobNames, 4, "", "", false, "default", "job_name", false);
         Mockito.when(jobInfoService.listJobs(jobFilter)).thenReturn(jobs);
         mockMvc.perform(MockMvcRequestBuilders.get("/api/jobs").contentType(MediaType.APPLICATION_JSON)
                 .param("project", "default").param("page_offset", "0").param("page_size", "10")
                 .param("time_filter", "1").param("subject", "").param("key", "").param("job_names", "")
-                .param("statuses", "NEW,RUNNING").accept(MediaType.parseMediaType(HTTP_VND_APACHE_KYLIN_JSON)))
+                .param("statuses", "NEW,RUNNING").param("type", "")
+                .accept(MediaType.parseMediaType(HTTP_VND_APACHE_KYLIN_JSON)))
                 .andExpect(MockMvcResultMatchers.status().isOk()).andReturn();
 
-        Mockito.verify(jobController).getJobList(
-                statuses.stream().map(jobStatusEnum -> jobStatusEnum.name()).collect(Collectors.toList()), jobNames, 1,
-                "", "", false, "default", 0, 10, "last_modified", true);
+        Mockito.verify(jobController).getJobList(statuses.stream().map(Enum::name).collect(Collectors.toList()),
+                jobNames, 1, "", "", false, "default", 0, 10, "last_modified", true, types);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/jobs").contentType(MediaType.APPLICATION_JSON)
+                .param("project", "default").param("time_filter", "1").param("job_names", "")
+                .param("type", "test1,INDEX_BUILD").accept(MediaType.parseMediaType(HTTP_VND_APACHE_KYLIN_JSON)))
+                .andExpect(MockMvcResultMatchers.status().isInternalServerError()).andReturn();
     }
 
     @Test

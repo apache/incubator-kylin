@@ -21,6 +21,7 @@ package org.apache.kylin.rest.controller;
 import static org.apache.kylin.common.constant.HttpConstant.HTTP_VND_APACHE_KYLIN_JSON;
 import static org.apache.kylin.common.constant.HttpConstant.HTTP_VND_APACHE_KYLIN_V4_PUBLIC_JSON;
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.JOB_ID_EMPTY;
+import static org.apache.kylin.common.exception.code.ErrorCodeServer.JOB_TYPE_ILLEGAL;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,9 +40,11 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.Pair;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.job.execution.AbstractExecutable;
 import org.apache.kylin.job.execution.ExecutableManager;
 import org.apache.kylin.job.execution.ExecutableState;
+import org.apache.kylin.job.execution.JobTypeEnum;
 import org.apache.kylin.job.rest.JobFilter;
 import org.apache.kylin.job.service.JobInfoService;
 import org.apache.kylin.job.util.JobContextUtil;
@@ -110,8 +114,15 @@ public class JobController extends BaseController {
             @RequestParam(value = "page_offset", required = false, defaultValue = "0") Integer pageOffset,
             @RequestParam(value = "page_size", required = false, defaultValue = "10") Integer pageSize,
             @RequestParam(value = "sort_by", required = false, defaultValue = "last_modified") String sortBy,
-            @RequestParam(value = "reverse", required = false, defaultValue = "true") boolean reverse) {
+            @RequestParam(value = "reverse", required = false, defaultValue = "true") boolean reverse,
+            @RequestParam(value = "type", required = false) List<String> types) {
         jobInfoService.checkJobStatus(statuses);
+        jobNames = CollectionUtils.isEmpty(jobNames) ? Lists.newArrayList() : jobNames;
+        types = CollectionUtils.isEmpty(types) ? Lists.newArrayList() : types;
+        jobNames.addAll(types);
+        if (jobNames.stream().anyMatch(type -> Objects.isNull(JobTypeEnum.getEnumByName(type)))) {
+            throw new KylinException(JOB_TYPE_ILLEGAL);
+        }
         checkRequiredArg("time_filter", timeFilter);
         JobFilter jobFilter = new JobFilter(jobInfoService.parseJobStatus(statuses), jobNames, timeFilter, subject, key,
                 exactMatch, project, sortBy, reverse);

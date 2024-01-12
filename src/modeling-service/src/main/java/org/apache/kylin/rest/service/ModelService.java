@@ -66,6 +66,7 @@ import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_REF
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_REFRESH_IN_BUILDING;
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_REFRESH_SELECT_RANGE_EMPTY;
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_STATUS;
+import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_STATUS_ILLEGAL;
 import static org.apache.kylin.job.execution.JobTypeEnum.INC_BUILD;
 import static org.apache.kylin.job.execution.JobTypeEnum.INDEX_BUILD;
 import static org.apache.kylin.job.execution.JobTypeEnum.INDEX_MERGE;
@@ -1265,8 +1266,7 @@ public class ModelService extends AbstractModelService
         }
         for (String status : statuses) {
             if (Objects.isNull(SegmentStatusEnumToDisplay.getByName(status))) {
-                throw new KylinException(PARAMETER_INVALID_SUPPORT_LIST, "statuses",
-                        StringUtils.join(SegmentStatusEnumToDisplay.getNames(), ", "));
+                throw new KylinException(SEGMENT_STATUS_ILLEGAL);
             }
         }
     }

@@ -38,6 +38,7 @@ import static org.apache.kylin.common.exception.code.ErrorCodeServer.PARAMETER_I
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_LOCKED;
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_NOT_EXIST_ID;
 import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_NOT_EXIST_NAME;
+import static org.apache.kylin.common.exception.code.ErrorCodeServer.SEGMENT_STATUS_ILLEGAL;
 import static org.apache.kylin.rest.request.MultiPartitionMappingRequest.MappingRequest;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -5280,10 +5281,8 @@ public class ModelServiceTest extends SourceTestCase {
         }
         {
             ArrayList<String> exceptionStatuses = Lists.newArrayList("ONLINE_EXCEPTION");
-            Assert.assertThrows(
-                    PARAMETER_INVALID_SUPPORT_LIST.getMsg("statuses",
-                            StringUtils.join(SegmentStatusEnumToDisplay.getNames(), ", ")),
-                    KylinException.class, () -> modelService.checkSegmentStatus(exceptionStatuses));
+            Assert.assertThrows(SEGMENT_STATUS_ILLEGAL.getMsg(), KylinException.class,
+                    () -> modelService.checkSegmentStatus(exceptionStatuses));
         }
     }
 
