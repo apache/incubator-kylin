@@ -84,7 +84,8 @@
   }, {
     "id" : 6,
     "name" : "O_TOTALPRICE",
-    "column" : "ORDERS.O_TOTALPRICE"
+    "column" : "ORDERS.O_TOTALPRICE",
+    "status" : "DIMENSION"
   }, {
     "id" : 7,
     "name" : "O_ORDERPRIORITY",

@@ -140,7 +140,9 @@ public class ModelViewGenerator {
         // add all cc source columns
         List<TblColRef> ccCols = colRefs.stream().filter(col -> col.getColumnDesc().isComputedColumn())
                 .collect(Collectors.toList());
-        colRefs.addAll(getComputedColumnSourceColumns(ccCols));
+        Set<TblColRef> ccTblColRefs = getComputedColumnSourceColumns(ccCols);
+        ccTblColRefs.removeIf(tblColRef -> !colRefs.contains(tblColRef));
+        colRefs.addAll(ccTblColRefs);
 
         return colRefs;
     }
