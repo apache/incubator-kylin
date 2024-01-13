@@ -38,6 +38,7 @@ package org.apache.kylin.common;
 
 import static org.apache.kylin.common.KylinConfigBase.FALSE;
 import static org.apache.kylin.common.KylinConfigBase.PATH_DELIMITER;
+import static org.apache.kylin.common.KylinConfigBase.TRUE;
 import static org.apache.kylin.common.KylinConfigBase.WRITING_CLUSTER_WORKING_DIR;
 import static org.apache.kylin.common.constant.Constants.KYLIN_SOURCE_JDBC_SOURCE_ENABLE_KEY;
 import static org.apache.kylin.common.constant.Constants.KYLIN_SOURCE_JDBC_SOURCE_NAME_KEY;
@@ -1521,6 +1522,21 @@ class KylinConfigBaseTest {
         Assertions.assertEquals(60, config.getTableAccessCacheTTL());
         config.setProperty("kylin.source.hive.table-access-cache-ttl", "1d");
         Assertions.assertEquals(1440, config.getTableAccessCacheTTL());
+    }
+
+    @Test
+    void testSparkPeriodicGCEnable() {
+        KylinConfig config = KylinConfig.getInstanceFromEnv();
+        Assertions.assertEquals(TRUE, config.sparkPeriodicGCEnabled());
+
+        config.setProperty("kylin.query.engine.periodicGC.crontab", " ");
+        Assertions.assertEquals(TRUE, config.sparkPeriodicGCEnabled());
+
+        config.setProperty("kylin.query.engine.periodicGC.crontab", "-");
+        Assertions.assertEquals(TRUE, config.sparkPeriodicGCEnabled());
+
+        config.setProperty("kylin.query.engine.periodicGC.crontab", "0 0 12 * * ?");
+        Assertions.assertEquals(FALSE, config.sparkPeriodicGCEnabled());
     }
 }
 

@@ -369,6 +369,7 @@ object KylinSession extends Logging {
         }
       }
 
+      sparkConf.set("spark.cleaner.periodicGC.enabled", KylinConfig.getInstanceFromEnv.sparkPeriodicGCEnabled())
       sparkConf
     }
 

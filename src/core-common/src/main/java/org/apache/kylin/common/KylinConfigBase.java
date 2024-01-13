@@ -87,6 +87,7 @@ import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.yaml.snakeyaml.Yaml;
 
 import io.kyligence.config.core.loader.IExternalConfigLoader;
@@ -3989,6 +3990,7 @@ public abstract class KylinConfigBase implements Serializable {
     public int getJobSchedulerSlavePollBatchSize() {
         return Integer.parseInt(this.getOptional("kylin.job.slave-pull-batch-size", "20"));
     }
+
     public int getJobLockClientRenewalMaxThreads() {
         return Integer.parseInt(this.getOptional("kylin.job.lock-client-renewal-threads", "3"));
     }
@@ -4388,5 +4390,17 @@ public abstract class KylinConfigBase implements Serializable {
 
     public String getBuildResourceTemporaryWritableDB() {
         return getOptional("kylin.build.resource.temporary-writable-db", null);
+    }
+
+    public String getQueryEnginePeriodicGCCrontab() {
+        return getOptional("kylin.query.engine.periodicGC.crontab", Scheduled.CRON_DISABLED);
+    }
+
+    public String sparkPeriodicGCEnabled() {
+        String queryEnginePeriodicGCCrontab = getQueryEnginePeriodicGCCrontab();
+        // The special value "-" indicates a disabled cron trigger
+        boolean notUseCrontabPeriodicGC = StringUtils.isBlank(queryEnginePeriodicGCCrontab)
+                || StringUtils.equals(Scheduled.CRON_DISABLED, queryEnginePeriodicGCCrontab);
+        return String.valueOf(notUseCrontabPeriodicGC);
     }
 }

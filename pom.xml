@@ -3589,6 +3589,7 @@
                         <exclude>**/org/apache/kylin/rest/BaseFilter.class</exclude>
                         <exclude>**/org/apache/kylin/rest/util/HttpUtil.class</exclude>
                         <exclude>**/org/apache/kylin/rest/util/SparkUIUtil.class</exclude>
+                        <exclude>**/org/apache/kylin/rest/util/SparderUIUtil.class</exclude>
                         <exclude>**/org/apache/kylin/rest/filter/SegmentsRequestFilter.class</exclude>
                         <exclude>**/org/apache/kylin/rest/interceptor/ReloadAuthoritiesInterceptor.class</exclude>
                         <exclude>**/org/apache/kylin/spark/common/logging/AbstractHdfsLogAppender.class</exclude>
