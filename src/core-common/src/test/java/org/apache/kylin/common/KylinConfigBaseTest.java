@@ -1538,6 +1538,33 @@ class KylinConfigBaseTest {
         config.setProperty("kylin.query.engine.periodicGC.crontab", "0 0 12 * * ?");
         Assertions.assertEquals(FALSE, config.sparkPeriodicGCEnabled());
     }
+
+    @Test
+    void testGetSourceProviderFamilyMapping() {
+        KylinConfig config = KylinConfig.getInstanceFromEnv();
+        Map<Integer, List<Integer>> map;
+
+        // No provider-family set
+        map = config.getSourceProviderFamilyMapping();
+        Assertions.assertEquals(0, map.size());
+
+        // 9 refers to ISourceAware.ID_SPARK
+        config.setProperty("kylin.source.provider-family.9", "3001");
+        map = config.getSourceProviderFamilyMapping();
+        Assertions.assertEquals(1, map.size());
+        Assertions.assertEquals(1, map.get(9).size());
+        Assertions.assertEquals(3001, map.get(9).get(0));
+
+        // 13 refers to ISourceAware.ID_FILE
+        config.setProperty("kylin.source.provider-family.9", "3001,3002,3003");
+        config.setProperty("kylin.source.provider-family.13", "5001,5002");
+        map = config.getSourceProviderFamilyMapping();
+        Assertions.assertEquals(2, map.size());
+        Assertions.assertEquals(3, map.get(9).size());
+        Assertions.assertEquals(2, map.get(13).size());
+        Assertions.assertEquals(3003, map.get(9).get(2));
+        Assertions.assertEquals(5002, map.get(13).get(1));
+    }
 }
 
 class EnvironmentUpdateUtils {

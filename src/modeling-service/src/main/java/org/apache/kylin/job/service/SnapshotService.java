@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -827,7 +828,9 @@ public class SnapshotService extends BasicService implements SnapshotSupporter {
         return allTables.stream()
                 .filter(table -> includeExistSnapshot || !hasLoadedSnapshot(table, executables)
                         || (!excludeBroken && table.isSnapshotHasBroken()))
-                .filter(this::isAuthorizedTableAndColumn).map(SnapshotColResponse::from).collect(Collectors.toList());
+                .filter(this::isAuthorizedTableAndColumn)
+                .map(table -> SnapshotColResponse.from(table, tableSourceTypeTransformer(table)))
+                .collect(Collectors.toList());
     }
 
     public SnapshotColResponse reloadPartitionCol(String project, String table) {
@@ -835,7 +838,7 @@ public class SnapshotService extends BasicService implements SnapshotSupporter {
         aclEvaluate.checkProjectReadPermission(project);
         TableDesc newTableDesc = tableService.extractTableMeta(new String[] { table }, project).get(0).getFirst();
         newTableDesc.init(project);
-        return SnapshotColResponse.from(newTableDesc);
+        return SnapshotColResponse.from(newTableDesc, tableSourceTypeTransformer(newTableDesc));
     }
 
     public Map<String, SnapshotPartitionsResponse> getPartitions(String project, Map<String, String> tablesAndCol) {
@@ -867,5 +870,19 @@ public class SnapshotService extends BasicService implements SnapshotSupporter {
         });
         return responses;
 
+    }
+
+    public UnaryOperator<SnapshotColResponse> tableSourceTypeTransformer(TableDesc table) {
+        Map<Integer, List<Integer>> sourceProviderFamilyMapping = getConfig().getSourceProviderFamilyMapping();
+        return res -> {
+            boolean isMainSourceType = sourceProviderFamilyMapping.containsKey(table.getSourceType());
+            if (!isMainSourceType) {
+                sourceProviderFamilyMapping.entrySet().stream()
+                        .filter(entry -> entry.getValue().contains(table.getSourceType()))
+                        .findFirst()
+                        .ifPresent(entry -> res.setSourceType(entry.getKey()));
+            }
+            return res;
+        };
     }
 }

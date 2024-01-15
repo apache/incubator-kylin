@@ -265,14 +265,17 @@ public class TableService extends BasicService {
                         .contains(tableDescRequest.getTable().toLowerCase(Locale.ROOT));
             }).filter(tableDesc -> {
                 // Advance the logic of filtering the table by sourceType to here
-                if (!tableDescRequest.getSourceType().isEmpty()) {
-                    return tableDescRequest.getSourceType().contains(tableDesc.getSourceType());
+                List<Integer> sourceTypes = tableDescRequest.getSourceType();
+                if (!sourceTypes.isEmpty()) {
+                    return sourceTypes.contains(tableDesc.getSourceType())
+                            || sourceTypes.stream().flatMap(st -> getConfig().getSourceProviderFamily(st).stream())
+                            .collect(Collectors.toList()).contains(tableDesc.getSourceType());
                 }
                 return true;
             }).filter(table -> table.isAccessible(streamingEnabled)).sorted(this::compareTableDesc)
                     .collect(Collectors.toList()));
         }
-        return getTablesResponse(tables, tableDescRequest.getProject(), tableDescRequest.isWithExt(), returnTableSize);
+        return getTablesResponse(tables, tableDescRequest, returnTableSize);
     }
 
     public int compareTableDesc(TableDesc table1, TableDesc table2) {
@@ -471,8 +474,11 @@ public class TableService extends BasicService {
         return tableDescResponse;
     }
 
-    private Pair<List<TableDesc>, Integer> getTablesResponse(List<TableDesc> tables, String project, boolean withExt,
+    private Pair<List<TableDesc>, Integer> getTablesResponse(List<TableDesc> tables, TableDescRequest tableDescRequest,
             int returnTableSize) {
+        String project = tableDescRequest.getProject();
+        boolean withExt = tableDescRequest.isWithExt();
+        List<Integer> sourceTypesRequest = tableDescRequest.getSourceType();
         List<TableDesc> descs = new ArrayList<>();
         val projectManager = getManager(NProjectManager.class);
         val groups = getCurrentUserGroups();
@@ -520,6 +526,13 @@ public class TableService extends BasicService {
             Pair<Set<String>, Set<String>> tableColumnType = getTableColumnType(project, table, modelsUsingTable);
             tableDescResponse.setForeignKey(tableColumnType.getSecond());
             tableDescResponse.setPrimaryKey(tableColumnType.getFirst());
+
+            // Table source type conversion
+            sourceTypesRequest.stream()
+                    .filter(stq -> getConfig().getSourceProviderFamily(stq).contains(originTable.getSourceType()))
+                    .findFirst()
+                    .ifPresent(tableDescResponse::setSourceType);
+
             descs.add(tableDescResponse);
             satisfiedTableSize++;
         }

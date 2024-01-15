@@ -835,6 +835,28 @@ public class SnapshotServiceTest extends NLocalFileMetadataTestCase {
         Assert.assertEquals(10, responses.get(0).getUsage());
     }
 
+    @Test
+    public void testTableSourceTypeTransformer() {
+        TableDesc table = Mockito.mock(TableDesc.class);
+        overwriteSystemProp("kylin.source.provider-family.9", "3001");
+
+        {
+            // Table source type 3001
+            Mockito.when(table.getSourceType()).thenReturn(3001);
+            SnapshotColResponse res = new SnapshotColResponse("db", "table", null, null, null, 3001);
+            SnapshotColResponse afterTransform = snapshotService.tableSourceTypeTransformer(table).apply(res);
+            Assert.assertEquals(9, afterTransform.getSourceType());
+        }
+
+        {
+            // Table source type 9
+            Mockito.when(table.getSourceType()).thenReturn(9);
+            SnapshotColResponse res = new SnapshotColResponse("db", "table", null, null, null, 9);
+            SnapshotColResponse afterTransform = snapshotService.tableSourceTypeTransformer(table).apply(res);
+            Assert.assertEquals(9, afterTransform.getSourceType());
+        }
+    }
+
     private String getSnapshotPath(String tableName) {
         return NTableMetadataManager.getInstance(getTestConfig(), PROJECT).getTableDesc(tableName)
                 .getLastSnapshotPath();

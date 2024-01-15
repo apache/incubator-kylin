@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -1329,6 +1330,26 @@ public abstract class KylinConfigBase implements Serializable {
 
         r.putAll(convertKeyToInteger(getPropertiesByPrefix("kylin.source.provider.")));
         return r;
+    }
+
+    public List<Integer> getSourceProviderFamily(int sourceType) {
+        String family = getOptional("kylin.source.provider-family." + sourceType, "");
+        if (StringUtils.isBlank(family)) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(family.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+    }
+
+    public Map<Integer, List<Integer>> getSourceProviderFamilyMapping() {
+        Map<Integer, String> originalMapping = convertKeyToInteger(getPropertiesByPrefix("kylin.source.provider-family."));
+        Map<Integer, List<Integer>> ret = Maps.newHashMap();
+        for (Map.Entry<Integer, String> entry : originalMapping.entrySet()) {
+            if (StringUtils.isNotBlank(entry.getValue())) {
+                ret.put(entry.getKey(),
+                        Arrays.stream(entry.getValue().split(",")).map(Integer::parseInt).collect(Collectors.toList()));
+            }
+        }
+        return ret;
     }
 
     /**

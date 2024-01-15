@@ -328,6 +328,11 @@ public class TableDesc extends RootPersistentEntity implements Serializable, ISo
         return originIdentity.toUpperCase(Locale.ROOT);
     }
 
+    public String getLowerCaseIdentity() {
+        String originIdentity = getCaseSensitiveIdentity();
+        return originIdentity.toLowerCase(Locale.ROOT);
+    }
+
     public String getBackTickIdentity() {
         return getBackTickCaseSensitiveIdentity("");
     }

@@ -68,7 +68,7 @@ public class NSparkCubingSourceInput implements NSparkCubingEngine.NSparkCubingS
         return df.select(SparderTypeUtil.alignDataTypeAndName(sparkSchema, kylinSchema));
     }
 
-    private List<ColumnDesc> extractEffectiveColumns(TableDesc table, SparkSession ss) {
+    protected List<ColumnDesc> extractEffectiveColumns(TableDesc table, SparkSession ss) {
         List<ColumnDesc> ret = new ArrayList<>();
         Dataset<Row> sourceTableDS = ss.table(table.getBackTickIdentity());
         Set<String> sourceTableColumns = Arrays.stream(sourceTableDS.columns()).map(StringUtils::upperCase)
@@ -85,7 +85,7 @@ public class NSparkCubingSourceInput implements NSparkCubingEngine.NSparkCubingS
         return ret;
     }
 
-    private String generateSelectSql(TableDesc table, List<ColumnDesc> effectiveColumns, Map<String, String> params,
+    protected String generateSelectSql(TableDesc table, List<ColumnDesc> effectiveColumns, Map<String, String> params,
             KylinConfig kylinConfig) {
         String colString = generateColString(effectiveColumns);
         String sql;
@@ -99,12 +99,12 @@ public class NSparkCubingSourceInput implements NSparkCubingEngine.NSparkCubingS
         return sql;
     }
 
-    private String generateColString(List<ColumnDesc> effectiveColumns) {
+    protected String generateColString(List<ColumnDesc> effectiveColumns) {
         return effectiveColumns.stream().map(col -> BACK_TICK.string + col.getName() + BACK_TICK.string)
                 .collect(Collectors.joining(","));
     }
 
-    private StructType generateKylinSchema(List<ColumnDesc> effectiveColumns) {
+    protected StructType generateKylinSchema(List<ColumnDesc> effectiveColumns) {
         StructType kylinSchema = new StructType();
         for (ColumnDesc columnDesc : effectiveColumns) {
             if (!columnDesc.isComputedColumn()) {
