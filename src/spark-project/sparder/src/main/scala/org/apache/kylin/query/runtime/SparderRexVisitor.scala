@@ -18,10 +18,6 @@
 
 package org.apache.kylin.query.runtime
 
-
-import java.sql.Timestamp
-import java.time.ZoneId
-
 import org.apache.calcite.DataContext
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rex._
@@ -34,11 +30,13 @@ import org.apache.spark.sql.catalyst.expressions.Literal
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.DateTimeUtils._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{DataTypes, DateType, LongType, TimestampType}
+import org.apache.spark.sql.types.{DataTypes, DateType, LongType, StringType, TimestampType}
 import org.apache.spark.sql.util.SparderTypeUtil
 import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.unsafe.types.UTF8String
 
+import java.sql.Timestamp
+import java.time.ZoneId
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 
@@ -173,10 +171,22 @@ class SparderRexVisitor(val inputFieldNames: Seq[String],
               call.getType.getSqlTypeName match {
                 case SqlTypeName.DATE =>
                   return k_lit(k_add_months(k_lit(ts), num.num)).cast(DateType)
+                case SqlTypeName.TIMESTAMP =>
+                  return k_lit(k_add_months(k_lit(ts), num.num)).cast(TimestampType)
                 case _ =>
                   return k_lit(k_add_months(k_lit(ts), num.num))
               }
             }
+            case _ =>
+          }
+          call.getType.getSqlTypeName match {
+            case SqlTypeName.CHAR | SqlTypeName.VARCHAR | SqlTypeName.BINARY | SqlTypeName.VARBINARY =>
+              return k_lit(children.head)
+                .cast(TimestampType)
+                .cast(LongType)
+                .plus(k_lit(children.last))
+                .cast(TimestampType)
+                .cast(StringType)
             case _ =>
           }
         }
