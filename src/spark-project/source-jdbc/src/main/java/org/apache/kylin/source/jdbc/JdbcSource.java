@@ -25,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.msg.MsgPicker;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
 import org.apache.kylin.metadata.model.IBuildable;
 import org.apache.kylin.metadata.model.SegmentRange;
 import org.apache.kylin.metadata.model.TableDesc;
@@ -42,6 +43,12 @@ import lombok.extern.slf4j.Slf4j;
 public class JdbcSource implements ISource {
 
     private JdbcConnector dataSource;
+
+    // for ut only
+    @VisibleForTesting
+    public JdbcConnector getDataSource() {
+        return dataSource;
+    }
 
     // for reflection
     public JdbcSource(KylinConfig config) {

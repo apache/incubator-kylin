@@ -34,6 +34,7 @@ import javax.sql.rowset.CachedRowSet;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbcp2.BasicDataSourceFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
 import org.apache.kylin.guava30.shaded.common.base.Joiner;
 import org.apache.kylin.guava30.shaded.common.cache.Cache;
 import org.apache.kylin.guava30.shaded.common.cache.CacheBuilder;
@@ -65,6 +66,18 @@ public abstract class AbstractJdbcAdaptor implements Closeable, SupportsSparkCat
 
     private static Joiner joiner = Joiner.on("_");
 
+    // for ut only
+    @VisibleForTesting
+    public AdaptorConfig getConfig() {
+        return config;
+    }
+
+    // for ut only
+    @VisibleForTesting
+    public BasicDataSource getDataSource() {
+        return dataSource;
+    }
+
     // Used by DefaultSourceConnector just for build, do not abuse it!
     protected AbstractJdbcAdaptor() {
         this.dataSource = null;
@@ -88,6 +101,9 @@ public abstract class AbstractJdbcAdaptor implements Closeable, SupportsSparkCat
         props.setProperty("url", config.url);
         props.setProperty("username", config.username);
         props.setProperty("password", config.password);
+        props.setProperty("maxTotal", String.valueOf(config.poolMaxTotal));
+        props.setProperty("maxIdle", String.valueOf(config.poolMaxIdle));
+        props.setProperty("minIdle", String.valueOf(config.poolMinIdle));
 
         dataSource = BasicDataSourceFactory.createDataSource(props);
 

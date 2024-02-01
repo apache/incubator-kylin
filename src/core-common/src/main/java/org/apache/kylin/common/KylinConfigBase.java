@@ -4424,4 +4424,8 @@ public abstract class KylinConfigBase implements Serializable {
                 || StringUtils.equals(Scheduled.CRON_DISABLED, queryEnginePeriodicGCCrontab);
         return String.valueOf(notUseCrontabPeriodicGC);
     }
+
+    public String getSourceJDBCExtend() {
+        return getOptional("kylin.source.jdbc.extend", "");
+    }
 }

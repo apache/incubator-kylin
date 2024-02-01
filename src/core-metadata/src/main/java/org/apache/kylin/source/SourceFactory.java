@@ -116,6 +116,9 @@ public class SourceFactory {
         builder.append(config.getJdbcDialect()).append('|');
         builder.append(config.getJdbcAdaptorClass()).append('|');
         builder.append(config.getJdbcConvertToLowerCase()).append('|');
+        if (ISourceAware.ID_JDBC == aware.getSourceType()) {
+            builder.append(config.getSourceJDBCExtend()).append('|');
+        }
         return builder.toString();
     }
 
