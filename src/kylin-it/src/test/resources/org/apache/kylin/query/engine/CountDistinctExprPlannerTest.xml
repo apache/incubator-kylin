@@ -389,6 +389,39 @@ OlapToEnumerableConverter
                   OlapProjectRel(ORDER_ID=[$0], BUYER_ID=[$1], TEST_DATE_ENC=[$2], TEST_TIME_ENC=[$3], TEST_EXTENDED_COLUMN=[$4], ctx=[])
                     OlapTableScan(table=[[DEFAULT, TEST_ORDER]], ctx=[], fields=[[0, 1, 2, 3, 4]])
 ]]>
+        </Resource >
+        <Resource name="query14.planBefore">
+            <![CDATA[
+OlapToEnumerableConverter
+  OlapLimitRel(ctx=[], fetch=[500])
+    OlapProjectRel(EXPR$0=[/($0, $1)], ctx=[])
+      OlapAggregateRel(group-set=[[]], groups=[null], agg#0=[COUNT(DISTINCT $0)], agg#1=[COUNT(DISTINCT $1)], ctx=[])
+        OlapProjectRel($f0=[CASE(=($24, 'BRAZIL   3'), $2, null)], LO_CUSTKEY=[$2], ctx=[])
+          OlapJoinRel(condition=[=($2, $21)], joinType=[inner], ctx=[])
+            OlapTableScan(table=[[SSB, LINEORDER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]])
+            OlapTableScan(table=[[SSB, CUSTOMER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7]])
+]]>
+        </Resource>
+        <Resource name="query14.planAfter">
+            <![CDATA[
+OlapToEnumerableConverter
+  OlapLimitRel(ctx=[], fetch=[500])
+    OlapProjectRel(EXPR$0=[/($0, $1)], ctx=[])
+      OlapProjectRel(AGG$0=[$1], $f0=[$0], ctx=[])
+        OlapJoinRel(condition=[true], joinType=[inner], ctx=[])
+          OlapAggregateRel(group-set=[[]], groups=[null], agg#0=[COUNT(DISTINCT $1)], ctx=[])
+            OlapProjectRel($f0=[CAST(0):INTEGER], LO_CUSTKEY=[$2], ctx=[])
+              OlapJoinRel(condition=[=($2, $21)], joinType=[inner], ctx=[])
+                OlapTableScan(table=[[SSB, LINEORDER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]])
+                OlapTableScan(table=[[SSB, CUSTOMER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7]])
+          OlapAggregateRel(group-set=[[]], groups=[null], AGG$0=[BITMAP_COUNT($0)], ctx=[])
+            OlapProjectRel($f0=[CASE(=($0, 'BRAZIL   3'), $1, null)], ctx=[])
+              OlapAggregateRel(group-set=[[0]], groups=[null], COUNT_DISTINCT_CASE$0$0=[BITMAP_UUID($1)], ctx=[])
+                OlapProjectRel(C_CITY=[$24], LO_CUSTKEY=[$2], $f2=[0], ctx=[])
+                  OlapJoinRel(condition=[=($2, $21)], joinType=[inner], ctx=[])
+                    OlapTableScan(table=[[SSB, LINEORDER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]])
+                    OlapTableScan(table=[[SSB, CUSTOMER]], ctx=[], fields=[[0, 1, 2, 3, 4, 5, 6, 7]])
+]]>
         </Resource>
     </TestCase>
 </Root>

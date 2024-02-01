@@ -129,7 +129,7 @@ public class CountDistinctCaseWhenFunctionRule extends AbstractAggCaseWhenFuncti
         return aggFunction == SqlKind.SUM || aggFunction == SqlKind.SUM0 || aggFunction == SqlKind.MAX
                 || aggFunction == SqlKind.MIN || aggFunction == SqlKind.COUNT && !aggregateCall.isDistinct()
                 || isCountDistinctCaseExpr(aggregateCall, project)
-                || aggregateCall.getName().equalsIgnoreCase(FunctionDesc.FUNC_BITMAP_UUID);
+                || FunctionDesc.FUNC_BITMAP_UUID.equalsIgnoreCase(aggregateCall.getName());
     }
 
     @Override
