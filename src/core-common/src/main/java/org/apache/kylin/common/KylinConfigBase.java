@@ -4417,6 +4417,10 @@ public abstract class KylinConfigBase implements Serializable {
         return getOptional("kylin.query.engine.periodicGC.crontab", Scheduled.CRON_DISABLED);
     }
 
+    public boolean useOnlyModelsInPriorities() {
+        return Boolean.parseBoolean(getOptional("kylin.query.use-only-in-priorities", FALSE));
+    }
+
     public String sparkPeriodicGCEnabled() {
         String queryEnginePeriodicGCCrontab = getQueryEnginePeriodicGCCrontab();
         // The special value "-" indicates a disabled cron trigger

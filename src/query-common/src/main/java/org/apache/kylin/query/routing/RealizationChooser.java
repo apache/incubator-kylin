@@ -36,6 +36,7 @@
 
 package org.apache.kylin.query.routing;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,6 +53,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.rex.RexNode;
 import org.apache.commons.collections.CollectionUtils;
@@ -789,7 +791,23 @@ public class RealizationChooser {
             logger.error("No realization found for project {} with fact table {}", project, factTable);
         }
 
+        useOnlyModelsInPriorities(project, mapModelToRealizations);
         return mapModelToRealizations;
+    }
+
+    private static void useOnlyModelsInPriorities(String project,
+            Multimap<NDataModel, IRealization> modelToRealizations) {
+        KylinConfig projectConfig = NProjectManager.getProjectConfig(project);
+        String[] modelPriorities = QueryContext.current().getModelPriorities();
+        if (!projectConfig.useOnlyModelsInPriorities() || modelPriorities.length == 0) {
+            return;
+        }
+
+        modelToRealizations.entries().removeIf(
+                entry -> !Arrays.asList(modelPriorities).contains(entry.getKey().getAlias().toUpperCase(Locale.ROOT)));
+        List<String> usedModels = modelToRealizations.keys().stream().map(NDataModel::getAlias)
+                .collect(Collectors.toList());
+        logger.info("Use only models in priorities: {}", usedModels);
     }
 
     /**
