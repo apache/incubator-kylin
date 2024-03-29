@@ -4017,4 +4017,12 @@ public abstract class KylinConfigBase implements Serializable {
         String defaultValue = "org.apache.kylin.common.extension.KylinInfoExtension$Factory";
         return getOptional("kylin.extension.info.factory", defaultValue);
     }
+
+    public String[] getProjectsAggressiveOptimizationIndex() {
+        return getOptionalStringArray("kylin.index.projects-optimized-aggressively", new String[0]);
+    }
+
+    public int getExpectedIndexSizeOptimized() {
+        return Integer.parseInt(getOptional("kylin.index.expected-size-after-optimization", "0"));
+    }
 }

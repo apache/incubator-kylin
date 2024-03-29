@@ -19,5 +19,5 @@
 package org.apache.kylin.metadata.cube.optimization;
 
 public enum GarbageLayoutType {
-    LOW_FREQUENCY, INCLUDED, SIMILAR
+    LOW_FREQUENCY, INCLUDED, SIMILAR, MERGED
 }

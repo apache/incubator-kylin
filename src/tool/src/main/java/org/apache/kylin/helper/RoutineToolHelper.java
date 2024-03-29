@@ -18,12 +18,14 @@
 
 package org.apache.kylin.helper;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.util.SetThreadName;
@@ -128,7 +130,11 @@ public class RoutineToolHelper {
     public static void cleanMetaByProject(String projectName) {
         log.info("Start to clean up {} meta", projectName);
         try {
-            GarbageCleaner.cleanMetadata(projectName);
+            boolean needAggressiveOpt = Arrays
+                    .stream(KylinConfig.getInstanceFromEnv().getProjectsAggressiveOptimizationIndex())
+                    .map(StringUtils::lowerCase).collect(Collectors.toList())
+                    .contains(StringUtils.toRootLowerCase(projectName));
+            GarbageCleaner.cleanMetadata(projectName, needAggressiveOpt);
         } catch (Exception e) {
             log.error("Project[{}] cleanup Metadata failed", projectName, e);
         }

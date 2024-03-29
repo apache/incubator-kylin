@@ -18,16 +18,40 @@
 package org.apache.spark.utils
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.spark.SparkEnv
+import org.apache.spark.{SparkConf, SparkEnv}
 import org.apache.spark.deploy.SparkHadoopUtil
 
+/**
+ * Convenience utility object for invoking [[SparkHadoopUtil]].
+ */
 object SparkHadoopUtils {
 
+  /**
+   * Simply return a new default hadoop [[Configuration]].
+   * @return Newly created default hadoop configuration
+   */
+  def newConfiguration(): Configuration = {
+    new Configuration()
+  }
+
+  /**
+   * Returns a new hadoop [[Configuration]] with current [[SparkConf]] from [[SparkEnv]].
+   * @return Newly created hadoop configuration with extra spark properties
+   */
   def newConfigurationWithSparkConf(): Configuration = {
     val sparkEnv = SparkEnv.get
-    if (sparkEnv != null) {
-      SparkHadoopUtil.newConfiguration(sparkEnv.conf)
+    if (sparkEnv == null) {
+      throw new IllegalStateException("sparkEnv should not be null")
     }
-    new Configuration()
+    SparkHadoopUtil.newConfiguration(sparkEnv.conf)
+  }
+
+  /**
+   * Returns a new hadoop [[Configuration]] with [[SparkConf]] given.
+   * @param sparkConf A [[SparkConf]]
+   * @return Newly created hadoop configuration with extra spark properties given
+   */
+  def newConfigurationWithSparkConf(sparkConf: SparkConf): Configuration = {
+    SparkHadoopUtil.newConfiguration(sparkConf)
   }
 }

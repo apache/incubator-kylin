@@ -25,13 +25,12 @@ import java.util.stream.Collectors;
 
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.annotation.Clarification;
-import org.apache.kylin.metadata.cube.model.LayoutEntity;
-import org.apache.kylin.metadata.cube.model.NDataflow;
-import org.apache.kylin.metadata.project.NProjectManager;
-
 import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.metadata.cube.model.LayoutEntity;
+import org.apache.kylin.metadata.cube.model.NDataflow;
+import org.apache.kylin.metadata.project.NProjectManager;
 
 import lombok.Getter;
 
@@ -54,7 +53,9 @@ public class IndexOptimizer {
     protected List<LayoutEntity> filterAutoLayouts(NDataflow dataflow) {
         return dataflow.extractReadyLayouts().stream() //
                 .filter(layout -> !layout.isManual() && layout.isAuto()) //
-                .filter(layout -> !layout.isBase()).collect(Collectors.toList());
+                .filter(layout -> !layout.isBase()) //
+                .filter(layout -> !layout.isToBeDeleted()) //
+                .collect(Collectors.toList());
     }
 
     protected List<LayoutEntity> filterManualLayouts(NDataflow dataflow) {
@@ -70,8 +71,9 @@ public class IndexOptimizer {
         }
 
         Map<Long, GarbageLayoutType> garbageLayoutTypeMap = Maps.newHashMap();
+        List<LayoutEntity> autoLayouts = filterAutoLayouts(dataflow);
         for (AbstractOptStrategy strategy : getStrategiesForAuto()) {
-            strategy.collectGarbageLayouts(filterAutoLayouts(dataflow), dataflow, needLog)
+            strategy.collectGarbageLayouts(autoLayouts, dataflow, needLog)
                     .forEach(id -> garbageLayoutTypeMap.put(id, strategy.getType()));
         }
 

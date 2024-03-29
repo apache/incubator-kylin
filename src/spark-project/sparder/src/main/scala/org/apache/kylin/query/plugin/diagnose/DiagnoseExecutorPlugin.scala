@@ -18,12 +18,13 @@
 
 package org.apache.kylin.query.plugin.diagnose
 
-import org.apache.kylin.guava30.shaded.common.util.concurrent.ThreadFactoryBuilder
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.kylin.common.util.ExecutorServiceUtil
+import org.apache.kylin.guava30.shaded.common.util.concurrent.ThreadFactoryBuilder
 import org.apache.spark.api.plugin.{ExecutorPlugin, PluginContext}
 import org.apache.spark.internal.Logging
+import org.apache.spark.utils.SparkHadoopUtils
 import org.joda.time.DateTime
 
 import java.io.File
@@ -36,8 +37,10 @@ class DiagnoseExecutorPlugin extends ExecutorPlugin with Logging {
   private val LOCAL_GC_FILE_PREFIX: String = "gc"
   private val DATE_PATTERN = "yyyy-MM-dd"
   private val checkingInterval: Long = 10000L
-  private val configuration: Configuration = new Configuration()
-  private val fileSystem: FileSystem = FileSystem.get(configuration)
+  // Default hadoop configuration for the unique fileSystem below is sufficient
+  private val configuration: Configuration = SparkHadoopUtils.newConfiguration()
+  // Use FileSystem.newInstance(...) to prevent contamination of global file system cache
+  private val fileSystem: FileSystem = FileSystem.newInstance(configuration)
 
   private val scheduledExecutorService = Executors.newScheduledThreadPool(1,
     new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Diagnose-%d").build())

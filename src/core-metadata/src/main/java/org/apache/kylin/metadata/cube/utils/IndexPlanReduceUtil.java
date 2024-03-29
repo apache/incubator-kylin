@@ -18,21 +18,25 @@
 
 package org.apache.kylin.metadata.cube.utils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.kylin.metadata.cube.model.IndexEntity;
-import org.apache.kylin.metadata.cube.model.LayoutEntity;
-import org.apache.kylin.metadata.model.NDataModel;
-
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.guava30.shaded.common.collect.Maps;
 import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.metadata.cube.model.IndexEntity;
+import org.apache.kylin.metadata.cube.model.IndexPlan;
+import org.apache.kylin.metadata.cube.model.LayoutEntity;
+import org.apache.kylin.metadata.model.NDataModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class IndexPlanReduceUtil {
+    private static final Logger log = LoggerFactory.getLogger(IndexPlanReduceUtil.class);
 
     private IndexPlanReduceUtil() {
     }
@@ -63,6 +67,46 @@ public class IndexPlanReduceUtil {
         });
 
         return redundantMap;
+    }
+
+    public static List<Set<LayoutEntity>> collectSameDimAggLayouts(List<LayoutEntity> inputLayouts) {
+        List<Set<LayoutEntity>> sameDimAggLayouts = Lists.newArrayList();
+        Map<List<Integer>, Set<LayoutEntity>> aggLayoutDimGroup = Maps.newHashMap();
+        inputLayouts.stream().filter(layout -> !layout.isBase() && !IndexEntity.isTableIndex(layout.getId()))
+                .forEach(layout -> {
+                    List<Integer> aggLayoutDims = new ArrayList<>();
+                    for (Integer idx : layout.getColOrder()) {
+                        if (idx < NDataModel.MEASURE_ID_BASE) {
+                            aggLayoutDims.add(idx);
+                        }
+                    }
+                    aggLayoutDimGroup.putIfAbsent(aggLayoutDims, Sets.newHashSet());
+                    aggLayoutDimGroup.get(aggLayoutDims).add(layout);
+                });
+
+        sameDimAggLayouts.addAll(
+                aggLayoutDimGroup.values().stream().filter(layouts -> layouts.size() > 1).collect(Collectors.toSet()));
+        return sameDimAggLayouts;
+    }
+
+    public static IndexPlan mergeSameDimLayout(IndexPlan indexPlan, List<Set<LayoutEntity>> sameDimLayouts) {
+        IndexPlan.IndexPlanUpdateHandler updateHandler = indexPlan.createUpdateHandler();
+        for (Set<LayoutEntity> layoutEntities : sameDimLayouts) {
+            Set<Integer> colOrder = Sets.newLinkedHashSet();
+            List<Integer> allColOrders = Lists.newArrayList();
+            List<Integer> shardByCol = Lists.newArrayList();
+            for (LayoutEntity layoutEntity : layoutEntities) {
+                colOrder.addAll(layoutEntity.getColOrder());
+                allColOrders.addAll(layoutEntity.getColOrder());
+                shardByCol = layoutEntity.getShardByColumns();
+            }
+
+            LayoutEntity mergedLayout = indexPlan.createLayout(Lists.newArrayList(colOrder), true, false, shardByCol);
+            log.info("merge colOrders: {} into {}", allColOrders, mergedLayout.getColOrder());
+            updateHandler.add(mergedLayout, true, false);
+        }
+
+        return updateHandler.complete();
     }
 
     /**

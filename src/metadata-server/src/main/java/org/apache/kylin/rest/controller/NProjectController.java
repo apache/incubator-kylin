@@ -243,7 +243,19 @@ public class NProjectController extends NBasicController {
         if (projectInstance == null) {
             throw new KylinException(PROJECT_NOT_EXIST, project);
         }
-        projectService.cleanupGarbage(project);
+        projectService.cleanupGarbage(project, false);
+        return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, true, "");
+    }
+
+    @ApiOperation(value = "cleanupProjectStorage", tags = { "SM" }, notes = "Add URL: {project}; ")
+    @PutMapping(value = "/{project:.+}/optimize_index")
+    @ResponseBody
+    public EnvelopeResponse<Boolean> optimizeIndex(@PathVariable(value = "project") String project) throws Exception {
+        ProjectInstance projectInstance = projectService.getManager(NProjectManager.class).getProject(project);
+        if (projectInstance == null) {
+            throw new KylinException(PROJECT_NOT_EXIST, project);
+        }
+        projectService.cleanupGarbage(project, true);
         return new EnvelopeResponse<>(KylinException.CODE_SUCCESS, true, "");
     }
 

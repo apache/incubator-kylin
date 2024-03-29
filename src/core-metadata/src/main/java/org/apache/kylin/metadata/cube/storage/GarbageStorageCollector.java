@@ -49,7 +49,7 @@ public class GarbageStorageCollector implements StorageInfoCollector {
         for (val model : getModels(project)) {
             val dataflow = getDataflow(model).copy();
 
-            final IndexOptimizer indexOptimizer = IndexOptimizerFactory.getOptimizer(dataflow, false);
+            final IndexOptimizer indexOptimizer = IndexOptimizerFactory.getOptimizer(dataflow, false, false);
             val garbageLayouts = indexOptimizer.getGarbageLayoutMap(dataflow).keySet();
             if (CollectionUtils.isNotEmpty(garbageLayouts)) {
                 storageSize += calculateLayoutSize(garbageLayouts, dataflow);

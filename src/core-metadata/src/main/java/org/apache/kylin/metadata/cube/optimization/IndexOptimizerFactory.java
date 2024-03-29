@@ -20,9 +20,8 @@ package org.apache.kylin.metadata.cube.optimization;
 
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.annotation.Clarification;
-import org.apache.kylin.metadata.cube.model.NDataflow;
-
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.metadata.cube.model.NDataflow;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,8 +35,9 @@ public class IndexOptimizerFactory {
     private static final AbstractOptStrategy INCLUDED_OPT_STRATEGY = new IncludedLayoutOptStrategy();
     private static final AbstractOptStrategy LOW_FREQ_OPT_STRATEGY = new LowFreqLayoutOptStrategy();
     private static final AbstractOptStrategy SIMILAR_OPT_STRATEGY = new SimilarLayoutOptStrategy();
+    private static final AbstractOptStrategy MERGED_OPT_STRATEGY = new MergedLayoutOptStrategy();
 
-    public static IndexOptimizer getOptimizer(NDataflow dataflow, boolean needLog) {
+    public static IndexOptimizer getOptimizer(NDataflow dataflow, boolean needAggressiveOpt, boolean needLog) {
         IndexOptimizer optimizer = new IndexOptimizer(needLog);
         final int indexOptimizationLevel = KylinConfig.getInstanceFromEnv().getIndexOptimizationLevel();
         if (indexOptimizationLevel == 1) {
@@ -47,6 +47,12 @@ public class IndexOptimizerFactory {
         } else if (indexOptimizationLevel == 3) {
             optimizer.getStrategiesForAuto().addAll(Lists.newArrayList(INCLUDED_OPT_STRATEGY, LOW_FREQ_OPT_STRATEGY));
             optimizer.getStrategiesForManual().add(SIMILAR_OPT_STRATEGY);
+        }
+
+        if (needAggressiveOpt) {
+            optimizer.getStrategiesForAuto().clear();
+            optimizer.getStrategiesForAuto()
+                    .addAll(Lists.newArrayList(INCLUDED_OPT_STRATEGY, LOW_FREQ_OPT_STRATEGY, MERGED_OPT_STRATEGY));
         }
 
         // log if needed

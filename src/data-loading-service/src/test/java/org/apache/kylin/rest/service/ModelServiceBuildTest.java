@@ -57,6 +57,9 @@ import org.apache.kylin.engine.spark.job.ExecutableAddSegmentHandler;
 import org.apache.kylin.engine.spark.job.ExecutableMergeOrRefreshHandler;
 import org.apache.kylin.engine.spark.job.NSparkCubingJob;
 import org.apache.kylin.engine.spark.utils.ComputedColumnEvalUtil;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.job.dao.ExecutablePO;
 import org.apache.kylin.job.execution.AbstractExecutable;
 import org.apache.kylin.job.execution.ExecutableParams;
@@ -78,6 +81,7 @@ import org.apache.kylin.metadata.cube.model.NDataflowManager;
 import org.apache.kylin.metadata.cube.model.NDataflowUpdate;
 import org.apache.kylin.metadata.cube.model.NIndexPlanManager;
 import org.apache.kylin.metadata.cube.model.PartitionStatusEnum;
+import org.apache.kylin.metadata.cube.optimization.event.BuildIndexEvent;
 import org.apache.kylin.metadata.job.JobBucket;
 import org.apache.kylin.metadata.model.ManagementType;
 import org.apache.kylin.metadata.model.NDataModel;
@@ -121,10 +125,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
 import lombok.val;
 import lombok.var;
@@ -878,6 +878,32 @@ public class ModelServiceBuildTest extends SourceTestCase {
     }
 
     @Test
+    public void testBuildIndexManuallyForEvent() {
+        val project = "default";
+        val modelId = "abe3bf1a-c4bc-458d-8278-7ea8b00f5e96";
+        val dataflowManager = NDataflowManager.getInstance(KylinConfig.getInstanceFromEnv(), project);
+        val df = dataflowManager.getDataflow(modelId);
+        BuildIndexEvent buildIndexEvent = new BuildIndexEvent(project, Lists.newArrayList(df));
+
+        val dfUpdate = new NDataflowUpdate(df.getId());
+        List<NDataLayout> tobeRemoveCuboidLayouts = Lists.newArrayList();
+        Segments<NDataSegment> segments = df.getSegments();
+        for (NDataSegment segment : segments) {
+            tobeRemoveCuboidLayouts.addAll(segment.getLayoutsMap().values());
+        }
+        dfUpdate.setToRemoveLayouts(tobeRemoveCuboidLayouts.toArray(new NDataLayout[0]));
+        dataflowManager.updateDataflow(dfUpdate);
+        val modelManager = NDataModelManager.getInstance(KylinConfig.getInstanceFromEnv(), project);
+        modelManager.updateDataModel(modelId,
+                copyForWrite -> copyForWrite.setManagementType(ManagementType.MODEL_BASED));
+        modelBuildService.buildIndicesManually(buildIndexEvent);
+        val executables = getRunningExecutables(project, modelId);
+        Assert.assertEquals(1, executables.size());
+        Assert.assertTrue(((NSparkCubingJob) executables.get(0)).getHandler() instanceof ExecutableAddCuboidHandler);
+        Assert.assertEquals(3, executables.get(0).getPriority());
+    }
+
+    @Test
     public void testBuildIndexManuallyWithoutLayout() {
         val project = "default";
         val modelId = "abe3bf1a-c4bc-458d-8278-7ea8b00f5e96";
@@ -1392,7 +1418,7 @@ public class ModelServiceBuildTest extends SourceTestCase {
         // build all partition values
         IncrementBuildSegmentParams incrParams2 = new IncrementBuildSegmentParams(project, modelId, "1633104000000",
                 "1633190400000", model.getPartitionDesc(), model.getMultiPartitionDesc(), null, true, null)
-                        .withBuildAllSubPartitions(true);
+                .withBuildAllSubPartitions(true);
         val jobInfo2 = modelBuildService.incrementBuildSegmentsManually(incrParams2);
         Assert.assertEquals(1, jobInfo2.getJobs().size());
         Assert.assertEquals(jobInfo2.getJobs().get(0).getJobName(), JobTypeEnum.INC_BUILD.name());

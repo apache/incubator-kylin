@@ -33,6 +33,9 @@ import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.NLocalFileMetadataTestCase;
 import org.apache.kylin.common.util.TimeUtil;
 import org.apache.kylin.common.util.Unsafe;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.cube.model.IndexEntity;
 import org.apache.kylin.metadata.cube.model.IndexPlan;
 import org.apache.kylin.metadata.cube.model.LayoutEntity;
@@ -46,6 +49,7 @@ import org.apache.kylin.metadata.cube.optimization.FrequencyMap;
 import org.apache.kylin.metadata.cube.optimization.IncludedLayoutOptStrategy;
 import org.apache.kylin.metadata.cube.optimization.IndexOptimizer;
 import org.apache.kylin.metadata.cube.optimization.LowFreqLayoutOptStrategy;
+import org.apache.kylin.metadata.cube.optimization.MergedLayoutOptStrategy;
 import org.apache.kylin.metadata.cube.optimization.SimilarLayoutOptStrategy;
 import org.apache.kylin.metadata.recommendation.candidate.JdbcRawRecStore;
 import org.apache.kylin.metrics.HdfsCapacityMetrics;
@@ -54,10 +58,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
 import lombok.val;
 import lombok.extern.slf4j.Slf4j;
@@ -88,8 +88,8 @@ public class ProjectStorageInfoCollectorTest extends NLocalFileMetadataTestCase 
         getTestConfig().setProperty("kylin.metadata.semi-automatic-mode", "true");
         initTestData();
 
-        val collector = new ProjectStorageInfoCollector(Lists.newArrayList(StorageInfoEnum.GARBAGE_STORAGE, StorageInfoEnum.STORAGE_QUOTA,
-                StorageInfoEnum.TOTAL_STORAGE));
+        val collector = new ProjectStorageInfoCollector(Lists.newArrayList(StorageInfoEnum.GARBAGE_STORAGE,
+                StorageInfoEnum.STORAGE_QUOTA, StorageInfoEnum.TOTAL_STORAGE));
         val volumeInfo = collector.getStorageVolumeInfo(getTestConfig(), DEFAULT_PROJECT);
 
         Assert.assertEquals(10240L * 1024 * 1024 * 1024, volumeInfo.getStorageQuotaSize());
@@ -234,6 +234,65 @@ public class ProjectStorageInfoCollectorTest extends NLocalFileMetadataTestCase 
         Assert.assertEquals(new Integer(200), dateFrequency.get(currentDate - 3 * DAY_IN_MILLIS));
         Assert.assertEquals(new Integer(200), dateFrequency.get(currentDate - 8 * DAY_IN_MILLIS));
         Assert.assertEquals(new Integer(200), dateFrequency.get(currentDate - DAY_IN_MILLIS));
+    }
+
+    @Test
+    public void testMergedLayoutGcStrategy() {
+        NIndexPlanManager indexPlanManager = NIndexPlanManager.getInstance(getTestConfig(), DEFAULT_PROJECT);
+        NDataflowManager dataflowManager = NDataflowManager.getInstance(getTestConfig(), DEFAULT_PROJECT);
+        IndexPlan indexPlan = indexPlanManager.getIndexPlan(DEFAULT_MODEL_BASIC_ID);
+        indexPlanManager.updateIndexPlan(indexPlan.getUuid(), copyForWrite -> {
+            LayoutEntity layout1 = new LayoutEntity();
+            layout1.setId(40001L);
+            layout1.setColOrder(Lists.newArrayList(1, 2, 3, 100006, 100007));
+            layout1.setAuto(false);
+            IndexEntity index1 = new IndexEntity();
+            index1.setId(40000L);
+            index1.setDimensions(Lists.newArrayList(1, 2, 3));
+            index1.setMeasures(Lists.newArrayList(100006, 100007));
+            index1.setLayouts(Lists.newArrayList(layout1));
+
+            LayoutEntity layout2 = new LayoutEntity();
+            layout2.setId(50001L);
+            layout2.setColOrder(Lists.newArrayList(1, 2, 3, 100001, 100002));
+            layout2.setAuto(true);
+            IndexEntity index2 = new IndexEntity();
+            index2.setId(50000L);
+            index2.setDimensions(Lists.newArrayList(1, 2, 3));
+            index2.setMeasures(Lists.newArrayList(100001, 100002));
+            index2.setLayouts(Lists.newArrayList(layout2));
+
+            LayoutEntity layout3 = new LayoutEntity();
+            layout3.setId(60001L);
+            layout3.setColOrder(Lists.newArrayList(1, 2, 3, 100003, 100004, 100005));
+            layout3.setAuto(true);
+            IndexEntity index3 = new IndexEntity();
+            index3.setId(60000L);
+            index3.setDimensions(Lists.newArrayList(1, 2, 3));
+            index3.setMeasures(Lists.newArrayList(100003, 100004, 100005));
+            index3.setLayouts(Lists.newArrayList(layout3));
+
+            // Table Index
+            LayoutEntity layout4 = new LayoutEntity();
+            layout4.setId(20_000_040_001L);
+            layout4.setColOrder(Lists.newArrayList(1, 2, 3, 4, 5, 6));
+            layout4.setAuto(true);
+            IndexEntity index4 = new IndexEntity();
+            index4.setId(20_000_040_001L);
+            index4.setDimensions(Lists.newArrayList(1, 2, 3, 4, 5, 6));
+            copyForWrite.setIndexes(Lists.newArrayList(index1, index2, index3));
+        });
+
+        // change all layouts' status to ready.
+        NDataflow dataflow = dataflowManager.getDataflow(DEFAULT_MODEL_BASIC_ID);
+        NDataflowUpdate update = new NDataflowUpdate(dataflow.getUuid());
+        NDataSegment latestReadySegment = dataflow.getLatestReadySegment();
+        Set<Long> ids = indexPlan.getAllLayouts().stream().map(LayoutEntity::getId).collect(Collectors.toSet());
+        update.setToAddOrUpdateLayouts(genCuboids(dataflow, latestReadySegment.getId(), ids));
+        dataflowManager.updateDataflow(update);
+
+        Set<Long> garbageLayouts = IndexOptimizer.findGarbageLayouts(dataflow, new MergedLayoutOptStrategy());
+        Assert.assertEquals(2, garbageLayouts.size());
     }
 
     @Test
@@ -408,7 +467,8 @@ public class ProjectStorageInfoCollectorTest extends NLocalFileMetadataTestCase 
         NDataflow df = dataflowManager.getDataflow(DEFAULT_MODEL_BASIC_ID);
         NDataflowUpdate update = new NDataflowUpdate(df.getUuid());
         NDataSegment latestReadySegment = df.getLatestReadySegment();
-        Set<Long> ids = Sets.newHashSet(2_000_020_001L, 2_000_030_001L, 2_000_040_001L, 40_001L, 40_002L);
+        // 60_001L and 60_002L are non-existing layouts
+        Set<Long> ids = Sets.newHashSet(60_001L, 60_002L, 40_001L, 40_002L);
         update.setToAddOrUpdateLayouts(genCuboids(df, latestReadySegment.getId(), ids));
         dataflowManager.updateDataflow(update);
     }

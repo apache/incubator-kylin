@@ -358,7 +358,10 @@ public class ProjectService extends BasicService {
                 logger.info("Start to cleanup garbage for project<{}>", project.getName());
                 try {
                     projectSmartService.cleanupGarbage(project.getName(), remainingTime);
-                    GarbageCleaner.cleanMetadata(project.getName());
+                    boolean needAggressiveOpt = Arrays.stream(config.getProjectsAggressiveOptimizationIndex())
+                            .map(StringUtils::lowerCase).collect(Collectors.toList())
+                            .contains(StringUtils.toRootLowerCase(project.getName()));
+                    GarbageCleaner.cleanMetadata(project.getName(), needAggressiveOpt);
                     EventBusFactory.getInstance().callService(new ProjectCleanOldQueryResultEvent(project.getName()));
                 } catch (Exception e) {
                     logger.warn("clean project<" + project.getName() + "> failed", e);
@@ -407,9 +410,9 @@ public class ProjectService extends BasicService {
     }
 
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#project, 'ADMINISTRATION')")
-    public void cleanupGarbage(String project) throws Exception {
+    public void cleanupGarbage(String project, boolean needAggressiveOpt) throws Exception {
         projectSmartService.cleanupGarbage(project, 0);
-        GarbageCleaner.cleanMetadata(project);
+        GarbageCleaner.cleanMetadata(project, needAggressiveOpt);
         asyncTaskService.cleanupStorage();
     }
 

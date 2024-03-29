@@ -173,14 +173,14 @@ public class SparkExecutorHdfsLogAppender extends AbstractHdfsLogAppender {
                 if (ugi != null) {
                     StatusLogger.getLogger().warn("Login user hashcode is " + ugi.hashCode());
                     ugi.doAs((PrivilegedExceptionAction<Void>) () -> {
-                        if (!initHdfsWriter(file, SparkHadoopUtils.newConfigurationWithSparkConf())) {
+                        if (!initHdfsWriter(file, SparkHadoopUtils.newConfiguration())) {
                             StatusLogger.getLogger().error("Failed to init the hdfs writer!");
                         }
                         doRollingClean(loggingEvent);
                         return null;
                     });
                 } else {
-                    if (!initHdfsWriter(file, SparkHadoopUtils.newConfigurationWithSparkConf())) {
+                    if (!initHdfsWriter(file, SparkHadoopUtils.newConfiguration())) {
                         StatusLogger.getLogger().error("Failed to init the hdfs writer!");
                     }
                     doRollingClean(loggingEvent);

@@ -109,7 +109,7 @@ public abstract class AbstractHdfsLogAppender
 
     public FileSystem getFileSystem() {
         if (null == fileSystem) {
-            return getFileSystem(SparkHadoopUtils.newConfigurationWithSparkConf());
+            return getFileSystem(SparkHadoopUtils.newConfiguration());
         }
         return fileSystem;
     }
@@ -122,7 +122,10 @@ public abstract class AbstractHdfsLogAppender
                         workingDir = System.getProperty("kylin.hdfs.working.dir");
                         StatusLogger.getLogger().warn("hdfsWorkingDir -> " + getWorkingDir());
                     }
-                    fileSystem = new Path(workingDir).getFileSystem(conf);
+
+                    // Use FileSystem.newInstance(...) to prevent contamination of global file system cache
+                    fileSystem = FileSystem.newInstance(new Path(workingDir).toUri(), conf);
+
                 } catch (IOException e) {
                     StatusLogger.getLogger().error("Failed to create the file system, ", e);
                     throw new RuntimeException("Failed to create the file system, ", e);

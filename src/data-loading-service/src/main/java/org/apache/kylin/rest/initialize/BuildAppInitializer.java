@@ -19,6 +19,7 @@ package org.apache.kylin.rest.initialize;
 
 import org.apache.kylin.common.scheduler.EventBusFactory;
 import org.apache.kylin.rest.service.JobService;
+import org.apache.kylin.rest.service.ModelBuildService;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -32,8 +33,12 @@ public class BuildAppInitializer implements InitializingBean {
     @Autowired
     private JobService jobService;
 
+    @Autowired
+    private ModelBuildService modelBuildService;
+
     @Override
     public void afterPropertiesSet() throws Exception {
         EventBusFactory.getInstance().registerService(jobService);
+        EventBusFactory.getInstance().registerService(modelBuildService);
     }
 }

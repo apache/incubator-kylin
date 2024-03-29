@@ -72,7 +72,7 @@ public class LowFreqLayoutOptStrategy extends AbstractOptStrategy {
     }
 
     @Override
-    protected void skipOptimizeTableIndex(List<LayoutEntity> inputLayouts) {
+    protected void skipOptimizeIndex(List<LayoutEntity> inputLayouts) {
         final KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
         if (!kylinConfig.isLowFreqStrategyConsiderTableIndex()) {
             inputLayouts.removeIf(layout -> IndexEntity.isTableIndex(layout.getId()));

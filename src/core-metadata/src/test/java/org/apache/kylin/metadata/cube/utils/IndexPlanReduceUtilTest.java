@@ -18,15 +18,20 @@
 
 package org.apache.kylin.metadata.cube.utils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.cube.model.IndexEntity;
+import org.apache.kylin.metadata.cube.model.IndexPlan;
 import org.apache.kylin.metadata.cube.model.LayoutEntity;
 import org.junit.Assert;
 import org.junit.Test;
 
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 
 public class IndexPlanReduceUtilTest {
 
@@ -138,6 +143,26 @@ public class IndexPlanReduceUtilTest {
         Assert.assertTrue(map2.containsKey(layout4));
         Assert.assertEquals("[2, 1, 3, 4, 100000, 100001, 100002]", map2.get(layout4).getColOrder().toString());
 
+    }
+
+    @Test
+    public void testMergeSameDimLayout() {
+        LayoutEntity layout1 = new LayoutEntity();
+        layout1.setId(1);
+        layout1.setColOrder(Lists.newArrayList(1, 2, 3, 4, 100000, 100001));
+        layout1.setInProposing(false);
+        LayoutEntity layout2 = new LayoutEntity();
+        layout2.setId(10001);
+        layout2.setColOrder(Lists.newArrayList(1, 2, 3, 4, 100000, 100001, 100002));
+        layout2.setInProposing(true);
+
+        IndexPlan indexPlan = new IndexPlan();
+        List<Set<LayoutEntity>> sameDimLayouts = Lists
+                .newArrayList(Collections.singleton(Sets.newHashSet(layout1, layout2)));
+        IndexPlan indexPlanMerged = IndexPlanReduceUtil.mergeSameDimLayout(indexPlan, sameDimLayouts);
+        Assert.assertEquals(1, indexPlanMerged.getAllIndexes().size());
+        Assert.assertEquals(ImmutableList.of(1, 2, 3, 4, 100000, 100001, 100002),
+                indexPlanMerged.getAllIndexes().get(0).getLayouts().get(0).getColOrder());
     }
 
     @Test

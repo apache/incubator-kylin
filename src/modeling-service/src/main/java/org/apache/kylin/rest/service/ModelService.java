@@ -124,14 +124,22 @@ import org.apache.kylin.common.persistence.transaction.TransactionException;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.persistence.transaction.UnitOfWorkContext;
 import org.apache.kylin.common.scheduler.EventBusFactory;
-import org.apache.kylin.common.util.SqlIdentifierFormatterVisitor;
 import org.apache.kylin.common.util.DateFormat;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.common.util.RandomUtil;
+import org.apache.kylin.common.util.SqlIdentifierFormatterVisitor;
 import org.apache.kylin.common.util.StringHelper;
 import org.apache.kylin.common.util.ThreadUtil;
 import org.apache.kylin.engine.spark.utils.ComputedColumnEvalUtil;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.base.Strings;
+import org.apache.kylin.guava30.shaded.common.base.Supplier;
+import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.job.SecondStorageJobParamUtil;
 import org.apache.kylin.job.common.SegmentUtil;
 import org.apache.kylin.job.execution.AbstractExecutable;
@@ -267,15 +275,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.base.Strings;
-import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
-import org.apache.kylin.guava30.shaded.common.base.Supplier;
 import io.kyligence.kap.secondstorage.SecondStorage;
 import io.kyligence.kap.secondstorage.SecondStorageNodeHelper;
 import io.kyligence.kap.secondstorage.SecondStorageUpdater;
@@ -1847,6 +1847,10 @@ public class ModelService extends AbstractModelService implements TableModelSupp
     }
 
     public void saveNewModelsAndIndexes(String project, List<ModelRequest> newModels) {
+        saveNewModelsAndIndexes(project, null, newModels);
+    }
+
+    public void saveNewModelsAndIndexes(String project, String saveIndexesStrategy, List<ModelRequest> newModels) {
         if (CollectionUtils.isEmpty(newModels)) {
             return;
         }
@@ -1883,6 +1887,9 @@ public class ModelService extends AbstractModelService implements TableModelSupp
             emptyIndex.setUuid(expanded.getUuid());
             indexPlanManager.createIndexPlan(emptyIndex);
             indexPlanService.expandIndexPlanRequest(indexPlan, expanded);
+            if (SAVE_INDEXES_STRATEGY.equalsIgnoreCase(saveIndexesStrategy)) {
+                indexPlan.setBaseAggIndexReduceHighCardinalityDim(true);
+            }
             addBaseIndex(modelRequest, expanded, indexPlan);
 
             // create DataFlow
@@ -1896,7 +1903,7 @@ public class ModelService extends AbstractModelService implements TableModelSupp
             }
 
             createStreamingJob(project, expanded, modelRequest);
-            updateIndexPlan(project, indexPlan);
+            updateIndexPlan(project, indexPlan, expanded, saveIndexesStrategy);
             UnitOfWorkContext context = UnitOfWork.get();
             context.doAfterUnit(() -> EventBusFactory.getInstance()
                     .postSync(new ModelAddEvent(project, expanded.getId(), expanded.getAlias())));
@@ -2149,9 +2156,13 @@ public class ModelService extends AbstractModelService implements TableModelSupp
         copy.getPartitionDesc().changeTableAlias(oldAliasName, tableName);
     }
 
-    void updateIndexPlan(String project, IndexPlan indexPlan) {
+    void updateIndexPlan(String project, IndexPlan indexPlan, NDataModel model, String saveIndexesStrategy) {
         NIndexPlanManager indexPlanManager = NIndexPlanManager.getInstance(KylinConfig.getInstanceFromEnv(), project);
         indexPlanManager.updateIndexPlan(indexPlan.getId(), copyForWrite -> {
+            if (SAVE_INDEXES_STRATEGY.equalsIgnoreCase(saveIndexesStrategy)) {
+                copyForWrite.setBaseAggIndexReduceHighCardinalityDim(true);
+                splitIndexesIntoSingleDimIndexes(model, indexPlan);
+            }
             if (indexPlan.getAggShardByColumns() != null) {
                 copyForWrite.setAggShardByColumns(indexPlan.getAggShardByColumns());
             }

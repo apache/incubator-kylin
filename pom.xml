@@ -258,7 +258,11 @@
             **/org/apache/kylin/tool/hadoop/KapGetPathWithoutSchemeAndAuthorityCLI.java,
             **/org/apache/kylin/engine/spark/streaming/**/*,
             **/org/apache/kylin/rest/security/KerberosLoginManager.java,
-            **/org/apache/kylin/engine/spark/source/NSparkMetadataExplorer.java
+            **/org/apache/kylin/engine/spark/source/NSparkMetadataExplorer.java,
+            **/org/apache/kylin/tool/garbage/IndexCleaner.java,
+            **/org/apache/kylin/spark/common/logging/SparkExecutorHdfsLogAppender.java,
+            **/org/apache/kylin/rest/service/AbstractModelService.java,
+            **/org/apache/spark/utils/SparkHadoopUtils.scala
         </sonar.jacoco.excludes>
         <sonar.coverage.exclusions>
             **/org/apache/kylin/**/*Exception.java,
@@ -304,7 +308,11 @@
             **/org/apache/kylin/rest/util/InitResourceGroupUtils.java,
             **/org/apache/kylin/rest/QueryNodeFilter.java,
             **/org/apache/kylin/rest/config/SwaggerConfig.java,
-            **/org/apache/kylin/rest/config/SwaggerCompatibilityConfig.java
+            **/org/apache/kylin/rest/config/SwaggerCompatibilityConfig.java,
+            **/org/apache/kylin/tool/garbage/IndexCleaner.java,
+            **/org/apache/kylin/spark/common/logging/SparkExecutorHdfsLogAppender.java,
+            **/org/apache/kylin/rest/service/AbstractModelService.java,
+            **/org/apache/spark/utils/SparkHadoopUtils.scala
         </sonar.coverage.exclusions>
         <sonar.organization>kylin</sonar.organization>
         <!--suppress UnresolvedMavenProperty -->

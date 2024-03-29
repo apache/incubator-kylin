@@ -16,25 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.kylin.tool.garbage;
+package org.apache.kylin.metadata.cube.optimization.event;
 
-public abstract class MetadataCleaner {
-    protected final String project;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import org.apache.kylin.metadata.cube.model.NDataflow;
 
-    protected MetadataCleaner(String project) {
-        this.project = project;
-    }
+import java.util.List;
 
-    // do in transaction
-    public abstract void beforeCleanup();
-
-    // do in transaction
-    public abstract void cleanup();
-
-    // do in transaction
-    public abstract void afterCleanup();
-
-    public void prepare() {
-        // default do nothing
-    }
+@Setter
+@Getter
+@AllArgsConstructor
+@ToString
+public class BuildIndexEvent {
+    private String project;
+    private List<NDataflow> dataflows;
 }

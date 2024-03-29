@@ -20,6 +20,7 @@ package org.apache.kylin.rest.service;
 import java.util.List;
 
 import org.apache.kylin.common.KylinConfig;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
 import org.apache.kylin.metadata.cube.model.IndexEntity;
 import org.apache.kylin.metadata.cube.model.IndexPlan;
 import org.apache.kylin.metadata.cube.model.LayoutEntity;
@@ -28,8 +29,6 @@ import org.apache.kylin.metadata.model.NDataModel;
 import org.apache.kylin.rest.request.CreateBaseIndexRequest;
 import org.apache.kylin.rest.response.BuildBaseIndexResponse;
 import org.apache.kylin.rest.util.SpringContext;
-
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
 
 import io.kyligence.kap.secondstorage.SecondStorageUpdater;
 import io.kyligence.kap.secondstorage.SecondStorageUtil;
@@ -89,6 +88,10 @@ public class BaseIndexUpdateHelper {
     }
 
     public BuildBaseIndexResponse update(IndexPlanService service) {
+        return update(service, true);
+    }
+
+    public BuildBaseIndexResponse update(IndexPlanService service, boolean checkProjectOperation) {
         if (!needUpdate) {
             return BuildBaseIndexResponse.EMPTY;
         }
@@ -116,8 +119,14 @@ public class BaseIndexUpdateHelper {
         CreateBaseIndexRequest indexRequest = new CreateBaseIndexRequest();
         indexRequest.setModelId(modelId);
         indexRequest.setProject(project);
-        BuildBaseIndexResponse response = service.updateBaseIndex(project, indexRequest, needCreateBaseTable,
-                needCreateBaseAgg, true);
+        BuildBaseIndexResponse response;
+        if (checkProjectOperation) {
+            response = service.updateBaseIndex(project, indexRequest, needCreateBaseTable, needCreateBaseAgg, true);
+        } else {
+            response = service.updateBaseIndexInternal(project, indexRequest, needCreateBaseTable, needCreateBaseAgg,
+                    true);
+        }
+
         response.judgeIndexOperateType(exist(preBaseAggLayout), true);
         response.judgeIndexOperateType(exist(preBaseTableLayout), false);
 

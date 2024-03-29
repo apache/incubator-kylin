@@ -231,7 +231,7 @@ public class NProjectControllerTest extends NLocalFileMetadataTestCase {
         NProjectManager projectManager = Mockito.mock(NProjectManager.class);
         Mockito.doReturn(projectInstance).when(projectManager).getProject("default");
         Mockito.doReturn(projectManager).when(projectService).getManager(NProjectManager.class);
-        Mockito.doNothing().when(projectService).cleanupGarbage("default");
+        Mockito.doNothing().when(projectService).cleanupGarbage("default", false);
         mockMvc.perform(MockMvcRequestBuilders.put("/api/projects/{project}/storage", "default")
                 .contentType(MediaType.APPLICATION_JSON).param("project", "default")
                 .accept(MediaType.parseMediaType(HTTP_VND_APACHE_KYLIN_JSON)))

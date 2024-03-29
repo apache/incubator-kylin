@@ -52,7 +52,6 @@ import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.engine.spark.smarter.IndexDependencyParser;
-import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
 import org.apache.kylin.guava30.shaded.common.base.Preconditions;
 import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
 import org.apache.kylin.guava30.shaded.common.collect.Lists;
@@ -112,6 +111,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import io.kyligence.kap.secondstorage.SecondStorageUpdater;
@@ -265,7 +265,7 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
         return createTableIndex(project, request.getModelId(), newLayout, request.isLoadData());
     }
 
-    private BuildIndexResponse createTableIndex(String project, String modelId, LayoutEntity newLayout,
+    public BuildIndexResponse createTableIndex(String project, String modelId, LayoutEntity newLayout,
             boolean loadData) {
         NIndexPlanManager indexPlanManager = getManager(NIndexPlanManager.class, project);
         val jobManager = getManager(JobManager.class, project);
@@ -494,6 +494,7 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
                                     StringUtils.join(notExistCols.iterator(), ",")));
                 }
             }
+
             indexPlan.setRuleBasedIndex(ruleBasedIndex);
         } catch (OutOfMaxCombinationException oe) {
             invalid = true;
@@ -652,13 +653,13 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
     }
 
     public List<IndexResponse> getIndexes(String project, String modelId, String key, List<IndexEntity.Status> status,
-                                          String orderBy, Boolean desc, List<IndexEntity.Source> sources) {
+            String orderBy, Boolean desc, List<IndexEntity.Source> sources) {
         return getIndexes(new IndexPlanParams(project, modelId, null, null, sources, status, null),
-                new PaginationParams(null, null, orderBy, desc),
-                key);
+                new PaginationParams(null, null, orderBy, desc), key);
     }
 
-    public List<IndexResponse> getIndexes(IndexPlanParams indexPlanParams, PaginationParams paginationParams, String key) {
+    public List<IndexResponse> getIndexes(IndexPlanParams indexPlanParams, PaginationParams paginationParams,
+            String key) {
         String project = indexPlanParams.getProject();
         String modelId = indexPlanParams.getModelId();
         String segmentId = indexPlanParams.getSegmentId();
@@ -674,10 +675,11 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
         Preconditions.checkState(indexPlan != null);
         val model = indexPlan.getModel();
         val layouts = indexPlan.getAllLayouts();
-        Set<Long> layoutsByRunningJobs = getLayoutsByRunningJobs(project, modelId);
+        Map<String, Set<Long>> layoutsByRunningJobs = getLayoutsByRunningJobs(project, modelId);
         if (StringUtils.isBlank(key)) {
             return sortAndFilterLayouts(layouts.stream()
-                    .map(layoutEntity -> convertToResponse(layoutEntity, indexPlan.getModel(), layoutsByRunningJobs, segmentId))
+                    .map(layoutEntity -> convertToResponse(layoutEntity, indexPlan.getModel(), layoutsByRunningJobs,
+                            segmentId))
                     .filter(indexResponse -> statusSet.isEmpty() || statusSet.contains(indexResponse.getStatus())),
                     orderBy, desc, sources);
         }
@@ -840,8 +842,7 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
         return response;
     }
 
-    @VisibleForTesting
-    public Set<Long> getLayoutsByRunningJobs(String project, String modelId) {
+    public Map<String, Set<Long>> getLayoutsByRunningJobs(String project, String modelId) {
         List<AbstractExecutable> runningJobList = NExecutableManager
                 .getInstance(KylinConfig.getInstanceFromEnv(), project) //
                 .getPartialExecutablesByStatusList(
@@ -849,17 +850,27 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
                                 ExecutableState.ERROR), //
                         path -> StringUtils.endsWith(path, modelId));
 
-        return runningJobList.stream()
-                .filter(abstractExecutable -> Objects.equals(modelId, abstractExecutable.getTargetSubject()))
-                .map(AbstractExecutable::getToBeDeletedLayoutIds).flatMap(Set::stream).collect(Collectors.toSet());
+        Map<String, Set<Long>> underConstructionLayoutsMap = new HashMap<>();
+        runningJobList.stream().filter(ae -> Objects.equals(modelId, ae.getTargetSubject())).forEach(ae -> {
+            Set<Long> layoutIds = ae.getLayoutIds();
+            for (String segmentId : ae.getSegmentIds()) {
+                Set<Long> segmentLayoutIds = underConstructionLayoutsMap.get(segmentId);
+                if (segmentLayoutIds == null) {
+                    underConstructionLayoutsMap.put(segmentId, Sets.newHashSet(layoutIds));
+                } else {
+                    segmentLayoutIds.addAll(layoutIds);
+                }
+            }
+        });
+        return underConstructionLayoutsMap;
     }
 
     private IndexResponse convertToResponse(LayoutEntity layoutEntity, NDataModel model) {
-        return convertToResponse(layoutEntity, model, Sets.newHashSet(), null);
+        return convertToResponse(layoutEntity, model, Maps.newHashMap(), null);
     }
 
     private IndexResponse convertToResponse(LayoutEntity layoutEntity, NDataModel model,
-            Set<Long> layoutIdsOfRunningJobs, String segmentId) {
+            Map<String, Set<Long>> layoutIdsOfRunningJobs, String segmentId) {
 
         // remove all internal measures
         val colOrders = Lists.newArrayList(layoutEntity.getColOrder());
@@ -880,8 +891,14 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
         boolean hasDataInconsistent = false;
 
         List<NDataSegment> segments = StringUtils.isBlank(segmentId) ? dataflow.getSegments()
-                : dataflow.getSegments().stream().filter(seg -> seg.getId().equals(segmentId)).collect(Collectors.toList());
+                : dataflow.getSegments().stream().filter(seg -> seg.getId().equals(segmentId))
+                        .collect(Collectors.toList());
+        Set<Long> layoutIdsOnLoading = Sets.newHashSet();
         for (NDataSegment segment : segments) {
+            Set<Long> segmentLayoutIdsOnLoading = layoutIdsOfRunningJobs.get(segment.getId());
+            if (CollectionUtils.isNotEmpty(segmentLayoutIdsOnLoading)) {
+                layoutIdsOnLoading.addAll(segmentLayoutIdsOnLoading);
+            }
             NDataLayout layout = segment.getLayout(layoutEntity.getId(), true);
             if (layout == null) {
                 continue;
@@ -896,7 +913,7 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
 
         IndexEntity.Status status;
         if (readyCount <= 0) {
-            if (layoutIdsOfRunningJobs.contains(layoutEntity.getId())) {
+            if (layoutIdsOnLoading.contains(layoutEntity.getId())) {
                 status = IndexEntity.Status.BUILDING;
             } else {
                 status = IndexEntity.Status.NO_BUILD;
@@ -1110,6 +1127,13 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
     public BuildBaseIndexResponse updateBaseIndex(String project, CreateBaseIndexRequest request,
             boolean createIfNotExistTableLayout, boolean createIfNotExistAggLayout, boolean isAuto) {
         aclEvaluate.checkProjectOperationDesignPermission(project);
+        return updateBaseIndexInternal(project, request, createIfNotExistTableLayout, createIfNotExistAggLayout,
+                isAuto);
+    }
+
+    @Transaction(project = 0)
+    public BuildBaseIndexResponse updateBaseIndexInternal(String project, CreateBaseIndexRequest request,
+            boolean createIfNotExistTableLayout, boolean createIfNotExistAggLayout, boolean isAuto) {
         // update = delete + create
         Set<Long> needDelete = checkNeedUpdateBaseIndex(project, request, isAuto);
         List<LayoutEntity> needRetainAggLayout = getNeedRetainAggLayout(project, request, needDelete);
@@ -1126,7 +1150,7 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
             return BuildBaseIndexResponse.EMPTY;
         }
 
-        BuildBaseIndexResponse response = createBaseIndex(project, request);
+        BuildBaseIndexResponse response = createBaseIndexInternal(project, request);
         response.setIndexUpdateType(needDelete);
         return response;
     }
@@ -1246,6 +1270,10 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
     @Transaction(project = 0)
     public BuildBaseIndexResponse createBaseIndex(String project, CreateBaseIndexRequest request) {
         aclEvaluate.checkProjectOperationDesignPermission(project);
+        return createBaseIndexInternal(project, request);
+    }
+
+    public BuildBaseIndexResponse createBaseIndexInternal(String project, CreateBaseIndexRequest request) {
         NDataModel model = getManager(NDataModelManager.class, project).getDataModelDesc(request.getModelId());
         NIndexPlanManager indexPlanManager = getManager(NIndexPlanManager.class, project);
         IndexPlan indexPlan = indexPlanManager.getIndexPlan(request.getModelId());
@@ -1283,7 +1311,7 @@ public class IndexPlanService extends BasicService implements TableIndexPlanSupp
     }
 
     private void overrideLayout(LayoutEntity layout, LayoutProperty layoutProperty, NDataModel model) {
-        layout.setOwner(BasicService.getUsername());
+        layout.setOwner(SecurityContextHolder.getContext() == null ? "System" : getUsername());
         if (layoutProperty == null) {
             return;
         }

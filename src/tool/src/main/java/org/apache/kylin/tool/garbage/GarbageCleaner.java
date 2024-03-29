@@ -41,16 +41,18 @@ public class GarbageCleaner {
      * Clean up metadata
      * @param project
      */
-    public static void cleanMetadata(String project) {
+    public static void cleanMetadata(String project, boolean needAggressiveOpt) {
         val projectInstance = NProjectManager.getInstance(KylinConfig.getInstanceFromEnv()).getProject(project);
         if (projectInstance == null) {
             return;
         }
 
-        List<MetadataCleaner> cleaners = initCleaners(project);
+        List<MetadataCleaner> cleaners = initCleaners(project, needAggressiveOpt);
         cleaners.forEach(MetadataCleaner::prepare);
         EnhancedUnitOfWork.doInTransactionWithCheckAndRetry(() -> {
+            cleaners.forEach(MetadataCleaner::beforeCleanup);
             cleaners.forEach(MetadataCleaner::cleanup);
+            cleaners.forEach(MetadataCleaner::afterCleanup);
             return 0;
         }, project);
 
@@ -58,8 +60,9 @@ public class GarbageCleaner {
         MetricsGroup.hostTagCounterInc(MetricsName.METADATA_CLEAN, MetricsCategory.PROJECT, project);
     }
 
-    private static List<MetadataCleaner> initCleaners(String project) {
-        return Arrays.asList(new SnapshotCleaner(project), new IndexCleaner(project), new ExecutableCleaner(project));
+    private static List<MetadataCleaner> initCleaners(String project, boolean needAggressiveOpt) {
+        return Arrays.asList(new SnapshotCleaner(project), new IndexCleaner(project, needAggressiveOpt),
+                new ExecutableCleaner(project));
     }
 
 }

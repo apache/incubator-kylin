@@ -16,25 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.kylin.tool.garbage;
+package org.apache.kylin.metadata.cube.optimization.event;
 
-public abstract class MetadataCleaner {
-    protected final String project;
+import java.util.Map;
 
-    protected MetadataCleaner(String project) {
-        this.project = project;
-    }
+import org.apache.kylin.metadata.cube.model.NDataflow;
+import org.apache.kylin.metadata.cube.optimization.GarbageLayoutType;
 
-    // do in transaction
-    public abstract void beforeCleanup();
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-    // do in transaction
-    public abstract void cleanup();
+@Setter
+@Getter
+@AllArgsConstructor
+@ToString
+public class ApproveRecsEvent {
+    private String project;
 
-    // do in transaction
-    public abstract void afterCleanup();
-
-    public void prepare() {
-        // default do nothing
-    }
+    Map<NDataflow, Map<Long, GarbageLayoutType>> needOptAggressivelyModels;
 }

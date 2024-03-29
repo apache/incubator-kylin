@@ -1037,7 +1037,7 @@ public class ProjectServiceTest extends NLocalFileMetadataTestCase {
 
     @Test
     public void testCleanupGarbage() throws Exception {
-        projectService.cleanupGarbage(PROJECT);
+        projectService.cleanupGarbage(PROJECT, false);
     }
 
     @Test

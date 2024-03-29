@@ -256,7 +256,7 @@ public class NBasicControllerTest extends NLocalFileMetadataTestCase {
     @Test
     public void testCheckParamLength() {
         thrown.expect(KylinException.class);
-        thrown.expectMessage(String.format(Message.getInstance().getParamTooLarge(), "tag", 1000));
+        thrown.expectMessage(String.format(MsgPicker.getMsg().getParamTooLarge(), "tag", 1000));
         List param = new ArrayList();
         param.add(1);
         param.add(6);

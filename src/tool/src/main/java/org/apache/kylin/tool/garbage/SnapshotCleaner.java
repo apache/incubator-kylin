@@ -44,6 +44,11 @@ public class SnapshotCleaner extends MetadataCleaner {
     }
 
     @Override
+    public void beforeCleanup() {
+        // do nothing
+    }
+
+    @Override
     public void prepare() {
         NTableMetadataManager tMgr = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(), project);
         tMgr.listAllTables().forEach(tableDesc -> {
@@ -87,5 +92,10 @@ public class SnapshotCleaner extends MetadataCleaner {
             }
         }
         logger.info("Clean snapshot in project {} finished", project);
+    }
+
+    @Override
+    public void afterCleanup() {
+        // do nothing
     }
 }

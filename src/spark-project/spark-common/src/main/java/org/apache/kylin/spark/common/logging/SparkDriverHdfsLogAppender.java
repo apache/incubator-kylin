@@ -112,7 +112,7 @@ public class SparkDriverHdfsLogAppender extends AbstractHdfsLogAppender {
     @Override
     public void doWriteLog(int eventSize, List<LogEvent> transaction) throws IOException, InterruptedException {
         if (!isWriterInited()) {
-            Configuration conf = SparkHadoopUtils.newConfigurationWithSparkConf();
+            Configuration conf = SparkHadoopUtils.newConfiguration();
             if (!initHdfsWriter(new Path(getLogPath()), conf)) {
                 StatusLogger.getLogger().error("init the hdfs writer failed!");
             }

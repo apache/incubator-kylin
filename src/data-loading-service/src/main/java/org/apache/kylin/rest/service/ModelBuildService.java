@@ -45,6 +45,11 @@ import org.apache.kylin.common.exception.JobErrorCode;
 import org.apache.kylin.common.exception.KylinException;
 import org.apache.kylin.common.msg.MsgPicker;
 import org.apache.kylin.common.util.DateFormat;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.base.Strings;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
+import org.apache.kylin.guava30.shaded.common.eventbus.Subscribe;
 import org.apache.kylin.job.dao.ExecutablePO;
 import org.apache.kylin.job.exception.JobSubmissionException;
 import org.apache.kylin.job.execution.JobTypeEnum;
@@ -56,6 +61,7 @@ import org.apache.kylin.metadata.cube.model.NDataSegment;
 import org.apache.kylin.metadata.cube.model.NDataflow;
 import org.apache.kylin.metadata.cube.model.NDataflowManager;
 import org.apache.kylin.metadata.cube.model.SegmentPartition;
+import org.apache.kylin.metadata.cube.optimization.event.BuildIndexEvent;
 import org.apache.kylin.metadata.model.ManagementType;
 import org.apache.kylin.metadata.model.MultiPartitionDesc;
 import org.apache.kylin.metadata.model.NDataModel;
@@ -85,13 +91,10 @@ import org.apache.kylin.rest.service.params.IncrementBuildSegmentParams;
 import org.apache.kylin.rest.service.params.MergeSegmentParams;
 import org.apache.kylin.rest.service.params.RefreshSegmentParams;
 import org.apache.kylin.source.SourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.base.Strings;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
 import lombok.val;
 import lombok.var;
@@ -104,6 +107,8 @@ public class ModelBuildService extends AbstractModelService implements ModelBuil
 
     @Autowired
     private SegmentHelper segmentHelper;
+
+    private static final Logger logger = LoggerFactory.getLogger(ModelBuildService.class);
 
     //only fo test
     public JobInfoResponse buildSegmentsManually(String project, String modelId, String start, String end)
@@ -431,6 +436,12 @@ public class ModelBuildService extends AbstractModelService implements ModelBuil
     public BuildIndexResponse buildIndicesManually(String modelId, String project, int priority, String yarnQueue,
             Object tag) {
         aclEvaluate.checkProjectOperationPermission(project);
+        String username = getUsername();
+        return buildIndicesInternal(modelId, project, priority, yarnQueue, tag, username);
+    }
+
+    private BuildIndexResponse buildIndicesInternal(String modelId, String project, int priority, String yarnQueue,
+            Object tag, String userName) {
         NDataModel modelDesc = getManager(NDataModelManager.class, project).getDataModelDesc(modelId);
         if (ManagementType.MODEL_BASED != modelDesc.getManagementType()) {
             throw new KylinException(PERMISSION_DENIED, String.format(Locale.ROOT,
@@ -444,11 +455,24 @@ public class ModelBuildService extends AbstractModelService implements ModelBuil
         }
 
         String jobId = getManager(SourceUsageManager.class).licenseCheckWrap(project,
-                () -> getManager(JobManager.class, project).addIndexJob(new JobParam(modelId, getUsername())
-                        .withPriority(priority).withYarnQueue(yarnQueue).withTag(tag)));
+                () -> getManager(JobManager.class, project).addIndexJob(
+                        new JobParam(modelId, userName).withPriority(priority).withYarnQueue(yarnQueue).withTag(tag)));
 
         return new BuildIndexResponse(StringUtils.isBlank(jobId) ? BuildIndexResponse.BuildIndexType.NO_LAYOUT
                 : BuildIndexResponse.BuildIndexType.NORM_BUILD, jobId);
+    }
+
+    @Subscribe
+    public void buildIndicesManually(BuildIndexEvent event) {
+        String project = event.getProject();
+        List<NDataflow> dataflows = event.getDataflows();
+        dataflows.forEach(dataflow -> {
+            if (!dataflow.isOnline()) {
+                return;
+            }
+            logger.info("build indexes for model: {} under project: {}", dataflow.getModelAlias(), project);
+            buildIndicesInternal(dataflow.getId(), project, ExecutablePO.DEFAULT_PRIORITY, null, null, "System");
+        });
     }
 
     @Transaction(project = 0)

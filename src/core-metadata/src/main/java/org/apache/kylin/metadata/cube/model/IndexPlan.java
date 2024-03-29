@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,12 +51,26 @@ import org.apache.kylin.common.persistence.MissingRootPersistentEntity;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.RootPersistentEntity;
 import org.apache.kylin.common.util.JsonUtil;
+import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
+import org.apache.kylin.guava30.shaded.common.base.Joiner;
+import org.apache.kylin.guava30.shaded.common.base.Preconditions;
+import org.apache.kylin.guava30.shaded.common.collect.BiMap;
+import org.apache.kylin.guava30.shaded.common.collect.ImmutableBiMap;
+import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
+import org.apache.kylin.guava30.shaded.common.collect.ImmutableMap;
+import org.apache.kylin.guava30.shaded.common.collect.ImmutableSortedSet;
+import org.apache.kylin.guava30.shaded.common.collect.Lists;
+import org.apache.kylin.guava30.shaded.common.collect.Maps;
+import org.apache.kylin.guava30.shaded.common.collect.Sets;
 import org.apache.kylin.metadata.MetadataConstants;
 import org.apache.kylin.metadata.model.IEngineAware;
 import org.apache.kylin.metadata.model.JoinTableDesc;
 import org.apache.kylin.metadata.model.NDataModel;
 import org.apache.kylin.metadata.model.NDataModelManager;
+import org.apache.kylin.metadata.model.NTableMetadataManager;
 import org.apache.kylin.metadata.model.SegmentStatusEnum;
+import org.apache.kylin.metadata.model.TableDesc;
+import org.apache.kylin.metadata.model.TableExtDesc;
 import org.apache.kylin.metadata.model.TblColRef;
 import org.apache.kylin.metadata.project.NProjectManager;
 import org.apache.kylin.metadata.project.ProjectInstance;
@@ -64,18 +79,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.kylin.guava30.shaded.common.annotations.VisibleForTesting;
-import org.apache.kylin.guava30.shaded.common.base.Joiner;
-import org.apache.kylin.guava30.shaded.common.base.Preconditions;
-import org.apache.kylin.guava30.shaded.common.collect.BiMap;
-import org.apache.kylin.guava30.shaded.common.collect.ImmutableBiMap;
-import org.apache.kylin.guava30.shaded.common.collect.ImmutableList;
-import org.apache.kylin.guava30.shaded.common.collect.ImmutableMap;
-import org.apache.kylin.guava30.shaded.common.collect.Lists;
-import org.apache.kylin.guava30.shaded.common.collect.Maps;
-import org.apache.kylin.guava30.shaded.common.collect.Sets;
 
-import org.apache.kylin.guava30.shaded.common.collect.ImmutableSortedSet;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -179,6 +183,11 @@ public class IndexPlan extends RootPersistentEntity implements Serializable, IEn
      * Error messages during resolving json metadata
      */
     private final List<String> errors = Lists.newLinkedList();
+
+    @Setter
+    @Getter
+    @JsonProperty("base_agg_index_reduce_high_cardinality_dim")
+    private boolean baseAggIndexReduceHighCardinalityDim;
 
     public void initAfterReload(KylinConfig config, String p) {
         this.project = p;
@@ -866,6 +875,19 @@ public class IndexPlan extends RootPersistentEntity implements Serializable, IEn
                 getRuleBaseLayouts().stream().map(LayoutEntity::getId).collect(Collectors.toSet()), layoutIds));
     }
 
+    private boolean isHighCardinalityDim(NTableMetadataManager tableManager, TblColRef colRef) {
+        String tableIdentity = colRef.getTableRef().getTableIdentity();
+        TableDesc tableDesc = tableManager.getTableDesc(tableIdentity);
+        TableExtDesc tableExtIfExists = tableManager.getTableExtIfExists(tableDesc);
+        TableExtDesc.ColumnStats columnStats = tableExtIfExists.getColumnStatsByName(colRef.getName());
+
+        if (Objects.isNull(columnStats)) {
+            return false;
+        }
+
+        return (double) (columnStats.getCardinality()) / tableExtIfExists.getTotalRows() > 0.2;
+    }
+
     private void removeLayouts(Collection<IndexEntity> indexes, Set<Long> layoutIds, boolean deleteAuto,
             boolean deleteManual) {
         checkIsNotCachedAndShared();
@@ -937,10 +959,24 @@ public class IndexPlan extends RootPersistentEntity implements Serializable, IEn
     }
 
     public LayoutEntity createBaseAggIndex(NDataModel model) {
-        List<Integer> dims = model.getEffectiveDimensions().keySet().asList();
+        NTableMetadataManager tableManager = NTableMetadataManager.getInstance(KylinConfig.getInstanceFromEnv(),
+                model.getProject());
+        List<Integer> dims;
+        if (this.isBaseAggIndexReduceHighCardinalityDim()) {
+            List<Integer> list = new ArrayList<>();
+            for (Integer dimId : model.getEffectiveDimensions().keySet()) {
+                TblColRef colRef = model.getColRef(dimId);
+                if (!isHighCardinalityDim(tableManager, colRef)) {
+                    list.add(dimId);
+                }
+            }
+            dims = list;
+        } else {
+            dims = model.getEffectiveDimensions().keySet().asList();
+        }
         List<Integer> measures = model.getEffectiveMeasures().keySet().asList();
         List<Integer> colOrder = naturalOrderCombine(dims, measures);
-        return createLayout(colOrder, true);
+        return createLayout(colOrder, true, true, Lists.newArrayList());
     }
 
     public LayoutEntity createBaseTableIndex() {
@@ -954,16 +990,17 @@ public class IndexPlan extends RootPersistentEntity implements Serializable, IEn
         if (colOrder.isEmpty()) {
             return null;
         }
-        return createLayout(colOrder, false);
+        return createLayout(colOrder, false, true, Lists.newArrayList());
     }
 
-    private LayoutEntity createLayout(List<Integer> colOrder, boolean isAgg) {
-        LayoutEntity newBaseLayout = new LayoutEntity();
-        newBaseLayout.setColOrder(colOrder);
-        newBaseLayout.setUpdateTime(System.currentTimeMillis());
-        newBaseLayout.setBase(true);
-        newBaseLayout.initalId(isAgg);
-        return newBaseLayout;
+    public LayoutEntity createLayout(List<Integer> colOrder, boolean isAgg, boolean isBase, List<Integer> shardByCols) {
+        LayoutEntity newLayout = new LayoutEntity();
+        newLayout.setColOrder(colOrder);
+        newLayout.setUpdateTime(System.currentTimeMillis());
+        newLayout.setBase(isBase);
+        newLayout.initalId(isAgg);
+        newLayout.setShardByColumns(shardByCols);
+        return newLayout;
     }
 
     private List<Integer> naturalOrderCombine(List<Integer> col1, List<Integer> col2) {
@@ -1143,6 +1180,10 @@ public class IndexPlan extends RootPersistentEntity implements Serializable, IEn
         }
 
         public boolean add(LayoutEntity layout, boolean isAgg) {
+            return add(layout, isAgg, true);
+        }
+
+        public boolean add(LayoutEntity layout, boolean isAgg, boolean needUpdateApprovedRecs) {
             val identifier = createIndexIdentifier(layout, isAgg);
             if (allIndexesMap.get(identifier) != null && allIndexesMap.get(identifier).getLayouts().contains(layout)) {
                 return false;
@@ -1176,11 +1217,20 @@ public class IndexPlan extends RootPersistentEntity implements Serializable, IEn
                 indexEntity.getLayouts().add(layout);
                 addedLayouts.add(layout.getId());
             }
-            approvedAdditionalRecs += 1;
+
+            if (needUpdateApprovedRecs) {
+                approvedAdditionalRecs += 1;
+            }
+
             return true;
         }
 
         public boolean remove(LayoutEntity layout, boolean isAgg, boolean needAddBlackList) {
+            return remove(layout, isAgg, needAddBlackList, true);
+        }
+
+        public boolean remove(LayoutEntity layout, boolean isAgg, boolean needAddBlackList,
+                              boolean needUpdateApprovedRecs) {
             IndexEntity.IndexIdentifier identifier = createIndexIdentifier(layout, isAgg);
             if (allIndexesMap.containsKey(identifier) && allIndexesMap.get(identifier).getLayouts().contains(layout)) {
                 IndexEntity indexEntity = allIndexesMap.get(identifier);
@@ -1190,31 +1240,43 @@ public class IndexPlan extends RootPersistentEntity implements Serializable, IEn
                 }
 
                 if (layoutInIndexPlan.isManual()) {
-                    if (isAgg && needAddBlackList) {
-                        // For similar strategy only works on AggIndex, we need add this to black list.
-                        indexPlan.addRuleBasedBlackList(Lists.newArrayList(layout.getId()));
-                        if (layoutInIndexPlan.isAuto()) {
-                            indexEntity.getLayouts().remove(layoutInIndexPlan);
-                            whiteIndexesMap.values().stream().filter(
-                                    indexEntityInIndexPlan -> indexEntityInIndexPlan.getId() == indexEntity.getId())
-                                    .findFirst().ifPresent(indexEntityInIndexPlan -> indexEntityInIndexPlan.getLayouts()
-                                            .remove(layoutInIndexPlan));
-                        }
-                        this.approvedRemovalRecs += 1;
-                        return true;
-                    }
-                    return false;
+                    return removeManualPlan(layout, isAgg, needAddBlackList, needUpdateApprovedRecs, indexEntity, layoutInIndexPlan);
                 }
                 indexEntity.getLayouts().remove(layoutInIndexPlan);
                 whiteIndexesMap.values().stream()
                         .filter(indexEntityInIndexPlan -> indexEntityInIndexPlan.getId() == indexEntity.getId())
                         .findFirst().ifPresent(indexEntityInIndexPlan -> indexEntityInIndexPlan.getLayouts()
                                 .remove(layoutInIndexPlan));
-                this.approvedRemovalRecs += 1;
+
+                if (needUpdateApprovedRecs) {
+                    this.approvedRemovalRecs += 1;
+                }
                 return true;
             } else {
                 return false;
             }
+        }
+
+        private boolean removeManualPlan(LayoutEntity layout, boolean isAgg, boolean needAddBlackList,
+                                         boolean needUpdateApprovedRecs, IndexEntity indexEntity,
+                                         LayoutEntity layoutInIndexPlan) {
+            if (isAgg && needAddBlackList) {
+                // For similar strategy only works on AggIndex, we need add this to black list.
+                indexPlan.addRuleBasedBlackList(Lists.newArrayList(layout.getId()));
+                if (layoutInIndexPlan.isAuto()) {
+                    indexEntity.getLayouts().remove(layoutInIndexPlan);
+                    whiteIndexesMap.values().stream().filter(
+                                    indexEntityInIndexPlan -> indexEntityInIndexPlan.getId() == indexEntity.getId())
+                            .findFirst().ifPresent(indexEntityInIndexPlan -> indexEntityInIndexPlan.getLayouts()
+                                    .remove(layoutInIndexPlan));
+                }
+
+                if (needUpdateApprovedRecs) {
+                    this.approvedRemovalRecs += 1;
+                }
+                return true;
+            }
+            return false;
         }
 
         public IndexPlan complete() {

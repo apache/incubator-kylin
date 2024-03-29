@@ -52,11 +52,11 @@ public abstract class AbstractOptStrategy {
 
     private List<LayoutEntity> beforeCollect(List<LayoutEntity> inputLayouts) {
         List<LayoutEntity> layoutsToHandle = Lists.newArrayList(inputLayouts);
-        skipOptimizeTableIndex(layoutsToHandle);
+        skipOptimizeIndex(layoutsToHandle);
         return layoutsToHandle;
     }
 
-    protected abstract void skipOptimizeTableIndex(List<LayoutEntity> inputLayouts);
+    protected abstract void skipOptimizeIndex(List<LayoutEntity> inputLayouts);
 
     private void afterCollect(List<LayoutEntity> inputLayouts, Set<Long> garbages) {
         inputLayouts.removeIf(layout -> garbages.contains(layout.getId()));

@@ -58,7 +58,7 @@ public class IncludedLayoutOptStrategy extends AbstractOptStrategy {
     }
 
     @Override
-    protected void skipOptimizeTableIndex(List<LayoutEntity> inputLayouts) {
+    protected void skipOptimizeIndex(List<LayoutEntity> inputLayouts) {
         final KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
         if (!kylinConfig.isIncludedStrategyConsiderTableIndex()) {
             inputLayouts.removeIf(layout -> IndexEntity.isTableIndex(layout.getId()));

@@ -69,7 +69,7 @@ public class SimilarLayoutOptStrategy extends AbstractOptStrategy {
     }
 
     @Override
-    protected void skipOptimizeTableIndex(List<LayoutEntity> inputLayouts) {
+    protected void skipOptimizeIndex(List<LayoutEntity> inputLayouts) {
         inputLayouts.removeIf(layout -> IndexEntity.isTableIndex(layout.getId()));
     }
 
