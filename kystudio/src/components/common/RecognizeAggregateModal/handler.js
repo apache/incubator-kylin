@@ -39,6 +39,7 @@ export function updatePlaceHolder (editor, renderPlaceholder) {
       editor.on('input', editor.$updatePlaceholder)
     }
     editor.$updatePlaceholder(editor, renderPlaceholder)
+    editor.focus()
   }
 }
 
@@ -70,7 +71,7 @@ export function scrollToLineAndHighlight (editor, line) {
 export function searchColumnInEditor (editor, column) {
   const { $search: editorSearch } = editor
   const session = editor.getSession()
-  column = column.replace(/[\\$|\\/|\\^|\\?]/g, ($1) => {
+  column = column.replace(/[\\$|\\/|\\^|\\?|\\(|\\)|\\{|\\|\\-}|\\&|\\*|\\（|\\）]/g, ($1) => {
     return `\\${$1}`
   })
 

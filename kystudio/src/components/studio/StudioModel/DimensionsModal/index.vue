@@ -11,8 +11,11 @@
     @close="isShow && handleClose(false)">
     <template v-if="isFormShow">
       <div class="ksd-mb-10 ksd-right">
-        <el-button @click="changeSyncName">{{!syncCommentToName ? $t('syncName') : $t('resetSyncName')}}</el-button>
-        <el-input :placeholder="$t('searchColumn')" style="width:230px;" @input="changeSearchVal" v-model="searchChar">
+        <el-tooltip placement="top" :content="$t('textRecognitionTips')">
+          <el-button size="small" nobg-text icon="el-ksd-n-icon-view-outlined" @click="handleDimensionRecognize">{{ $t('textRecognition') }}</el-button>
+        </el-tooltip><!--
+        --><el-button @click="changeSyncName">{{!syncCommentToName ? $t('syncName') : $t('resetSyncName')}}</el-button><!--
+        --><el-input :placeholder="$t('searchColumn')" class="ksd-ml-8" style="width:230px;" @input="changeSearchVal" v-model="searchChar">
           <i slot="prefix" class="el-input__icon el-ksd-icon-search_22"></i>
         </el-input>
       </div>
@@ -349,6 +352,9 @@ vuex.registerModule(['modals', 'DimensionsModal'], store)
       loadDataSourceByProject: 'LOAD_DATASOURCE',
       saveSampleData: 'SAVE_SAMPLE_DATA'
     }),
+    ...mapActions('RecognizeAggregateModal', {
+      callRecognizeAggregateModal: types.CALL_MODAL
+    }),
     tableRowClassName ({row, rowIndex}, table) {
       return 'guide-' + table.alias + row.name
     }
@@ -417,6 +423,44 @@ export default class DimensionsModal extends Vue {
   // 判断 cc 是否引用了不预计算的维表
   setCCSelected (row) {
     return !this.unflattenComputedColumns.includes(row.columnName)
+  }
+
+  async handleDimensionRecognize () {
+    const selectedColumns = await this.callRecognizeAggregateModal({
+      type: 'DIMENSION',
+      allColumns: this.allColumns,
+      usedColumns: this.getAllSelectedColumns()
+    })
+    if (!selectedColumns.length) return
+    const batchRecognizeColumns = {}
+    selectedColumns.forEach(col => {
+      const [ table, column ] = col.split('.')
+      batchRecognizeColumns[table] = batchRecognizeColumns[table] ? [...batchRecognizeColumns[table], column] : [column]
+    })
+    const allTables = [...this.factTable, ...this.lookupTable, this.ccTable]
+    allTables.forEach(t => {
+      const tableAlias = t.alias ? t.alias : t.columns.length && t.columns[0].tableAlias
+      let isTableNeedRender = false
+      if (batchRecognizeColumns[tableAlias]) {
+        batchRecognizeColumns[tableAlias].forEach(col => {
+          const index = indexOfObjWithSomeKey(t.columns, 'column', col)
+          if (index !== -1) {
+            this.$set(t.columns[index], 'isSelected', true)
+            isTableNeedRender = true
+          }
+        })
+      }
+      if (!this.searchChar && isTableNeedRender) {
+        this.$nextTick(() => {
+          this.renderTableColumnSelected(t)
+        })
+      }
+    })
+    if (this.searchChar) {
+      this.$nextTick(() => {
+        this.renderTableColumnSelected(this.pagerSearchTable[0])
+      })
+    }
   }
 
   // 同步或撤销注释到名称
@@ -612,8 +656,7 @@ export default class DimensionsModal extends Vue {
     }
     return idx
   }
-  // 检测是否有重名
-  checkHasSameNamedColumn () {
+  get allColumns () {
     let columns = []
     for (let k = 0; k < this.factTable.length; k++) {
       columns = columns.concat(this.factTable[k].columns)
@@ -625,33 +668,37 @@ export default class DimensionsModal extends Vue {
     if (this.ccTable.columns) {
       columns = columns.concat(this.ccTable.columns)
     }
+    return columns
+  }
+  // 检测是否有重名
+  checkHasSameNamedColumn () {
     return () => {
       let hasPassValidate = true
       this.errorGuidList = []
-      columns.forEach((col) => {
+      this.allColumns.forEach((col) => {
         this.$set(col, 'validateNameRule', false)
         this.$set(col, 'validateSameName', false)
         this.$set(col, 'validateNameMaxLen', false)
         this.isClickSubmit = false
       })
-      let selectedColumns = columns.filter((col) => {
+      let selectedColumns = this.allColumns.filter((col) => {
         return col.isSelected === true
       })
       selectedColumns.forEach((col) => {
         if (countObjWithSomeKey(selectedColumns, 'alias', col.alias) > 1) {
           hasPassValidate = false
-          let idx = this.getIdxBySelected(col, columns)
-          this.$set(columns[idx], 'validateSameName', true)
+          let idx = this.getIdxBySelected(col, this.allColumns)
+          this.$set(this.allColumns[idx], 'validateSameName', true)
           this.errorGuidList.push(col.guid || col.table_guid)
         } else if (!this.checkDimensionNameRegex(col.alias)) {
           hasPassValidate = false
-          let idx = this.getIdxBySelected(col, columns)
-          this.$set(columns[idx], 'validateNameRule', true)
+          let idx = this.getIdxBySelected(col, this.allColumns)
+          this.$set(this.allColumns[idx], 'validateNameRule', true)
           this.errorGuidList.push(col.guid || col.table_guid)
         } else if (col.alias.length > this.dimMeasNameMaxLength) {
           hasPassValidate = false
-          let idx = this.getIdxBySelected(col, columns)
-          this.$set(columns[idx], 'validateNameMaxLen', true)
+          let idx = this.getIdxBySelected(col, this.allColumns)
+          this.$set(this.allColumns[idx], 'validateNameMaxLen', true)
           this.errorGuidList.push(col.guid || col.table_guid)
         }
       })

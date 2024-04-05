@@ -30,6 +30,8 @@ export default {
     lockLookupTableTip: 'Unable to use columns from this table for dimensions. Because the join relationship of this dimension table  won\'t be precomputed.',
     useCCBylockLookupTableTip: 'Unable to use certain computed columns. Because the join relationships of related dimension tables won\'t be precomputed.',
     streamTips: 'For fusion model, the time partition column can’t be deleted from the dimension.',
-    secStorTips: 'When the tiered storage is ON, the time partition column can\'t be deleted from the dimension.'
+    secStorTips: 'When the tiered storage is ON, the time partition column can\'t be deleted from the dimension.',
+    textRecognition: 'Text Recognition',
+    textRecognitionTips: 'Batch selection of columns by automatic recognition of pasted text'
   }
 }

@@ -1,83 +1,83 @@
 <template>
-    <el-dialog class="recognize-aggregate-modal" width="960px"
-      append-to-body
-      :title="$t('title')"
-      :visible="isShow"
-      :close-on-press-escape="false"
-      :close-on-click-modal="false"
-      :before-close="handleCancel"
-      @closed="handleClosed"
-    >
-      <div class="dialog-content">
-        <div class="recognize-area">
-          <div class="recognize-header" v-if="errorLines.length">
-            <div class="result-counter">
-              <span class="error">{{$tc('errorCount', errorCount, { count: errorCount })}}</span>
-              <el-tooltip :content="$t('repeatTip')" placement="top">
-                <span class="warning">{{$tc('repeatCount', repeatCount, { count: repeatCount })}}</span>
-              </el-tooltip>
-            </div>
-            <div class="result-actions">
-              <el-button icon-button text type="primary" size="mini" icon="el-ksd-n-icon-arrow-up-outlined" @click="handlePrevious" /><!--
-           --><el-button icon-button text type="primary" size="mini" icon="el-ksd-n-icon-arrow-down-outlined" @click="handleNext" />
-            </div>
-          </div>
-          <AceEditor :key="isShow" :placeholder="'123'" class="text-input" ref="editorRef" :value="form.text" @input="handleInputText" />
-          <div class="actions">
-            <el-tooltip placement="left">
-              <div slot="content">{{$t('dexecute')}}<span class="accelerator-key">{{$t('acceleratorKey')}}</span></div>
-              <el-button icon-button class="recognize" size="small" type="primary" icon="el-ksd-n-icon-play-filled" :disabled="!form.text" @click="handleRecognize" />
+  <el-dialog class="recognize-aggregate-modal" width="960px"
+    append-to-body
+    :title="$t('title')"
+    :visible="isShow"
+    :close-on-press-escape="false"
+    :close-on-click-modal="false"
+    :before-close="handleCancel"
+    @closed="handleClosed"
+  >
+    <div class="dialog-content">
+      <div class="recognize-area">
+        <div class="recognize-header" v-if="errorLines.length">
+          <div class="result-counter">
+            <span class="error">{{$tc('errorCount', errorCount, { count: errorCount })}}</span>
+            <el-tooltip :content="$t('repeatTip')" placement="top">
+              <span class="warning">{{$tc('repeatCount', repeatCount, { count: repeatCount })}}</span>
             </el-tooltip>
           </div>
-        </div>
-        <div class="recognize-results" v-loading="loadingRecognize">
-          <template v-if="form.dimensions.length">
-            <div class="results-header">
-              {{$tc('selectedDimensionCount', selectedDimensionCount, { count: selectedDimensionCount })}}
-              <template>
-                <span class="divide ksd-ml-8 ksd-mr-8">|</span><span>{{$t('usedDimensionCount', {count: usedDimensionCount})}}</span>
-              </template>
-            </div>
-            <div class="list-actions">
-              <el-checkbox :key="isSelectAll" :indeterminate="isIndeterminate" :checked="isSelectAll" @change="handleSelectAll" />
-              <div class="header-dimension-name">{{$t('dimensionName')}}</div>
-              <div class="header-data-type">{{$t('dataType')}}</div>
-            </div>
-            <RecycleScroller
-              class="dimension-list"
-              :items="dimensionList"
-              :item-size="37"
-              key-field="value"
-            >
-              <template slot-scope="{ item }">
-                <div class="dimension" @click="handleCheckDimension(item)">
-                  <el-checkbox :key="item.isChecked" :checked="item.isChecked" @change="handleCheckDimension(item)" />
-                  <span class="name">{{ item.label }}</span>
-                  <span class="data-type">{{ item.dataType }}</span>
-                  <div v-if="item.isDisabled" class="current-used-mask" />
-                </div>
-              </template>
-            </RecycleScroller>
-          </template>
-          <div class="all-dimension-error" v-else-if="isAllDimensionError">
-            <i class="el-ksd-n-icon-error-circle-filled" />
-            <span>{{$t('recognizeFailed')}}</span>
+          <div class="result-actions">
+            <el-button icon-button text type="primary" size="mini" icon="el-ksd-n-icon-arrow-up-outlined" @click="handlePrevious" /><!--
+          --><el-button icon-button text type="primary" size="mini" icon="el-ksd-n-icon-arrow-down-outlined" @click="handleNext" />
           </div>
-          <EmptyData v-else :showImage="false" :content="$t('emptyText')" />
+        </div>
+        <AceEditor :key="isShow" :placeholder="'123'" class="text-input" ref="editorRef" :value="form.text" @input="handleInputText" />
+        <div class="actions">
+          <el-tooltip placement="left">
+            <div slot="content">{{$t('dexecute')}}<span class="accelerator-key">{{$t('acceleratorKey')}}</span></div>
+            <el-button icon-button class="recognize" size="small" type="primary" icon="el-ksd-n-icon-play-filled" :disabled="!form.text" @click="handleRecognize" />
+          </el-tooltip>
         </div>
       </div>
-      <div slot="footer" class="dialog-footer ky-no-br-space">
-        <el-button size="medium" @click="handleCancel">
-          {{$t('kylinLang.common.cancel')}}
-        </el-button>
-        <el-button type="primary" size="medium" :disabled="!selectedDimensionCount" @click="handleSubmit">
-          {{$t('kylinLang.common.save')}}
-        </el-button>
+      <div class="recognize-results" v-loading="loadingRecognize">
+        <template v-if="form.dimensions.length">
+          <div class="results-header">
+            {{$tc('selectedDimensionCount', selectedDimensionCount, { count: selectedDimensionCount })}}
+            <template v-if="type !== 'TABLE_INDEX'">
+              <span class="divide ksd-ml-8 ksd-mr-8">|</span><span>{{$t('usedDimensionCount', {count: usedDimensionCount})}}</span>
+            </template>
+          </div>
+          <div class="list-actions">
+            <el-checkbox :key="isSelectAll" :indeterminate="isIndeterminate" :checked="isSelectAll" @change="handleSelectAll" />
+            <div class="header-dimension-name">{{$t('dimensionName')}}</div>
+            <div class="header-data-type">{{$t('dataType')}}</div>
+          </div>
+          <RecycleScroller
+            class="dimension-list"
+            :items="dimensionList"
+            :item-size="37"
+            key-field="value"
+          >
+            <template slot-scope="{ item }">
+              <div class="dimension" @click="handleCheckDimension(item)">
+                <el-checkbox :key="item.isChecked" :checked="item.isChecked" @change="handleCheckDimension(item)" />
+                <span class="name">{{ item.label }}</span>
+                <span class="data-type">{{ item.dataType }}</span>
+                <div v-if="item.isDisabled" class="current-used-mask" />
+              </div>
+            </template>
+          </RecycleScroller>
+        </template>
+        <div class="all-dimension-error" v-else-if="isAllDimensionError">
+          <i class="el-ksd-n-icon-error-circle-filled" />
+          <span>{{$t('recognizeFailed')}}</span>
+        </div>
+        <EmptyData v-else :showImage="false" :content="$t('emptyText')" />
       </div>
-    </el-dialog>
-  </template>
+    </div>
+    <div slot="footer" class="dialog-footer ky-no-br-space">
+      <el-button size="medium" @click="handleCancel">
+        {{$t('kylinLang.common.cancel')}}
+      </el-button>
+      <el-button type="primary" size="medium" :disabled="!selectedDimensionCount" @click="handleSubmit">
+        {{$t('kylinLang.common.save')}}
+      </el-button>
+    </div>
+  </el-dialog>
+</template>
   
-  <script>
+<script>
   import Vue from 'vue'
   import AceEditor from 'vue2-ace-editor'
   import { Component, Watch } from 'vue-property-decorator'
@@ -92,6 +92,7 @@
   vuex.registerModule(['modals', 'RecognizeAggregateModal'], store)
 
   const TABLE_INDEX = 'TABLE_INDEX'
+  const DIMENSION = 'DIMENSION'
 
   @Component({
     components: {
@@ -105,6 +106,7 @@
         type: state => state.type,
         status: state => state.status,
         form: state => state.form,
+        usedColumns: state => state.usedColumns,
         errors: state => state.errors,
         errorLines: state => state.errorLines,
         errorInEditor: state => state.errorInEditor,
@@ -119,7 +121,7 @@
         'hierarchyItems',
         'joints',
         'jointItems',
-        'tableIndexCols'
+        'allColumns'
       ])
     },
     methods: {
@@ -181,16 +183,17 @@
     }
     get isIndeterminate () {
       const { selectedDimensionCount, isSelectAll } = this
-      return selectedDimensionCount && !isSelectAll
+      return selectedDimensionCount > 0 && !isSelectAll
     }
     isColumnUsedInCurrent (column) {
-      const { type, includes, mandatories, hierarchyItems, jointItems, tableIndexCols } = this
+      const { type, includes, mandatories, hierarchyItems, jointItems, usedColumns } = this
       switch (type) {
         case AGGREGATE_TYPE.INCLUDE: return includes.includes(column)
         case AGGREGATE_TYPE.MANDATORY: return mandatories.includes(column)
         case AGGREGATE_TYPE.HIERARCHY: return hierarchyItems.includes(column)
         case AGGREGATE_TYPE.JOINT: return jointItems.includes(column)
-        case TABLE_INDEX: return tableIndexCols.includes(column)
+        case DIMENSION: return usedColumns.find(d => d.column === column)
+        case TABLE_INDEX:
         default: return false
       }
     }
@@ -213,6 +216,7 @@
             joints.some(joint => joint.items.some((item, idx) => idx !== groupIdx && item === column))
         // 包含维度不做判断
         case AGGREGATE_TYPE.INCLUDE:
+        case DIMENSION:
         default: return false
       }
     }
@@ -237,6 +241,22 @@
         default: return 'Unknow Error'
       }
     }
+    getRecognizeColumn (columnText) {
+      const { type, modelDimensions, allColumns } = this
+      switch (type) {
+        case AGGREGATE_TYPE.MANDATORY:
+        case AGGREGATE_TYPE.HIERARCHY:
+        case AGGREGATE_TYPE.JOINT:
+        case AGGREGATE_TYPE.INCLUDE:
+          return modelDimensions.find(d => d.column === columnText)
+        case TABLE_INDEX:
+          return allColumns.find(d => d.column === columnText)
+        case DIMENSION:
+          return allColumns.find(d => d.column === columnText)
+        default: return null
+      }
+    }
+
     setNotInModelError (column) {
       const { errors } = this
       if (!errors.notInModel.includes(column)) this.setModal({ errors: { ...errors, notInModel: [...errors.notInModel, column] } })
@@ -271,7 +291,7 @@
           <div class="ace_placeholder">
             <div>
               {this.$t('inputPlaceholder1')}
-              <el-tooltip
+              {/* <el-tooltip
                 popperClass="recognize-aggregate-placeholder-tooltip"
                 placement="top"
               >
@@ -280,7 +300,7 @@
                   <li>{this.$t('inputPlaceholderTooltip2')}</li>
                 </ul>
                 <span class="how-to-use">{this.$t('inputPlaceholderTooltipTrigger')}</span>
-              </el-tooltip>
+              </el-tooltip> */}
             </div>
             <div>
               {this.$t('inputPlaceholder2')}
@@ -322,7 +342,7 @@
       }
     }
     handleRecognize () {
-      const { type, form, modelDimensions } = this
+      const { type, form } = this
       const dimensions = []
       this.clearupErrors()
       let formattedText = ''
@@ -330,23 +350,23 @@
       for (const text of form.text.replace(/\n*/g, '').split(/,\n*/g)) {
         const columnText = text.trim().toLocaleUpperCase()
         if (columnText) {
-          const dimension = modelDimensions.find(d => d.column === columnText)
-          if (dimension) {
-            if (![AGGREGATE_TYPE.INCLUDE, TABLE_INDEX].includes(type) && !this.isColumnInIncludes(dimension.column)) {
-              this.setNotInIncludesError(dimension.column)
-            } else if (!this.isColumnUsedInOther(dimension.column)) {
-              const duplicate = dimensions.some(d => d.value === dimension.column)
+          const recognizeColumn = this.getRecognizeColumn(columnText)
+          if (recognizeColumn) {
+            if (![AGGREGATE_TYPE.INCLUDE, TABLE_INDEX, DIMENSION].includes(type) && !this.isColumnInIncludes(recognizeColumn.column)) {
+              this.setNotInIncludesError(recognizeColumn.column)
+            } else if (!this.isColumnUsedInOther(recognizeColumn.column)) {
+              const duplicate = dimensions.some(d => d.value === recognizeColumn.column)
               if (!duplicate) {
                 const isFormChecked = form.dimensions.find(d => d.value === columnText)?.isChecked
                 const isChecked = isFormChecked ?? true
-                const isDisabled = this.isColumnUsedInCurrent(dimension.column)
-                const dataType = dimension.type
-                dimensions.push({ value: dimension.column, label: dimension.column, isChecked, isDisabled, dataType })
+                const isDisabled = this.isColumnUsedInCurrent(recognizeColumn.column)
+                const dataType = recognizeColumn.type ?? recognizeColumn.datatype
+                dimensions.push({ value: recognizeColumn.column, label: recognizeColumn.column, isChecked, isDisabled, dataType })
               } else {
-                this.setDuplicateError(dimension.column)
+                this.setDuplicateError(recognizeColumn.column)
               }
             } else {
-              this.setUsedInOthersError(dimension.column)
+              this.setUsedInOthersError(recognizeColumn.column)
             }
           } else {
             this.setNotInModelError(columnText)
@@ -394,16 +414,18 @@
     }
     handleCancel (done) {
       if (typeof done === 'function') done()
+      this.resetModal()
       this.hideModal()
     }
     handleSubmit () {
       const { form, callback } = this
       callback(form.dimensions.filter(d => !d.isDisabled && d.isChecked).map(d => d.value))
+      this.resetModal()
       this.hideModal()
     }
   }
-  </script>
-  <style lang="less">
+</script>
+<style lang="less">
   @import '../../../assets/styles/variables.less';
   .recognize-aggregate-modal {
     .el-dialog {
@@ -606,5 +628,5 @@
   .accelerator-key {
     color: @text-disabled-color;
   }
-  </style>
+</style>
   

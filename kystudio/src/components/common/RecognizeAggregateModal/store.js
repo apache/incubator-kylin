@@ -30,6 +30,8 @@ function getInitialState () {
     isShow: false,
     model: null,
     aggregate: null,
+    allColumns: [],
+    usedColumns: null,
     type: AGGREGATE_TYPE.INCLUDE,
     status: ALERT_STATUS.INIT,
     groupIdx: null,
@@ -88,9 +90,21 @@ export default {
       const { aggregate } = state
       return aggregate?.jointArray ?? []
     },
-    tableIndexCols (state) {
-      const { allColumns } = state
-      return allColumns.filter(c => c.isUsed).map(c => c.fullName)
+    allColumns (state) {
+      const { allColumns, type } = state
+      const cloneColumns =  objectClone(allColumns).map((d) => {
+        switch (type) {
+          case 'TABLE_INDEX':
+            d.column = d.label
+            return d
+          case 'DIMENSION': 
+            const tableAlias = d.tableName ? d.tableName : d.tableAlias
+            d.column = `${tableAlias}.${d.column}`
+            return d
+          default: return d
+        }
+      })
+      return cloneColumns
     },
     hierarchyItems (state) {
       const { aggregate, groupIdx } = state
@@ -107,9 +121,9 @@ export default {
   },
   actions: {
     [types.CALL_MODAL] ({ commit }, args) {
-      const { aggregate, type, model, allColumns = [], groupIdx = null } = args
+      const { aggregate, type, model, allColumns = [], groupIdx = null, usedColumns = [] } = args
       return new Promise(resolve => {
-        commit(types.SET_MODAL, { aggregate, model, type, groupIdx, allColumns, callback: resolve })
+        commit(types.SET_MODAL, { aggregate, model, type, groupIdx, allColumns, usedColumns, callback: resolve })
         commit(types.SHOW_MODAL)
       })
     }
