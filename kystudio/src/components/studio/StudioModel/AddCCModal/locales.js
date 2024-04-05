@@ -1,5 +1,5 @@
 export default {
   en: {
-    editCCTip: 'Please be aware that the modified expression would be effective until all the related indexes have been built.'
+    editCCTip: 'Modify with caution, it may cause query performance degradation! If the edited computed column is used as a dimension or metric, the system will delete the relevant index and generate new index. The query performance will not be restored until the build index job is done.'
   }
 }

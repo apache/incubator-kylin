@@ -785,13 +785,13 @@ export default class ModelPartitionModal extends Vue {
             try {
               const res = await this.callGlobalDetailDialog({
                 msg: this.$t('editCCBuildTip'),
-                title: this.$t('kylinLang.common.tip'),
+                title: this.$t('editCCBuildTipTitle'),
                 dialogType: 'warning',
                 showDetailBtn: false,
                 isSubSubmit: true,
+                isHideSubmit: true,
                 wid: '600px',
                 submitSubText: this.$t('kylinLang.common.save'),
-                submitText: this.$t('saveAndLoad'),
                 needConcelReject: true
               })
               this.handleClose(true, res.isOnlySave)
