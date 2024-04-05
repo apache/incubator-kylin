@@ -30,7 +30,7 @@ export function handleError (res, errorcallback) {
     if (window.kylinVm.$store.state.config.platform === 'iframe') {
       window.kylinVm.$store.state.config.errorMsgBox.msg = res.message || window.kylinVm.$t('kylinLang.common.notConnectServerIframe')
     } else {
-      window.kylinVm.$store.state.config.errorMsgBox.msg = res.message || window.kylinVm.$t('kylinLang.common.notConnectServer')
+      window.kylinVm.$store.state.config.errorMsgBox.msg = res.message || (responseData && responseData.msg) || window.kylinVm.$t('kylinLang.common.notConnectServer')
     }
     window.kylinVm.$store.state.config.errorMsgBox.detail = responseData && responseData.stacktrace || res.stack || JSON.stringify(res)
   } else {

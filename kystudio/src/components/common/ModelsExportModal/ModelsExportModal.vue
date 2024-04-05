@@ -270,7 +270,7 @@ export default class ModelsExportModal extends Vue {
       this.handleClose(true)
       this.$message.success(this.$t('exportSuccess'))
     } catch (e) {
-      this.$message.error(this.$t('exportFailed'))
+      // this.$message.error(this.$t('exportFailed'))
     }
     this.isSubmiting = false
   }

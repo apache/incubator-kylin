@@ -1,5 +1,7 @@
 import Vue from 'vue'
 import ElementUI from 'kyligence-kylin-ui'
+import $ from 'jquery'
+import { handleError } from './business'
 
 export const download = {
   post (url, data) {
@@ -32,11 +34,29 @@ export const download = {
     }
 
     document.body.appendChild($form)
-    $form.submit()
-
-    setTimeout(() => {
-      document.body.removeChild($form)
+    return $.ajax({
+      headers: {
+        'Accept-Language': localStorage.getItem('kystudio_lang') === 'en' ? 'en' : 'cn'
+      },
+      url: $($form).attr('action'), // 获取表单的提交地址
+      method: $($form).attr('method'), // 获取表单的提交方法
+      data: $($form).serialize(), // 序列化表单数据
+      success: (res) => {
+        // 当服务器响应成功时的处理逻辑
+        $form.submit()
+        setTimeout(() => {
+          document.body.removeChild($form)
+        })
+      },
+      error: (xhr, status, error) => {
+        // 当服务器响应错误时的处理逻辑
+        handleError({data: xhr.responseJSON}) // 打印错误信息
+        setTimeout(() => {
+          document.body.removeChild($form)
+        })
+      }
     })
+    // $form.submit()
   }
 }
 
