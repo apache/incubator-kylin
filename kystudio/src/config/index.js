@@ -5,6 +5,8 @@ let apiUrl
 let baseUrl
 let regexApiUrl
 
+let filterPagesize = 5
+
 let pageCount = 10
 let bigPageCount = 20
 let pageSizes = [10, 20, 50, 100]
@@ -31,6 +33,7 @@ export {
   apiUrl,
   baseUrl,
   regexApiUrl,
+  filterPagesize,
   pageCount,
   bigPageCount,
   pageSizes,

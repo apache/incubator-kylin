@@ -1,34 +1,135 @@
 <template>
   <div id="queryHistoryTable">
-    <div class="ksd-title-page ksd-mb-16">{{$t('kylinLang.menu.queryhistory')}}</div>
-    <div class="clearfix ksd-mb-10">
-      <div class="btn-group ksd-fleft export-btn">
-        <el-dropdown
-          split-button
-          class="ksd-fleft"
-          :class="{'is-disabled': !queryHistoryTotalSize}"
-          type="primary"
-          size="medium"
-          id="exportSql"
-          btn-icon="el-ksd-icon-export_22"
-          placement="bottom-start"
-          @click="exportHistory(false)">{{$t('kylinLang.query.export')}}
-          <el-dropdown-menu slot="dropdown" class="model-actions-dropdown">
-            <el-dropdown-item
-              :disabled="!queryHistoryTotalSize"
-              @click="exportHistory(true)">
-              {{$t('kylinLang.query.exportSql')}}
-            </el-dropdown-item>
+    <div class="clearfix ksd-mt-32 ksd-mb-16">
+      <div class="ksd-fleft">
+        <div class="ksd-title-page">{{$t('kylinLang.menu.queryhistory')}}</div>
+      </div>
+      <div class="ksd-fright">
+        <div class="btn-group export-btn">
+          <el-dropdown
+            split-button
+            class="ksd-fleft"
+            :class="{'is-disabled': !queryHistoryTotalSize}"
+            type="primary"
+            size="medium"
+            id="exportSql"
+            btn-icon="el-ksd-icon-export_22"
+            placement="bottom-start"
+            @click="exportHistory(false)">{{$t('kylinLang.query.export')}}
+            <el-dropdown-menu slot="dropdown" class="model-actions-dropdown">
+              <el-dropdown-item
+                :disabled="!queryHistoryTotalSize"
+                @click="exportHistory(true)">
+                {{$t('kylinLang.query.exportSql')}}
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
+        </div>
+      </div>
+    </div>  
+
+    <div class="clearfix ksd-mb-16">
+      <div class="table-filters ksd-fleft">
+        <DropdownFilter
+          type="checkbox"
+          trigger="click"
+          :value="realizationFilters"
+          hideArrow
+          @input="v => filterContent(v, 'realization')"
+          @handleChangeAll="handleChangeAll"
+          @filterFilters="(v) => fiterList('loadFilterHitModelsList', v)"
+          @filter-scroll-bottom="scrollBottom"
+          :totalSizeLabel="$t('totalSizeLabel', {num: searchCount})"
+          isShowSearchInput
+          :is-loading-data="isShowLoading && (isFilterItemLoading || paginationRealFilteArr.length === maxFilterAndFilterValues)"
+          :is-loading="isFilterItemLoading"
+          :loading-tips="paginationRealFilteArr.length === maxFilterAndFilterValues ? $t('loadingTips') : ''"
+          :filterPlaceholder="$t('searchAnsweredBy')"
+          :optionsTitle="$t('model')"
+          :isSelectAllOption="allHitModel"
+          :options="paginationRealFilteArr.map(item => ({label: item, value: item}))"
+          :options2="pushdownFilteArr.map(item => ({label: item, value: item}))">
+          <el-button text type="primary" iconr="el-ksd-icon-arrow_down_22">
+            {{$t('kylinLang.query.realization_th')}} {{ realizationLabel }}
+          </el-button>
+        </DropdownFilter>
+        <DropdownFilter
+          type="checkbox"
+          trigger="click"
+          :value="filterData.query_status"
+          hideArrow
+          @input="v => filterContent(v, 'query_status')"
+          :options="[
+            { renderLabel: renderStatusLabel, value: 'SUCCEEDED' },
+            { renderLabel: renderStatusLabel, value: 'FAILED' }
+          ]">
+          <el-button text type="primary" iconr="el-ksd-icon-arrow_down_22">{{$t('kylinLang.query.query_status')}} {{filterData.query_status.length > 1 ? `${$t(filterData.query_status[0])} +${filterData.query_status.length - 1}` : filterData.query_status.join('')}}</el-button>
+        </DropdownFilter>
+        <DropdownFilter
+          type="datetimerange"
+          trigger="click"
+          :value="datetimerange"
+          hideArrow
+          :shortcuts="['lastDay', 'lastWeek', 'lastMonth']"
+          @input="v => handleInputDateRange(v)">
+          <el-button text type="primary" iconr="el-ksd-icon-arrow_down_22">{{$t('kylinLang.query.startTime_th')}} {{selectedRange}}</el-button>
+        </DropdownFilter>
+        <DropdownFilter
+          type="inputNumber"
+          trigger="click"
+          :value="[filterData.latencyFrom, filterData.latencyTo]"
+          hideArrow
+          :isShowDropDownImme="plusFilter.includes('latency_th')"
+          v-if="plusFilter.includes('latency_th')"
+          :isShowfooter="false"
+          @input="v => filterContent(v, 'latency')"
+          :options="queryNodes.map(item => ({label: item, value: item}))">
+          <el-button text type="primary" iconr="el-ksd-icon-arrow_down_22">{{$t('kylinLang.query.latency_th')}} <span v-if="filterData.latencyFrom!==null&&filterData.latencyTo!==null">{{filterData.latencyFrom}}s To {{ filterData.latencyTo }}s</span></el-button>
+        </DropdownFilter>
+        <DropdownFilter
+          type="checkbox"
+          trigger="click"
+          :value="filterData.server"
+          hideArrow
+          :isShowDropDownImme="plusFilter.includes('queryNode')"
+          v-if="plusFilter.includes('queryNode')"
+          @input="v => filterContent(v, 'server')"
+          :options="queryNodes.map(item => ({label: item, value: item}))">
+          <el-button text type="primary" iconr="el-ksd-icon-arrow_down_22">{{$t('kylinLang.query.queryNode')}} {{filterData.server.length > 1 ? `${$t(filterData.server[0])} +${filterData.server.length - 1}` : filterData.server.join('')}}</el-button>
+        </DropdownFilter>
+        <DropdownFilter
+          type="checkbox"
+          trigger="click"
+          :value="filterData.submitter"
+          hideArrow
+          :isShowDropDownImme="plusFilter.includes('submitter')"
+          isShowSearchInput
+          :filterPlaceholder="$t('searchSubmitter')"
+          v-if="queryHistoryFilter.includes('filterActions')&&plusFilter.includes('submitter')"
+          @input="v => filterContent(v, 'submitter')"
+          @filterFilters="(v) => fiterList('loadFilterSubmitterList', v)"
+          :options="submitterFilter.map(item => ({label: item, value: item}))">
+          <el-button text type="primary" iconr="el-ksd-icon-arrow_down_22">{{$t('kylinLang.query.submitter')}} {{filterData.submitter.length > 1 ? `${$t(filterData.submitter[0])} +${filterData.submitter.length - 1}` : filterData.submitter.join('')}}</el-button>
+        </DropdownFilter>
+        <el-dropdown @command="handleCommand" placement="bottom-start" trigger="click" v-if="plusFilter.length < 3 ">
+          <i class="el-dropdown-link el-ksd-n-icon-plus-outlined"></i>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="latency_th" v-if="!plusFilter.includes('latency_th')">{{$t('kylinLang.query.latency_th')}}</el-dropdown-item>
+            <el-dropdown-item command="queryNode" v-if="!plusFilter.includes('queryNode')">{{$t('kylinLang.query.queryNode')}}</el-dropdown-item>
+            <el-dropdown-item command="submitter" v-if="!plusFilter.includes('submitter')">{{$t('kylinLang.query.submitter')}}</el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
+        <div class="actions">
+          <el-button
+            nobg-text
+            class="reset-filters-btn"
+            :disabled="!isHasFilterValue"
+            @click="clearAllTags">{{$t('clearAll')}}</el-button>
+        </div>
       </div>
-      <div class="ksd-fright ksd-inline searchInput ksd-ml-10">
-        <el-input v-model="filterData.sql" v-global-key-event.enter.debounce="onSqlFilterChange" @clear="onSqlFilterChange()" prefix-icon="el-ksd-icon-search_22" :placeholder="$t('searchSQL')" size="medium"></el-input>
+      <div class="ksd-fright ksd-ml-10">
+        <el-input v-model="filterData.sql" class="searchInput" v-global-key-event.enter.debounce="onSqlFilterChange" @clear="onSqlFilterChange()" prefix-icon="el-ksd-icon-search_22" :placeholder="$t('searchSQL')" size="medium"></el-input>
       </div>
-    </div>
-    <div class="filter-tags" v-show="filterTags.length">
-      <div class="filter-tags-layout"><el-tag closable v-for="(item, index) in filterTags" :key="index" @close="handleClose(item)">{{$t(item.source) + '：'}}{{['query_status', 'realization'].includes(item.key) ? $t(item.label) : item.label}}</el-tag><span class="clear-all-filters" @click="clearAllTags">{{$t('clearAll')}}</span></div>
-      <span class="filter-queries-size">{{$t('filteredTotalSize', {totalSize: queryHistoryTotalSize})}}</span>
     </div>
     <el-table
       :data="queryHistoryData"
@@ -171,12 +272,12 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column :renderHeader="renderColumn" prop="query_time" width="218">
+      <el-table-column :label="$t('kylinLang.query.startTime_th')" prop="query_time" width="218">
         <template slot-scope="props">
           {{transToGmtTime(props.row.query_time)}}
         </template>
       </el-table-column>
-      <el-table-column :renderHeader="renderColumn2" prop="duration" align="right" width="120">
+      <el-table-column :label="$t('kylinLang.query.latency_th')" prop="duration" align="right" width="120">
         <template slot-scope="props">
           <span v-if="props.row.duration < 1000">&lt; 1s</span>
           <span v-if="props.row.duration >= 1000">{{props.row.duration / 1000 | fixed(2)}}s</span>
@@ -203,18 +304,7 @@
         </template>
       </el-table-column>
       <el-table-column
-        :filters="realFilteArr"
-        :filters2="allHitModels"
-        :show-search-input="true"
-        :filtered-value="filterData.realization"
         :label="$t('kylinLang.query.realization_th')"
-        filter-icon="el-ksd-icon-filter_22"
-        :placeholder="$t('searchAnsweredBy')"
-        :emptyFilterText="$t('kylinLang.common.noData')"
-        :show-multiple-footer="false"
-        :filter-change="(v) => filterContent(v, 'realization')"
-        :filter-filters-change="(v) => fiterList('loadFilterHitModelsList', v)"
-        customFilterClass="filter-realization"
         prop="realizations"
         width="250">
         <template slot-scope="props">
@@ -233,25 +323,15 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column :filters="statusList.map(item => ({text: $t(item), value: item}))" :filtered-value="filterData.query_status" :label="$t('kylinLang.query.query_status')" filter-icon="el-ksd-icon-filter_22" :show-multiple-footer="false" :filter-change="(v) => filterContent(v, 'query_status')" show-overflow-tooltip prop="query_status" width="130">
+      <el-table-column :label="$t('kylinLang.query.query_status')" show-overflow-tooltip prop="query_status" width="130">
         <template slot-scope="scope">
           {{$t('kylinLang.query.' + scope.row.query_status)}}
         </template>
       </el-table-column>
-      <el-table-column :filterMultiple="false" :show-all-select-option="false" :filters="queryNodes.map(item => ({text: item, value: item}))" :filtered-value="filterData.server" :label="$t('kylinLang.query.queryNode')" filter-icon="el-ksd-icon-filter_22" :filter-change="(v) => filterContent(v, 'server')"  show-overflow-tooltip prop="server" width="145">
+      <el-table-column :label="$t('kylinLang.query.queryNode')" show-overflow-tooltip prop="server" width="145">
       </el-table-column>
       <el-table-column
         :label="$t('kylinLang.query.submitter')"
-        :filters="submitterFilter.map(item => ({text: item, value: item}))"
-        :show-search-input="true"
-        :filtered-value="filterData.submitter"
-        filter-icon="el-ksd-icon-filter_22"
-        :show-multiple-footer="false"
-        :placeholder="$t('searchSubmitter')"
-        :emptyFilterText="$t('kylinLang.common.noData')"
-        :filter-change="(v) => filterContent(v, 'submitter')"
-        :filter-filters-change="(v) => fiterList('loadFilterSubmitterList', v)"
-        customFilterClass="filter-submitter"
         prop="submitter"
         v-if="queryHistoryFilter.includes('filterActions')"
         show-overflow-tooltip
@@ -302,10 +382,11 @@ import Vue from 'vue'
 import { mapActions, mapGetters } from 'vuex'
 import { Component, Watch } from 'vue-property-decorator'
 // import $ from 'jquery'
-import { sqlRowsLimit, sqlStrLenLimit, formatSQLConfig } from '../../config/index'
+import { sqlRowsLimit, sqlStrLenLimit, formatSQLConfig, filterPagesize, maxFilterAndFilterValues } from '../../config/index'
 // import { format } from 'sql-formatter'
 import IndexDetails from '../studio/StudioModel/ModelList/ModelAggregate/indexDetails'
 import Diagnostic from 'components/admin/Diagnostic/index'
+import DropdownFilter from '../common/DropdownFilter/DropdownFilter.vue'
 @Component({
   name: 'QueryHistoryTable',
   props: ['queryHistoryData', 'queryHistoryTotalSize', 'queryNodes', 'filterDirectData', 'isLoadingHistory'],
@@ -331,7 +412,8 @@ import Diagnostic from 'components/admin/Diagnostic/index'
   },
   components: {
     IndexDetails,
-    Diagnostic
+    Diagnostic,
+    DropdownFilter
   },
   locales: {
     'en': {
@@ -347,7 +429,8 @@ import Diagnostic from 'components/admin/Diagnostic/index'
       SUCCEEDED: 'SUCCEEDED',
       FAILED: 'FAILED',
       pushdown: 'Pushdown',
-      modelName: 'Model',
+      model: 'Model',
+      modelName: 'All Models',
       totalDuration: 'Total Duration',
       PREPARATION: 'Preparation',
       SQL_TRANSFORMATION: 'SQL transformation',
@@ -364,7 +447,7 @@ import Diagnostic from 'components/admin/Diagnostic/index'
       SQL_PUSHDOWN_TRANSFORMATION: 'SQL pushdown transformation',
       CONSTANT_QUERY: 'Constant query',
       HIT_CACHE: 'Cache hit',
-      allModels: 'All Models',
+      allModels: 'All',
       searchAnsweredBy: 'Search by model name',
       searchSubmitter: 'Search by submitter',
       aggDetailTitle: 'Aggregate Detail',
@@ -376,7 +459,11 @@ import Diagnostic from 'components/admin/Diagnostic/index'
       downloadQueryDiagnosticPackage: 'Download Query Diagnostic Package',
       queryError: 'Query error.',
       viewDetails: 'View Details',
-      errorTitle: 'Error Details'
+      errorTitle: 'Error Details',
+      fetchError: 'Can\'t get the result as the record is missing',
+      loadingTips: 'Up to 100 items',
+      totalSizeLabel: '{num} search results',
+      realizationFilterLengthTips: 'Exceed the selection limit. Please clear and reselect'
     }
   },
   filters: {
@@ -386,18 +473,28 @@ import Diagnostic from 'components/admin/Diagnostic/index'
   }
 })
 export default class QueryHistoryTable extends Vue {
+  maxFilterAndFilterValues = maxFilterAndFilterValues
   datetimerange = ''
   startSec = 0
   endSec = 10
   latencyFilterPopoverVisible = false
   realFilteArr = []
+  pushdownFilteArr = []
+  filterHandleChangeAll = false
+  filtePageOffset = 0
+  isShowLoading = false
   submitterFilter = []
+  realizationFilters = []
+  plusFilter = []
+  searchCount = 0
+  modelCount = 0
   filterData = {
     startTimeFrom: null,
     startTimeTo: null,
     latencyFrom: null,
     latencyTo: null,
     realization: [],
+    exclude_realization: [],
     submitter: [],
     server: [],
     sql: '',
@@ -428,6 +525,13 @@ export default class QueryHistoryTable extends Vue {
     this.queryErrorVisible = true
   }
 
+  renderStatusLabel (h, option) {
+    const { value } = option
+    return [
+      <span>{this.$t(value)}</span>
+    ]
+  }
+
   @Watch('queryHistoryData')
   onQueryHistoryDataChange (val) {
     val.forEach(element => {
@@ -456,8 +560,23 @@ export default class QueryHistoryTable extends Vue {
     return this.isHasFilterValue ? this.$t('kylinLang.common.noResults') : this.$t('kylinLang.common.noData')
   }
 
-  get allHitModels () {
-    return [{text: this.$t('allModels'), value: 'modelName', icon: 'el-icon-ksd-cube'}]
+  get allHitModel () {
+    return {label: this.$t('allModels'), value: 'modelName', indeterminate: this.filterData.exclude_realization.length > 0, totalSize: this.modelCount, selectedSize: this.filterData.realization.includes('modelName') ? this.modelCount - this.filterData.exclude_realization.length : this.filterData.realization.filter(i => !this.pushdownFilteArr.includes(i)).length}
+  }
+  get realizationLabel () {
+    if (this.filterData.realization.length) {
+      if (this.filterData.realization.includes('modelName')) {
+        if (this.filterData.realization[0] === 'modelName') { // 过滤器第一个选择全部模型, 显示模型第一个名称+数字
+          return this.realizationFilters[0] !== 'modelName' ? `${this.realizationFilters[0]} +${this.modelCount - 1 - this.filterData.exclude_realization.length + this.filterData.realization.length - 1}` : `+${this.modelCount - this.filterData.exclude_realization.length + this.filterData.realization.length - 1}`
+        } else {
+          return `${this.filterData.realization[0]} +${this.filterData.realization.length - 1 - 1 + this.modelCount - this.filterData.exclude_realization.length}`
+        }
+      } else {
+        return this.filterData.realization.length > 1 ? `${this.filterData.realization[0]} +${this.filterData.realization.length - 1}` : this.filterData.realization[0]
+      }
+    } else {
+      return ''
+    }
   }
 
   // 排除击中 snapshot 的查询对象
@@ -479,7 +598,7 @@ export default class QueryHistoryTable extends Vue {
   }
 
   dateRangeChange () {
-    if (this.datetimerange) {
+    if (this.datetimerange.length) {
       this.filterData.startTimeFrom = new Date(this.datetimerange[0]).getTime()
       this.filterData.startTimeTo = new Date(this.datetimerange[1]).getTime()
       this.clearDatetimeRange()
@@ -489,6 +608,16 @@ export default class QueryHistoryTable extends Vue {
       this.filterData.startTimeTo = null
       this.clearDatetimeRange()
     }
+  }
+
+  get selectedRange () {
+    if (this.datetimerange && this.datetimerange[0] && this.datetimerange[1]) {
+      return `${this.transToGmtTime(this.filterData.startTimeFrom)} To ${this.transToGmtTime(this.filterData.startTimeTo)}`
+    }
+    return ''
+  }
+  handleCommand (command) {
+    this.plusFilter.push(command)
   }
 
   initFilterData () {
@@ -507,27 +636,40 @@ export default class QueryHistoryTable extends Vue {
 
   async loadFilterHitModelsList (filterValue) {
     try {
-      const res = await this.fetchHitModelsList({ project: this.currentSelectedProject, model_name: filterValue, page_size: 100 })
+      const res = await this.fetchHitModelsList({ project: this.currentSelectedProject, model_name: filterValue, page_size: maxFilterAndFilterValues })
       const data = await handleSuccessAsync(res)
-      this.realFilteArr = data.map((d) => {
-        if (d === 'HIVE') {
-          return { text: d, value: d, icon: 'el-icon-ksd-hive' }
-        } else if (d === 'CONSTANTS') {
-          return { text: d, value: d, icon: 'el-icon-ksd-contants' }
-        } else if (d === 'OBJECT STORAGE') {
-          return { text: d, value: d, icon: 'el-icon-ksd-data_source' }
-        } else {
-          return { text: d, value: d, icon: 'el-icon-ksd-model' }
-        }
-      })
+      this.pushdownFilteArr = data.engines
+      this.realFilteArr = data.models
+      if (this.filterData.realization.includes('modelName')) {
+        data.models.forEach(m => {
+          if (!this.filterData.exclude_realization.includes(m)) {
+            this.realizationFilters.push(m)
+          }
+        })
+      }
+      this.searchCount = data.search_count
+      this.modelCount = data.total_model_count
     } catch (e) {
       handleError(e)
     }
   }
 
+  get isFilterItemLoading () {
+    return this.paginationRealFilteArr.length < this.realFilteArr.length
+  }
+  get paginationRealFilteArr () {
+    return this.realFilteArr.slice(0, (this.filtePageOffset + 1) * filterPagesize)
+  }
+  scrollBottom () {
+    this.isShowLoading = true
+    setTimeout(() => {
+      this.isFilterItemLoading && this.filtePageOffset++
+    }, 200)
+  }
+
   async loadFilterSubmitterList (filterValue) {
     try {
-      const res = await this.fetchSubmitterList({ project: this.currentSelectedProject, submitter: filterValue, page_size: 100 })
+      const res = await this.fetchSubmitterList({ project: this.currentSelectedProject, submitter: filterValue, page_size: maxFilterAndFilterValues })
       this.submitterFilter = await handleSuccessAsync(res)
     } catch (e) {
       handleError(e)
@@ -774,161 +916,67 @@ export default class QueryHistoryTable extends Vue {
     if (!realization.valid || realization.indexType === 'Table Snapshot') return
     this.$emit('openIndexDialog', realization, rows)
   }
-  renderColumn (h) {
-    if (this.filterData.startTimeFrom && this.filterData.startTimeTo) {
-      const startTime = transToGmtTime(this.filterData.startTimeFrom)
-      const endTime = transToGmtTime(this.filterData.startTimeTo)
-      return (<span onClick={e => (e.stopPropagation())}>
-        <span>{this.$t('kylinLang.query.startTime_th')}</span>
-        <el-tooltip placement="top">
-          <div slot="content">
-            <span>
-              <i class='el-icon-time'></i>
-              <span> {startTime} To {endTime}</span>
-            </span>
-          </div>
-          <el-date-picker
-            value={this.datetimerange}
-            onInput={this.handleInputDateRange}
-            type="datetimerange"
-            popper-class="table-filter-datepicker"
-            toggle-icon="el-ksd-icon-data_range_old isFilter"
-            is-only-icon={true}>
-          </el-date-picker>
-        </el-tooltip>
-      </span>)
-    } else {
-      return (<span onClick={e => (e.stopPropagation())}>
-        <span>{this.$t('kylinLang.query.startTime_th')}</span>
-        <el-date-picker
-          value={this.datetimerange}
-          onInput={this.handleInputDateRange}
-          popper-class="table-filter-datepicker"
-          type="datetimerange"
-          toggle-icon="el-ksd-icon-data_range_old"
-          is-only-icon={true}>
-        </el-date-picker>
-      </span>)
-    }
-  }
+
   handleInputDateRange (val) {
     this.datetimerange = val
     this.dateRangeChange()
     this.filterList()
   }
-  resetLatency () {
-    this.startSec = 0
-    this.endSec = 10
-    this.filterData.latencyFrom = null
-    this.filterData.latencyTo = null
-    this.latencyFilterPopoverVisible = false
-    this.clearLatencyRange()
-    this.filterList()
-  }
-  saveLatencyRange () {
-    this.filterData.latencyFrom = this.startSec
-    if (this.startSec > this.endSec) {
-      this.filterData.latencyTo = this.endSec = this.startSec
-    } else {
-      this.filterData.latencyTo = this.endSec
-    }
-    this.latencyFilterPopoverVisible = false
-    this.clearLatencyRange()
-    this.filterTags.push({label: `${this.startSec}s To ${this.endSec}s`, source: 'kylinLang.query.latency_th', key: 'latency'})
-    this.filterList()
+
+  handleChangeAll () {
+    this.filterHandleChangeAll = true
   }
 
-  renderColumn2 (h) {
-    if (this.filterData.latencyTo) {
-      return (<span>
-        <span style="margin-right:5px;">{this.$t('kylinLang.query.latency_th')}</span>
-        <el-tooltip placement="top">
-          <div slot="content">
-            <span>
-              <i class='el-icon-time'></i>
-              <span> {this.filterData.latencyFrom}s To {this.filterData.latencyTo}s</span>
-            </span>
-          </div>
-          <el-popover
-            ref="latencyFilterPopover"
-            placement="bottom"
-            width="315"
-            value={this.latencyFilterPopoverVisible}
-            onInput={val => (this.latencyFilterPopoverVisible = val)}>
-            <div class="latency-filter-pop">
-              <el-input-number
-                size="small"
-                min={0}
-                value={this.startSec}
-                onInput={val1 => (this.startSec = val1)}></el-input-number>
-              <span>&nbsp;S&nbsp;&nbsp;To</span>
-              <el-input-number
-                size="small"
-                min={this.startSec}
-                class="ksd-ml-10"
-                value={this.endSec}
-                onInput={val2 => (this.endSec = val2)}></el-input-number>
-              <span>&nbsp;S</span>
-            </div>
-            <div class="latency-filter-footer">
-              <el-button size="small" onClick={this.resetLatency}>{this.$t('kylinLang.query.clear')}</el-button>
-              <el-button type="primary" onClick={this.saveLatencyRange} size="small">{this.$t('kylinLang.common.save')}</el-button>
-            </div>
-            <i class="el-ksd-icon-data_range_old isFilter" onClick={e => (e.stopPropagation())} slot="reference"></i>
-          </el-popover>
-        </el-tooltip>
-      </span>)
-    } else {
-      return (<span>
-        <span style="margin-right:5px;">{this.$t('kylinLang.query.latency_th')}</span>
-        <el-popover
-          ref="latencyFilterPopover"
-          placement="bottom"
-          width="315"
-          value={this.latencyFilterPopoverVisible}
-          onInput={val => (this.latencyFilterPopoverVisible = val)}>
-          <div class="latency-filter-pop">
-            <el-input-number
-              size="small"
-              value={this.startSec}
-              min={0}
-              onInput={val1 => (this.startSec = val1)}></el-input-number>
-            <span>&nbsp;S&nbsp;&nbsp;To</span>
-            <el-input-number
-              size="small"
-              class="ksd-ml-10"
-              value={this.endSec}
-              min={this.startSec}
-              onInput={val2 => (this.endSec = val2)}></el-input-number>
-            <span>&nbsp;S</span>
-          </div>
-          <div class="latency-filter-footer">
-            <el-button size="small" onClick={this.resetLatency}>{this.$t('kylinLang.query.clear')}</el-button>
-            <el-button type="primary" onClick={this.saveLatencyRange} size="small">{this.$t('kylinLang.common.save')}</el-button>
-          </div>
-          <i class="el-ksd-icon-data_range_old" onClick={e => (e.stopPropagation())} slot="reference"></i>
-        </el-popover>
-      </span>)
-    }
-  }
   // 查询状态过滤回调函数
   filterContent (val, type) {
-    const maps = {
-      realization: 'kylinLang.query.answered_by',
-      query_status: 'taskStatus',
-      server: 'kylinLang.query.queryNode',
-      submitter: 'kylinLang.query.submitter'
+    if (type === 'latency') {
+      this.filterData['latencyFrom'] = val[0]
+      this.filterData['latencyTo'] = val[1]
+      this.filterList()
+    } else if (type === 'realization') {
+      setTimeout(() => {
+        if (val.includes('modelName') && this.filterHandleChangeAll) {  // 选择全部模型
+          this.realizationFilters = [...this.realFilteArr, ...val]
+          this.filterData.realization = [...val]
+        } else if (!val.includes('modelName') && this.filterHandleChangeAll) {  // 取消全部模型
+          this.realizationFilters = [...this.filterData.realization].filter(i => i !== 'modelName')
+          this.filterData.realization = [...this.filterData.realization].filter(i => i !== 'modelName')
+          this.filterData.exclude_realization = []
+        } else {
+          if (val.includes('modelName')) { // 操作其他选项时，有全选模型，模型名称的进入反选数组
+            this.realizationFilters = [...val]
+            this.filterData.realization = [...val].filter(i => this.pushdownFilteArr.includes(i) || i === 'modelName')
+            this.filterData.exclude_realization = this.filterData.exclude_realization.filter(i => !this.realizationFilters.includes(i)) // 全选情况下，手动勾选的模型是取消反选的操作
+            this.filterData.exclude_realization = Array.from(new Set([...this.filterData.exclude_realization, ...this.realFilteArr.filter(i => !val.includes(i))]))
+          } else {
+            this.realizationFilters = [...val]
+            this.filterData.realization = [...val]
+            this.filterData.exclude_realization = []
+          }
+        }
+        if (this.filterData.realization.length > maxFilterAndFilterValues || this.filterData.exclude_realization.length > maxFilterAndFilterValues) {
+          this.$message({
+            message: this.$t('realizationFilterLengthTips'),
+            type: 'warning',
+            duration: 10000,
+            showClose: true
+          })
+          if (val.length > maxFilterAndFilterValues) {
+            this.realizationFilters = val.slice(0, val.length - 1)
+            this.filterData.realization = val.slice(0, val.length - 1)
+          } else {
+            this.realizationFilters.push(this.realFilteArr.filter(i => !val.includes(i))[0])
+            this.filterData.exclude_realization = this.filterData.exclude_realization.slice(0, this.filterData.exclude_realization.length - 1)
+          }
+          return
+        }
+        this.filterList()
+      })
+    } else {
+      this.filterData[type] = val
+      this.filterList()
     }
-
-    this.filterTags = this.filterTags.filter((item, index) => item.key !== type || item.key === type && val.includes(item.label))
-    const list = this.filterTags.filter(it => it.key === type).map(it => it.label)
-    val.length && val.forEach(item => {
-      if (!list.includes(item)) {
-        this.filterTags.push({label: item === 'modelName' ? 'allModels' : item, source: maps[type], key: type})
-      }
-    })
-    this.filterData[type] = val
-    this.filterList()
+    this.filterHandleChangeAll = false
   }
   // 删除单个筛选条件
   handleClose (tag) {
@@ -958,12 +1006,14 @@ export default class QueryHistoryTable extends Vue {
   clearAllTags () {
     this.filterData.query_status.splice(0, this.filterData.query_status.length)
     this.filterData.realization.splice(0, this.filterData.realization.length)
+    this.filterData.exclude_realization.splice(0, this.filterData.exclude_realization.length)
     this.filterData.server.splice(0, this.filterData.server.length)
     this.filterData.submitter.splice(0, this.filterData.submitter.length)
     this.filterData.latencyFrom = null
     this.filterData.latencyTo = null
     this.datetimerange = ''
     this.filterTags = []
+    this.realizationFilters = []
     this.dateRangeChange()
     this.filterList()
   }
@@ -1041,6 +1091,24 @@ export default class QueryHistoryTable extends Vue {
         background: @table-stripe-color;
       }
     } */
+    .actions {
+      line-height: 22px;
+      // border-right: 1px solid @ke-border-divider-color;
+      margin: 6px 8px 0 0;
+      padding-right: 4px;
+      height: 22px;
+      display: inline-block;
+      .reset-filters-btn.is-disabled {
+        i {
+          cursor: not-allowed;
+        }
+      }
+    }
+    .table-filters {
+      >.dropdown-filter {
+        margin-left: -8px;
+      }
+    }
     .el-table__expanded-cell {
       padding: 24px;
       .copy-btn {
@@ -1367,7 +1435,7 @@ export default class QueryHistoryTable extends Vue {
     }
   }
   .latency-filter-footer {
-    border-top: 1px solid @line-split-color;
+    border-top: 1px solid @ke-border-divider-color;
     padding: 10px 10px 0;
     margin: 10px -10px 0;
     text-align: right;
@@ -1427,17 +1495,20 @@ export default class QueryHistoryTable extends Vue {
       color: @text-title-color;
     }
   }
-  .filter-realization, .filter-submitter {
+  .filter-submitter {
     .el-checkbox-group {
       max-height: 205px;
       overflow: auto;
     }
     i {
-      margin-right: 5px;
+      margin-right: 4px;
       color: @text-normal-color;
     }
     .el-checkbox__input.is-checked+.el-checkbox__label i {
       color: @base-color;
     }
+  }
+  .filter-realization i {
+    margin-right: 4px;
   }
 </style>

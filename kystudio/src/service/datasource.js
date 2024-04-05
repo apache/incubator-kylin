@@ -122,7 +122,7 @@ export default {
     return Vue.resource(`${apiUrl}access/${projectId}/all`).get(para)
   },
   getHistoryList: (para) => {
-    return Vue.resource(apiUrl + 'query/history_queries{?realization}{&query_status}{&submitter}').get(para)
+    return Vue.resource(apiUrl + 'query/history_queries{?realization}{&query_status}{&submitter}{&exclude_realization}').get(para)
   },
   loadOnlineQueryNodes: (para) => {
     return Vue.resource(apiUrl + 'query/servers').get(para)

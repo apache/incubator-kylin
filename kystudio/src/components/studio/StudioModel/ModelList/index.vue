@@ -72,12 +72,10 @@
           </DropdownFilter>
           <div class="actions">
             <el-button
-              text
-              type="primary"
-              icon="el-ksd-icon-resure_22"
+              nobg-text
               class="reset-filters-btn"
               :disabled="isResetFilterDisabled"
-              @click="handleResetFilters">{{$t('reset')}}</el-button>
+              @click="handleResetFilters">{{$t('clearAll')}}</el-button>
           </div>
         </div>
         <div class="ksd-fright">
@@ -1134,18 +1132,23 @@ export default class ModelList extends Vue {
   .el-tabs__content {
     overflow: initial;
   }
+  .actions {
+    line-height: 22px;
+    // border-right: 1px solid @ke-border-divider-color;
+    margin: 6px 8px 0 0;
+    padding-right: 4px;
+    height: 22px;
+    display: inline-block;
+    .reset-filters-btn.is-disabled {
+      i {
+        cursor: not-allowed;
+      }
+    }
+  }
   .table-filters {
     margin-bottom: 8px;
     >.dropdown-filter {
       margin-left: -8px;
-    }
-    .actions {
-      float: right;
-      .reset-filters-btn.is-disabled {
-        i {
-          cursor: not-allowed;
-        }
-      }
     }
   }
   .last-modified {
