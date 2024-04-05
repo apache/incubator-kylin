@@ -287,7 +287,7 @@ export default class DataFeatures extends Vue {
   .data_features-details {
     padding: 24px;
     height: 100%;
-    width: calc(~'100% - 214px');
+    width: calc(~'100% - 216px');
     box-sizing: border-box;
     overflow: auto;
     display: inline-block;

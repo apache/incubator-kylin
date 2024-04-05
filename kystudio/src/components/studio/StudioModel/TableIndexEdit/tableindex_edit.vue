@@ -14,13 +14,13 @@
         :rightTitle="$t('tableIndex')"
         :rightTitleTip="$t('tableIndexTips')"
         isTextRecognition
-        :isEdit="this.tableIndexMeta.id !== ''"
+        :isEdit="tableIndexMeta.id !== ''"
         :alertTips="alertTips"
         @handleTableIndexRecognize="handleTableIndexRecognize"
         @setSelectedColumns="(v) => setSelectedColumns(v)"
         @setShardbyCol="(label) => setShardbyCol(label)">
         <template slot="left-footer" v-if="showExcludedTableCheckBox">
-          <el-checkbox v-model="displayExcludedTables" @change="isShowExcludedTablesCols" class="exclude-checkbox" size="small">
+          <el-checkbox v-model="displayExcludedTables" @change="getTablesCols" class="exclude-checkbox" size="small">
             <span>{{$t('excludeTableCheckbox')}}</span>
             <el-tooltip effect="dark" placement="top" :maxHeight="200">
               <div slot="content" class="ksd-fs-12">
@@ -72,7 +72,7 @@
           <el-tooltip placement="top" :disabled="indexUpdateEnabled" :content="$t('refuseAddIndexTip')">
             <el-radio :label="'HYBRID'" :disabled="!indexUpdateEnabled">
               {{$t('kylinLang.common.HYBRID')}}<el-tooltip effect="dark" :content="$t('indexTimeRangeTips')" placement="top">
-                <i class="el-icon-ksd-what ksd-ml-5 ksd-fs-14"></i>
+                <i class="el-icon-ksd-what ksd-ml-5 ksd-fs-14" style="position: relative; top: 1px;"></i>
               </el-tooltip>
             </el-radio>
           </el-tooltip>
@@ -156,6 +156,7 @@
     })
     tableIndexMeta = JSON.parse(this.tableIndexMetaStr)
     cloneMeta = ''
+    cloneShardbyCol = ''
     displayExcludedTables = false
     isLoadDataLoading = false
     alertTips = []
@@ -204,6 +205,12 @@
       return typeof col.excluded !== 'undefined' ? col.excluded : false
     }
     initColumns () {
+      this.getTablesCols()
+      setTimeout(() => {
+        this.isShowHelp = this.isShowHelpDefault
+      }, 200)
+    }
+    getTablesCols () {
       this.allColumns = this.modelInstance.selected_columns.filter(col => !this.displayExcludedTables && !this.isExistExcludeTable(col) || this.displayExcludedTables).map((col) => {
         const isShardby = this.tableIndexMeta.shard_by_columns.indexOf(col.column) >= 0
         const disabled = this.getDisabledTableType(col)
@@ -212,23 +219,6 @@
           this.alertTips = [{ text: this.$t('manyToManyAntiTableTip'), type: 'warning' }]
         }
         return { key: col.id, label: col.column, name: col.name, disabled: disabled, cardinality: col.cardinality, type: col.type, comment: col.comment, excluded: typeof col.excluded !== 'undefined' ? col.excluded : true, selected: isSelected, isShared: isShardby }
-      })
-      this.selectedColumns = this.tableIndexMeta.col_order.map(item => {
-        const index = this.allColumns.findIndex(it => it.label === item)
-        return this.allColumns[index].key
-      })
-      setTimeout(() => {
-        this.isShowHelp = this.isShowHelpDefault
-      }, 200)
-    }
-    isShowExcludedTablesCols () {
-      this.allColumns = this.modelInstance.selected_columns.filter(col => !this.displayExcludedTables && !this.isExistExcludeTable(col) || this.displayExcludedTables).map((col) => {
-        const isShardby = this.tableIndexMeta.shard_by_columns.indexOf(col.column) >= 0
-        const disabled = this.getDisabledTableType(col)
-        if (disabled) {
-          this.alertTips = [{ text: this.$t('manyToManyAntiTableTip'), type: 'warning' }]
-        }
-        return { key: col.id, label: col.column, name: col.name, disabled: disabled, cardinality: col.cardinality, type: col.type, comment: col.comment, excluded: typeof col.excluded !== 'undefined' ? col.excluded : true, selected: false, isShared: isShardby }
       })
       if (!this.displayExcludedTables) {
         this.removeTips('warning')
@@ -239,7 +229,7 @@
       })
     }
     get saveBtnDisable () {
-      return this.cloneMeta === JSON.stringify(this.selectedColumns)
+      return this.cloneMeta === JSON.stringify(this.selectedColumns) && this.cloneShardbyCol === JSON.stringify(this.tableIndexMeta.shard_by_columns)
     }
     @Watch('isShow')
     initTableIndex (val) {
@@ -255,6 +245,7 @@
         }
         this.initColumns()
         this.cloneMeta = JSON.stringify(this.selectedColumns)
+        this.cloneShardbyCol = JSON.stringify(this.tableIndexMeta.shard_by_columns)
       } else {
         this.tableIndexMeta = JSON.parse(this.tableIndexMetaStr)
       }
@@ -384,9 +375,6 @@
   .table-edit-dialog {
     .el-dialog {
       min-width: 600px;
-      .exclude-checkbox {
-        margin: 6px 8px;
-      }
       .header {
         text-align: right;
         .el-alert--nobg {

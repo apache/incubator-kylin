@@ -71,13 +71,16 @@
                   <div class="contain">
                     <div class="row" v-if="model.model_type === 'HYBRID'">
                       <h2 class="title font-medium">
-                        <span class="is-required">*</span>
                         <span>{{$t('indexTimeRange')}}</span>
-                        <common-tip :content="$t('indexTimeRangeTips')"><i class="el-ksd-icon-more_info_16 ksd-fs-16"></i></common-tip>
+                        <span class="is-required">*</span>
                       </h2>
                       <el-radio-group v-model="form.aggregateArray[aggregateIdx].index_range" :disabled="form.aggregateArray[aggregateIdx].curAggIsEdit">
                         <el-tooltip placement="top" :disabled="indexUpdateEnabled || form.aggregateArray[aggregateIdx].curAggIsEdit" :content="$t('refuseAddIndexTip')">
-                          <el-radio :label="'HYBRID'" :disabled="!indexUpdateEnabled">{{$t('kylinLang.common.HYBRID')}}</el-radio>
+                          <el-radio :label="'HYBRID'" :disabled="!indexUpdateEnabled">
+                            {{$t('kylinLang.common.HYBRID')}}<el-tooltip effect="dark" :content="$t('indexTimeRangeTips')" placement="top">
+                              <i class="el-icon-ksd-what ksd-ml-5 ksd-fs-14" style="position: relative; top: 1px;"></i>
+                            </el-tooltip>
+                          </el-radio>
                         </el-tooltip>
                         <el-radio :label="'BATCH'">{{$t('kylinLang.common.BATCH')}}</el-radio>
                         <el-tooltip placement="top" :disabled="indexUpdateEnabled || form.aggregateArray[aggregateIdx].curAggIsEdit" :content="$t('refuseAddIndexTip')">
@@ -98,7 +101,7 @@
                               :disabled="!(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) || (!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))">
                               <el-button
                                 plain
-                                class="ksd-ml-10"
+                                class="ksd-ml-8"
                                 size="mini"
                                 :disabled="(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) || (!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))"
                                 @click="handleIncludesRecognize(AGGREGATE_TYPE.INCLUDE, aggregateIdx)"
@@ -110,9 +113,9 @@
                               :disabled="!(!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))">
                               <el-button
                                 plain
-                                class="ksd-ml-10"
+                                class="ksd-ml-8"
                                 size="mini"
-                                :disabled="!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range)"
+                                :disabled="!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range) || !aggregate.includes.length"
                                 @click="handleRemoveAllIncludes(aggregateIdx, aggregateIdx + 1, aggregate.id)"
                               >{{$t('clearAll')}}</el-button>
                             </common-tip>
@@ -122,7 +125,7 @@
                                 plain
                                 size="mini"
                                 icon="el-ksd-icon-edit_22"
-                                class="add-all-item"
+                                class="add-all-item ksd-ml-8"
                                 type="primary"
                                 :disabled="(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) || (!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))"
                                 @click="handleEditIncludes(aggregateIdx, aggregate.id)">{{$t('edit')}}</el-button>
@@ -152,8 +155,8 @@
                             <common-tip placement="right" :content="$t('mandatoryDesc')">
                               <i class="el-ksd-icon-more_info_16"></i>
                             </common-tip>
-                            <span class="row ksd-fright ky-no-br-space">
-                              <common-tip placement="top" v-if="form.aggregateArray[aggregateIdx].includes.length" :content="(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) ? $t('disableAddDim') : $t('refuseAddIndexTip')"
+                            <span class="row ksd-fright ky-no-br-space" v-if="form.aggregateArray[aggregateIdx].includes.length">
+                              <common-tip placement="top" :content="(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) ? $t('disableAddDim') : $t('refuseAddIndexTip')"
                                 :disabled="!(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) || (!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))">
                                 <el-button
                                   plain
@@ -164,6 +167,16 @@
                                 >
                                   {{$t('textRecognition')}}
                                 </el-button>
+                              </common-tip>
+                              <common-tip placement="top" :content="$t('refuseAddIndexTip')"
+                                :disabled="!(!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))">
+                                <el-button
+                                  plain
+                                  class="ksd-ml-8"
+                                  size="mini"
+                                  :disabled="!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range) || !aggregate.mandatory.length"
+                                  @click="handleRemoveAllMandatory(aggregateIdx, aggregateIdx + 1, aggregate.id)"
+                                >{{$t('clearAll')}}</el-button>
                               </common-tip>
                             </span>
                           </h2>
@@ -287,13 +300,13 @@
                           <div class="row ksd-mb-10 ksd-fright ky-no-br-space">
                             <common-tip placement="top" :content="$t('refuseAddIndexTip')"
                               :disabled="!(!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))">
-                              <el-button plain size="mini" class="ksd-ml-10"
+                              <el-button plain size="mini"
                                 :disabled="!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range)"
                                 @click="handleRemoveAllMeasure(aggregateIdx, aggregateIdx+1, aggregate.id)">{{$t('clearAll')}}</el-button>
                             </common-tip>
                             <common-tip placement="top" :content="(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) ? $t('disableAddDim') : $t('refuseAddIndexTip')"
                               :disabled="!(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) || (!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))">
-                              <el-button plain size="mini" class="add-all-item" type="primary"
+                              <el-button plain size="mini" class="add-all-item ksd-ml-8" type="primary"
                                 :disabled="(model.model_type === 'HYBRID' && !form.aggregateArray[aggregateIdx].index_range) || (!indexUpdateEnabled && ['HYBRID', 'STREAMING'].includes(aggregate.index_range))"
                                 @click="handleEditMeasures(aggregateIdx, aggregate.id)"><i class="el-ksd-icon-edit_16 ksd-mr-5"></i>{{$t('edit')}}</el-button>
                             </common-tip>
@@ -458,7 +471,7 @@
         <div class="right ksd-fs-0">
           <el-button :type="!onlyRealTimeType ? 'primary' : ''" :text="!onlyRealTimeType" size="medium" @click="handleClose(false)">{{$t('kylinLang.common.cancel')}}</el-button>
           <common-tip :content="disabledTips" :disabled="!isDisabledSaveBtn" effect="dark" placement="top">
-            <el-button :type="onlyRealTimeType ? 'primary' : ''" size="medium" class="ksd-ml-10" :disabled="isDisabledSaveBtn || isSubmit&&isCatchUpLoading" v-if="isShow" v-guide.saveAggBtn :loading="isSubmit&&!isCatchUpLoading" @click="handleSubmit(false)">{{$t('kylinLang.common.save')}}</el-button>
+            <el-button :type="onlyRealTimeType ? 'primary' : ''" size="medium" class="ksd-ml-10" :disabled="isDisabledSaveBtn || isSubmit&&isCatchUpLoading" v-if="isShow" :loading="isSubmit&&!isCatchUpLoading" @click="handleSubmit(false)">{{$t('kylinLang.common.save')}}</el-button>
           </common-tip>
           <common-tip effect="dark" :disabled="!isDisabledSaveBtn" placement="top" :content="disabledTips">
             <el-button v-if="isShow && !onlyRealTimeType" type="primary" size="medium" class="ksd-ml-10" :disabled="isDisabledSaveBtn || isSubmit&&!isCatchUpLoading" :loading="isSubmit&&isCatchUpLoading" @click="handleSubmit(true)">{{$t('saveAndBuild')}}</el-button>
@@ -470,7 +483,7 @@
     <el-dialog
       class="edit-includes-dimensions"
       :title="$t('editIncludeDimensions')"
-      width="1000px"
+      width="880px"
       :append-to-body="true"
       :close-on-press-escape="false"
       :close-on-click-modal="false"
@@ -479,59 +492,59 @@
       v-if="editIncludeDimension"
       ref="includesDimensionDialog"
     >
-      <div class="action-layout">
-        <p class="alert">{{$t('editIncludeDimensionTip')}}</p>
-        <el-alert
-          v-if="hasManyToManyAndAntiTable"
-          class="ksd-pt-0"
-          :title="$t('manyToManyAntiTableTip')"
-          type="info"
-          :show-background="false"
-          :closable="false"
-          show-icon>
-        </el-alert>
-        <div class="filter-dimension">
-          <el-input v-model="searchName" v-global-key-event.enter.debounce="filterChange" @clear="clearFilter" size="medium" prefix-icon="el-ksd-icon-search_22" style="width:240px" :placeholder="$t('kylinLang.common.pleaseFilter')"></el-input>
-        </div>
-      </div>
-      <div class="ky-simple-table" @scroll="scrollEvent">
-        <el-row class="table-header table-row dim-table-header">
-          <el-col :span="1"><el-checkbox v-model="isSelectAllDimensions" :indeterminate="getSelectedIncludeDimensions.length > 0 && getSelectedIncludeDimensions.length < dimensions().length" @change="selectAllIncludes" size="small"/></el-col>
-          <el-col :span="6" :key="dataDragData.width" :style="{width: dataDragData.width + 'px'}">{{$t('th_name')}}
-            <div class="ky-table-drag-layout-line" unselectable="on" v-drag:change.width="dataDragData"></div>
-          </el-col>
-          <el-col :span="7" :key="dataDragData2.width" :style="{width: dataDragData2.width + 'px'}">{{$t('th_column')}}
-            <div class="ky-table-drag-layout-line" unselectable="on" v-drag:change.width="dataDragData2"></div>
-          </el-col>
-          <el-col :span="3">{{$t('th_dataType')}}</el-col>
-          <el-col :span="2">{{$t('cardinality')}}</el-col>
-          <el-col :span="3">{{$t('th_info')}}</el-col>
-          <el-col :span="2">{{$t('th_order')}}</el-col>
-        </el-row>
-        <transition-group name="flip-list" tag="div">
-          <el-row class="table-row" v-for="(item, index) in includeDimensions" :key="item.id">
-            <el-col :span="1"><el-checkbox size="small" :disabled="getDisabledTableType(item)" v-model="item.isCheck" @change="(val) => selectIncludDimensions(item, val)"/></el-col>
-            <el-col :span="6" :key="dataDragData.width" :style="{width: dataDragData.width + 'px'}"><span class="text" v-custom-tooltip="{text: item.name, w: 20}">{{item.name}}</span></el-col>
-            <el-col :span="7" :key="dataDragData2.width" :style="{width: dataDragData2.width + 'px'}"><span v-custom-tooltip="{text: item.column, w: 40}">{{item.column}}</span><el-tooltip :content="$t('excludedTableIconTip')" effect="dark" placement="top"><i class="excluded_table-icon el-icon-ksd-exclude" v-if="isExistExcludeTable(item) && displayExcludedTables"></i></el-tooltip></el-col>
-            <el-col :span="3">{{item.type}}</el-col>
-            <el-col :span="2">
-              <template v-if="item.cardinality === null"><i class="no-data_placeholder">NULL</i></template>
-              <template v-else>{{ item.cardinality }}</template>
-            </el-col>
-            <el-col :span="3"><span v-custom-tooltip="{text: item.comment, w: 20}">{{item.comment}}</span></el-col>
-            <el-col :span="2" class="order-actions">
-              <template v-if="item.isCheck">
-                <span :class="['icon', 'el-icon-ksd-move_to_top', {'is-disabled': index === 0 && !searchName}]" @click="moveTo('top', item)"></span>
-                <span :class="['icon', 'el-icon-ksd-move_up', {'is-disabled': index === 0}]" @click="moveTo('up', item)"></span>
-                <span :class="['icon', 'el-icon-ksd-move_down', {'is-disabled': !includeDimensions[index + 1] || !includeDimensions[index + 1].isCheck}]" @click="moveTo('down', item)"></span>
-              </template>
-            </el-col>
-          </el-row>
-        </transition-group>
-      </div>
+      <transfer-data
+        :allModelColumns="backUpDimensions"
+        isShowNum
+        draggable
+        topColAble
+        isSortAble
+        isAllSelect
+        :selectedColumns="selectedIncludeDimension"
+        :rightTitle="$t('includeDim')"
+        :rightTitleTip="$t('includeDimTips')"
+        :isEdit="selectedIncludeDimension.length>0"
+        :alertTips="alertTips"
+        @setSelectedColumns="(v) => setSelectedColumns(v)"
+        @setShardbyCol="(label) => setShardbyCol(label)">
+        <template slot="left-footer" v-if="showExcludedTableCheckBox">
+          <el-checkbox v-model="displayExcludedTables" @change="getDimensionsCols(currentAggregateInfo.aggregateIdx)" class="exclude-checkbox" size="small">
+            <span>{{$t('excludeTableCheckbox')}}</span>
+            <el-tooltip effect="dark" placement="top" :maxHeight="200">
+              <div slot="content" class="ksd-fs-12">
+                <div>{{ $t('excludeTableCheckboxTip1') }}</div>
+                <li>• {{ $t('excludeTableCheckboxTip2') }}</li>
+                <li>• {{ $t('excludeTableCheckboxTip3') }}</li>
+                <div v-html="$t('excludeTableCheckboxTip4')"></div>
+              </div>
+              <i class="el-icon-ksd-what ksd-fs-14"></i>
+            </el-tooltip>
+          </el-checkbox>
+        </template>
+        <template slot="help">
+          <el-popover
+            ref="help"
+            placement="top"
+            width="366"
+            popper-class="table-index-help"
+            :title="$t('kylinLang.common.help')"
+            v-model="isShowHelp">
+            <i class="el-ksd-n-icon-close-L-outlined" @click="isShowHelp = false"></i>
+            <div class="sugession-blocks">
+              <p class="ksd-mt-16">
+                <span class="sugession">{{ $t('sugession') }}
+                  <span class="tips">{{ $t('tips') }}<a class="ky-a-like" @click="goToDataSource">{{ $t('goToDataSource') }}</a></span>
+                </span>
+              </p>
+            </div>
+          </el-popover>
+          <el-tooltip effect="dark" :content="$t('help')" placement="top">
+            <i class="el-ksd-n-icon-help-circle-outlined" v-popover:help></i>
+          </el-tooltip>
+        </template>
+      </transfer-data>
       <div slot="footer" class="dialog-footer ky-no-br-space">
         <el-button size="medium" @click="editIncludeDimension = false">{{$t('kylinLang.common.cancel')}}</el-button>
-        <el-button type="primary" size="medium" @click="saveIncludes" :disabled="!getSelectedIncludeDimensions.length">{{$t('ok')}}</el-button>
+        <el-button type="primary" size="medium" @click="saveIncludes">{{$t('ok')}}</el-button>
       </div>
     </el-dialog>
     <!-- 编辑度量 -->
@@ -591,14 +604,15 @@ import { AGGREGATE_TYPE } from 'config'
 import { BuildIndexStatus } from 'config/model'
 import store, { types, initialAggregateData } from './store'
 import { titleMaps, getPlaintDimensions, findIncludeDimension } from './handler'
-import { handleError, get, set, push, kylinConfirm, handleSuccessAsync, sampleGuid, objectClone, ArrayFlat } from 'util'
+import { handleError, get, set, push, kylinConfirm, handleSuccessAsync, sampleGuid, objectClone, ArrayFlat, indexOfObjWithSomeKey } from 'util'
 import { handleSuccess } from 'util/business'
 import common_tip from '../../../../common/common_tip.vue'
+import TransferData from '../../../../common/CustomTransferData/TransferData'
 
 vuex.registerModule(['modals', 'AggregateModal'], store)
 
 @Component({
-  components: { common_tip },
+  components: { common_tip, TransferData },
   computed: {
     ...mapState('AggregateModal', {
       form: state => state.form,
@@ -676,11 +690,13 @@ export default class AggregateModal extends Vue {
     data: {}
   }
   editIncludeDimension = false
+  isShowHelp = false
   includeDimensions = []
   selectedIncludeDimension = []
   currentAggregateInfo = {}
-  isSelectAllDimensions = false
-  searchName = ''
+  alertTips = []
+  // isSelectAllDimensions = false
+  // searchName = ''
 
   measureList = []
   editMeasure = false
@@ -750,10 +766,21 @@ export default class AggregateModal extends Vue {
     return Object.keys(dimensionMaps)
   }
   get getSelectedIncludeDimensions () {
-    return this.selectedIncludeDimension
+    const dimensions = []
+    this.selectedIncludeDimension.forEach((key) => {
+      const i = indexOfObjWithSomeKey(this.backUpDimensions, 'key', key)
+      i !== -1 && dimensions.push(this.backUpDimensions[i].label)
+    })
+    return dimensions
   }
   get getSelectedMeasures () {
     return this.selectedMeasures
+  }
+
+  // 是否展示屏蔽表 checkbox
+  get showExcludedTableCheckBox () {
+    const dimensions = this.dimensions()
+    return dimensions.length ? dimensions.filter(it => typeof it.excluded !== 'undefined' && it.excluded).length > 0 : false
   }
 
   // 是否存在多对多且被屏蔽的表
@@ -770,6 +797,10 @@ export default class AggregateModal extends Vue {
 
   get onlyRealTimeType () {
     return (this.model.model_type === 'HYBRID' && this.form.aggregateArray.filter(item => item.index_range === 'STREAMING').length === this.form.aggregateArray.length) || this.model.model_type === 'STREAMING'
+  }
+
+  goToDataSource () {
+    this.$router.push('/studio/source')
   }
 
   // 当表为屏蔽表且表关联关系为多对多时，不能作为维度添加到索引中
@@ -1221,6 +1252,11 @@ export default class AggregateModal extends Vue {
       this.handleInput(`aggregateArray.${aggregateIdx}.includes`, [], id)
     })
   }
+  handleRemoveAllMandatory (aggregateIdx, titleId, id) {
+    kylinConfirm(this.$t('clearAllMandatoryTip', {aggId: titleId}), {type: 'warning'}, this.$t('clearMandatoryTitle')).then(() => {
+      this.handleInput(`aggregateArray.${aggregateIdx}.mandatory`, [], id)
+    })
+  }
   handleBuildIndexTip (data) {
     let tipMsg = this.$t('kylinLang.model.saveIndexSuccess', {indexType: this.$t('kylinLang.model.aggregateGroupIndex')})
     if (this.form.isCatchUp) {
@@ -1585,129 +1621,53 @@ export default class AggregateModal extends Vue {
     }
   }
 
+  getDimensionsCols (aggregateIdx) {
+    // 此处用方法调用避免 getters 数据缓存
+    const dimensions = this.dimensions()
+    let includes = []
+    this.backUpDimensions = dimensions.filter(col => !this.displayExcludedTables && !this.isExistExcludeTable(col) || this.displayExcludedTables).map((col) => {
+      const disabled = this.getDisabledTableType(col)
+      const isSelected = this.form.aggregateArray[aggregateIdx].includes.indexOf(col.column) >= 0
+      if (disabled) {
+        this.alertTips = [{ text: this.$t('manyToManyAntiTableTip'), type: 'warning' }]
+      }
+      if (isSelected) {
+        includes.push(col.id)
+      }
+      return { key: col.id, label: col.column, name: col.name, disabled: disabled, cardinality: col.cardinality, type: col.type, comment: col.comment, excluded: typeof col.excluded !== 'undefined' ? col.excluded : true, selected: isSelected }
+    })
+    this.selectedIncludeDimension = includes
+  }
+
   // 编辑 Includes 包含的维度
   handleEditIncludes (aggregateIdx, id) {
     if (this.model.model_type === 'HYBRID' && !this.form.aggregateArray[aggregateIdx].index_range) {
       return false
     }
-    this.searchName = ''
-    this.editIncludeDimension = true
-    // 此处用方法调用避免 getters 数据缓存
-    const dimensions = this.dimensions()
-    let includes = []
-    this.form.aggregateArray[aggregateIdx].includes.forEach(item => {
-      const idx = dimensions.findIndex(it => it.label === item)
-      includes.push({...dimensions[idx], isCheck: true})
-    })
-    if (includes.length !== dimensions.length) {
-      this.isSelectAllDimensions = false
-    }
-    this.selectedIncludeDimension = includes
-    this.backUpDimensions = [...includes, ...dimensions.filter(it => !this.form.aggregateArray[aggregateIdx].includes.includes(it.label))]
+    this.getDimensionsCols(aggregateIdx)
     this.currentAggregateInfo = {
       aggregateIdx,
       id
     }
-    this.getDimensionList()
+    this.editIncludeDimension = true
+    setTimeout(() => {
+      this.isShowHelp = this.selectedIncludeDimension.length === 0
+    }, 200)
   }
 
-  scrollEvent (e) {
-    const { clientHeight, scrollHeight, scrollTop } = e.target
-    if (clientHeight + scrollTop + 40 >= scrollHeight) {
-      if (this.pageOffset * this.pageSize >= this.backUpDimensions.length) return
-      this.pageOffset += 1
-      this.getDimensionList()
-    }
+  setSelectedColumns (selectedColumns) {
+    this.selectedIncludeDimension = selectedColumns
+    this.removeTips('error')
   }
 
-  getDimensionList () {
-    const selectedItems = this.selectedIncludeDimension.map(it => it.label)
-    const filterData = this.backUpDimensions.filter(it => {
-      if (this.displayExcludedTables) {
-        return it.name.toLocaleLowerCase().indexOf(this.searchName.toLocaleLowerCase()) > -1 || it.column.toLocaleLowerCase().indexOf(this.searchName.toLocaleLowerCase()) > -1
-      } else {
-        return (it.name.toLocaleLowerCase().indexOf(this.searchName.toLocaleLowerCase()) > -1 || it.column.toLocaleLowerCase().indexOf(this.searchName.toLocaleLowerCase()) > -1) && !this.isExistExcludeTable(it)
-      }
-    }).map(it => ({...it, isCheck: selectedItems.includes(it.label)}))
-    const labels = filterData.map(it => it.label)
-    const dataList = [...this.selectedIncludeDimension.filter(it => labels.includes(it.label)), ...filterData.filter(it => !it.isCheck)]
-    this.includeDimensions = dataList.slice(0, (this.pageOffset + 1) * this.pageSize)
-    this.orderIncludeDimensions()
-  }
-
-  // 全选或取消全选 includes 维度
-  selectAllIncludes (v) {
-    if (v) {
-      this.includeDimensions.forEach(it => {
-        if (this.getDisabledTableType(it)) return
-        it.isCheck = true
-        this.collectSelectedDimensions(it, true)
-      })
-    } else {
-      this.includeDimensions.forEach(it => {
-        it.isCheck = false
-        this.collectSelectedDimensions(it, false)
-      })
-    }
-  }
-
-  // 收集已勾选的维度
-  collectSelectedDimensions (item, type) {
-    const list = this.selectedIncludeDimension.filter(it => it.label === item.label)
-    if (type) {
-      if (!list.length) {
-        this.selectedIncludeDimension.push(item)
-      }
-    } else {
-      if (list.length) {
-        const index = this.selectedIncludeDimension.findIndex(dimension => dimension.label === item.label)
-        this.selectedIncludeDimension.splice(index, 1)
-      }
-    }
-  }
-
-  // 选择包含维度
-  selectIncludDimensions (item, val) {
-    this.collectSelectedDimensions(item, val)
-    this.orderIncludeDimensions()
-  }
-
-  // 将勾选的include度量排在前面
-  orderIncludeDimensions () {
-    const unSelected = this.includeDimensions.filter(it => !it.isCheck)
-    const selected = this.includeDimensions.filter(it => it.isCheck)
-    this.includeDimensions = [...selected, ...unSelected]
-    selected.length === this.backUpDimensions.length && (this.isSelectAllDimensions = true)
-    unSelected.length === this.backUpDimensions.length && (this.isSelectAllDimensions = false)
-  }
-
-  // 移动（置顶、上移、下移）
-  moveTo (type, scope) {
-    const index = this.includeDimensions.findIndex(it => it.id === scope.id)
-    const idx = this.selectedIncludeDimension.findIndex(it => it.id === scope.id)
-    if (index < 0) return
-    if (type === 'up') {
-      this.includeDimensions.splice(index - 1, 0, scope)
-      this.includeDimensions.splice(index + 1, 1)
-      this.selectedIncludeDimension.splice(idx - 1, 0, scope)
-      this.selectedIncludeDimension.splice(idx + 1, 1)
-    } else if (type === 'down') {
-      this.includeDimensions.splice(index + 2, 0, scope)
-      this.includeDimensions.splice(index, 1)
-      this.selectedIncludeDimension.splice(idx + 2, 0, scope)
-      this.selectedIncludeDimension.splice(idx, 1)
-    } else if (type === 'top') {
-      // this.includeDimensions.splice(0, 0, scope)
-      // this.includeDimensions.splice(index, 1)
-      this.selectedIncludeDimension.splice(0, 0, scope)
-      this.selectedIncludeDimension.splice(idx + 1, 1)
-      this.filterChange()
-    }
+  removeTips (type) {
+    const index = indexOfObjWithSomeKey(this.alertTips, 'type', type)
+    index !== -1 && this.alertTips.splice(index, 1)
   }
 
   // 保存includes 包含维度
   saveIncludes () {
-    const allDimensions = this.getSelectedIncludeDimensions.map(dimension => dimension.label)
+    const allDimensions = this.getSelectedIncludeDimensions
     const { aggregateIdx, id } = this.currentAggregateInfo
     const unExistDimensions = this.form.aggregateArray[aggregateIdx].includes.filter(item => !allDimensions.includes(item))
     if (unExistDimensions.length) {
@@ -1718,20 +1678,6 @@ export default class AggregateModal extends Vue {
     this.handleInput(`aggregateArray.${aggregateIdx}.includes`, allDimensions, id)
     this.editIncludeDimension = false
     this.currentSelectedTag.ctx = ''
-  }
-
-  // 筛选包含维度的列名
-  filterChange () {
-    this.pageOffset = 0
-    if (this.$refs.includesDimensionDialog) {
-      const scrollDom = this.$refs.includesDimensionDialog.$el.querySelector('.ky-simple-table')
-      scrollDom.scrollTop = 0
-    }
-    this.getDimensionList()
-  }
-
-  clearFilter () {
-    this.filterChange()
   }
 
   // 编辑度量
@@ -1804,11 +1750,6 @@ export default class AggregateModal extends Vue {
     const constantMeasure = this.measureList.filter(it => it.expression === 'COUNT' && it.parameter_value && it.parameter_value[0].type === 'constant')
     !constantMeasure.length && !measures.includes('COUNT_ALL') && measures.unshift('COUNT_ALL')
     this.$set(this.form.aggregateArray[aggregateIdx], 'measures', measures)
-  }
-
-  // 是否显示被屏蔽的列
-  changeExcludedTables () {
-    this.getDimensionList()
   }
 
   // 跳转至job页面
@@ -2350,10 +2291,6 @@ export default class AggregateModal extends Vue {
   }
 }
 .edit-includes-dimensions {
-  .el-dialog__body {
-    height: 500px;
-    overflow: auto;
-  }
   .flip-list-move {
     transition: transform .5s;
   }
