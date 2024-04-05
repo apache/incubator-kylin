@@ -43,6 +43,10 @@ import { Component } from 'vue-property-decorator'
     refTag: {
       type: String,
       default: ''
+    },
+    isNeedLocalStorage: {
+      type: Boolean,
+      default: true
     }
   },
   methods: {
@@ -53,7 +57,7 @@ import { Component } from 'vue-property-decorator'
     sizeChange (size) {
       this.pageSize = size
       this.currentPage = 0
-      cacheLocalStorage(this.refTag, size)
+      this.isNeedLocalStorage && this.refTag && cacheLocalStorage(this.refTag, size)
       this.$emit('handleCurrentChange', this.currentPage, size)
     }
   }
@@ -61,7 +65,7 @@ import { Component } from 'vue-property-decorator'
 export default class Pager extends Vue {
   data () {
     return {
-      pageSize: +localStorage.getItem(this.refTag) || this.perPageSize || bigPageCount,
+      pageSize: this.refTag && +localStorage.getItem(this.refTag) || this.perPageSize || bigPageCount,
       pageSizes: pageSizes,
       currentPage: this.curPage
     }

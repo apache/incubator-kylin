@@ -438,7 +438,7 @@ export default class AddMeasure extends Vue {
   }
 
   get flattenLookupTables () {
-    return this.modelInstance.anti_flatten_lookups
+    return this.modelInstance?.anti_flatten_lookups ?? []
   }
 
   get showSync () {

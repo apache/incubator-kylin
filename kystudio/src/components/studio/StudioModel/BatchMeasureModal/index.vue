@@ -1,5 +1,5 @@
 <template>
-  <el-dialog class="batch-measure-modal" width="960px"
+  <el-dialog class="batch-measure-modal" width="1380px"
     :title="$t('batchMeasure')"
     :visible="isShow"
     :close-on-press-escape="false"
@@ -31,32 +31,38 @@
           </div>
           <el-table
             v-if="table.show || isGuideMode"
-            :data="table.columns"
+            :data="table.pagedColumns"
             :ref="table.guid">
             <!-- <el-table-column show-overflow-tooltip prop="name" :label="$t('name')"></el-table-column> -->
             <el-table-column show-overflow-tooltip prop="column" :label="$t('column')"></el-table-column>
-            <el-table-column show-overflow-tooltip prop="datatype" width="110px" :label="$t('dataType')"></el-table-column>
-            <el-table-column prop="SUM" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+            <el-table-column show-overflow-tooltip prop="datatype" width="90px" :label="$t('dataType')"></el-table-column>
+            <el-table-column prop="SUM" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
               <template slot-scope="scope">
                 <el-checkbox v-model="scope.row.SUM.value" @change="handleChange(scope.row, table, 'SUM')" :disabled="scope.row.SUM.isShouldDisable"></el-checkbox>
               </template>
             </el-table-column>
-            <el-table-column prop="MIN" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+            <el-table-column prop="MIN" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
               <template slot-scope="scope">
                 <el-checkbox v-model="scope.row.MIN.value" @change="handleChange(scope.row, table, 'MIN')" :disabled="scope.row.MIN.isShouldDisable"></el-checkbox>
               </template>
             </el-table-column>
-            <el-table-column prop="MAX" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+            <el-table-column prop="MAX" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
               <template slot-scope="scope">
                 <el-checkbox v-model="scope.row.MAX.value" @change="handleChange(scope.row, table, 'MAX')" :disabled="scope.row.MAX.isShouldDisable"></el-checkbox>
               </template>
             </el-table-column>
-            <el-table-column prop="COUNT" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+            <el-table-column prop="COUNT" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
               <template slot-scope="scope">
                 <el-checkbox v-model="scope.row.COUNT.value" @change="handleChange(scope.row, table, 'COUNT')" :disabled="scope.row.COUNT.isShouldDisable"></el-checkbox>
               </template>
             </el-table-column>
+            <el-table-column prop="COUNT_DISTINCT" width="300" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+              <template slot-scope="scope">
+                <el-checkbox v-model="scope.row.COUNT_DISTINCT.value" @change="handleChange(scope.row, table, 'COUNT_DISTINCT')" :disabled="scope.row.COUNT_DISTINCT.isShouldDisable"></el-checkbox>
+              </template>
+            </el-table-column>
           </el-table>
+          <kylin-pager v-if="table.show || isGuideMode" class="ksd-center ksd-mtb-10" :perPageSize="table.pageSize" :curPage="table.pageOffset+1" :totalSize="table.columns.length" :isNeedLocalStorage="false" @handleCurrentChange="(size, count) => tablePageCurrentChange(size, count, table)"></kylin-pager>
         </div>
         <!-- 维度表 -->
         <div v-for="(table, index) in lookupTable" :class="['ksd-mb-10', 'scroll-table-item']" :key="index">
@@ -76,32 +82,38 @@
           <el-table
             v-if="table.show || isGuideMode"
             :class="{'disabled-checkbox': flattenLookupTables.includes(table.alias)}"
-            :data="table.columns"
+            :data="table.pagedColumns"
             :ref="table.guid">
             <el-table-column show-overflow-tooltip prop="name" :label="$t('name')"></el-table-column>
             <el-table-column show-overflow-tooltip prop="column" :label="$t('column')"></el-table-column>
-            <el-table-column show-overflow-tooltip prop="datatype" width="110px" :label="$t('dataType')"></el-table-column>
-            <el-table-column prop="SUM" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+            <el-table-column show-overflow-tooltip prop="datatype" width="90px" :label="$t('dataType')"></el-table-column>
+            <el-table-column prop="SUM" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
               <template slot-scope="scope">
                 <el-checkbox v-model="scope.row.SUM.value" @change="handleChange(scope.row, table, 'SUM')" :disabled="scope.row.SUM.isShouldDisable || flattenLookupTables.includes(table.alias)"></el-checkbox>
               </template>
             </el-table-column>
-            <el-table-column prop="MIN" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+            <el-table-column prop="MIN" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
               <template slot-scope="scope">
                 <el-checkbox v-model="scope.row.MIN.value" @change="handleChange(scope.row, table, 'MIN')" :disabled="scope.row.MIN.isShouldDisable || flattenLookupTables.includes(table.alias)"></el-checkbox>
               </template>
             </el-table-column>
-            <el-table-column prop="MAX" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+            <el-table-column prop="MAX" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
               <template slot-scope="scope">
                 <el-checkbox v-model="scope.row.MAX.value" @change="handleChange(scope.row, table, 'MAX')" :disabled="scope.row.MAX.isShouldDisable || flattenLookupTables.includes(table.alias)"></el-checkbox>
               </template>
             </el-table-column>
-            <el-table-column prop="COUNT" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+            <el-table-column prop="COUNT" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
               <template slot-scope="scope">
                 <el-checkbox v-model="scope.row.COUNT.value" @change="handleChange(scope.row, table, 'COUNT')" :disabled="scope.row.COUNT.isShouldDisable || flattenLookupTables.includes(table.alias)"></el-checkbox>
               </template>
             </el-table-column>
+            <el-table-column prop="COUNT_DISTINCT" width="300" :renderHeader="(h, obj) => {return renderColumn(h, obj, table)}" align="center">
+              <template slot-scope="scope">
+                <el-checkbox v-model="scope.row.COUNT_DISTINCT.value" @change="handleChange(scope.row, table, 'COUNT_DISTINCT')" :disabled="scope.row.COUNT_DISTINCT.isShouldDisable || flattenLookupTables.includes(table.alias)"></el-checkbox>
+              </template>
+            </el-table-column>
           </el-table>
+          <kylin-pager v-if="table.show || isGuideMode" class="ksd-center ksd-mtb-10" :perPageSize="table.pageSize" :curPage="table.pageOffset+1" :totalSize="table.columns.length" :isNeedLocalStorage="false" @handleCurrentChange="(size, count) => tablePageCurrentChange(size, count, table)"></kylin-pager>
         </div>
         <!-- 可计算列 -->
         <template v-if="ccTable.columns.length">
@@ -122,28 +134,34 @@
               :data="ccTable.columns"
               :ref="ccTable.guid">
               <el-table-column show-overflow-tooltip prop="name" :label="$t('column')"></el-table-column>
-              <el-table-column show-overflow-tooltip prop="datatype" width="110px" :label="$t('dataType')"></el-table-column>
-              <el-table-column prop="SUM" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
+              <el-table-column show-overflow-tooltip prop="datatype" width="90px" :label="$t('dataType')"></el-table-column>
+              <el-table-column prop="SUM" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
                 <template slot-scope="scope">
                   <el-checkbox v-model="scope.row.SUM.value" @change="handleChange(scope.row, ccTable, 'SUM')" :disabled="scope.row.SUM.isShouldDisable || unflattenComputedColumns.includes(scope.row.columnName)"></el-checkbox>
                 </template>
               </el-table-column>
-              <el-table-column prop="MIN" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
+              <el-table-column prop="MIN" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
                 <template slot-scope="scope">
                   <el-checkbox v-model="scope.row.MIN.value" @change="handleChange(scope.row, ccTable, 'MIN')" :disabled="scope.row.MIN.isShouldDisable || unflattenComputedColumns.includes(scope.row.columnName)"></el-checkbox>
                 </template>
               </el-table-column>
-              <el-table-column prop="MAX" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
+              <el-table-column prop="MAX" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
                 <template slot-scope="scope">
                   <el-checkbox v-model="scope.row.MAX.value" @change="handleChange(scope.row, ccTable, 'MAX')" :disabled="scope.row.MAX.isShouldDisable || unflattenComputedColumns.includes(scope.row.columnName)"></el-checkbox>
                 </template>
               </el-table-column>
-              <el-table-column prop="COUNT" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
+              <el-table-column prop="COUNT" width="180" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
                 <template slot-scope="scope">
                   <el-checkbox v-model="scope.row.COUNT.value" @change="handleChange(scope.row, ccTable, 'COUNT')" :disabled="scope.row.COUNT.isShouldDisable || unflattenComputedColumns.includes(scope.row.columnName)"></el-checkbox>
                 </template>
               </el-table-column>
+              <el-table-column prop="COUNT_DISTINCT" width="300" :renderHeader="(h, obj) => {return renderColumn(h, obj, ccTable)}" align="center">
+                <template slot-scope="scope">
+                  <el-checkbox v-model="scope.row.COUNT_DISTINCT.value" @change="handleChange(scope.row, ccTable, 'COUNT_DISTINCT')" :disabled="scope.row.COUNT_DISTINCT.isShouldDisable || unflattenComputedColumns.includes(scope.row.columnName)"></el-checkbox>
+                </template>
+              </el-table-column>
             </el-table>
+            <kylin-pager v-if="ccTable.show || isGuideMode" class="ksd-center ksd-mtb-10" :perPageSize="ccTable.pageSize" :curPage="ccTable.pageOffset+1" :totalSize="ccTable.columns.length" :isNeedLocalStorage="false" @handleCurrentChange="(size, count) => tablePageCurrentChange(size, count, ccTable)"></kylin-pager>
           </div>
         </template>
       </div>
@@ -154,7 +172,7 @@
             :empty-text="emptyText"
             :key="searchTable.guid"
             :ref="searchTable.guid"
-            :data="searchTable.columns">
+            :data="searchTable.pagedColumns">
             <el-table-column show-overflow-tooltip prop="name" :label="$t('column')"></el-table-column>
             <el-table-column show-overflow-tooltip prop="table_alias" :label="$t('table')"></el-table-column>
             <el-table-column prop="SUM" :renderHeader="(h, obj) => {return renderColumn(h, obj, searchTable)}" align="center">
@@ -177,6 +195,11 @@
                 <el-checkbox v-model="scope.row.COUNT.value" @change="handleChange(scope.row, searchTable, 'COUNT')" :disabled="scope.row.COUNT.isShouldDisable || flattenLookupTables.includes(scope.row.table_alias)"></el-checkbox>
               </template>
             </el-table-column>
+            <el-table-column prop="COUNT_DISTINCT" width="300" :renderHeader="(h, obj) => {return renderColumn(h, obj, searchTable)}" align="center">
+              <template slot-scope="scope">
+                <el-checkbox v-model="scope.row.COUNT_DISTINCT.value" @change="handleChange(scope.row, searchTable, 'COUNT_DISTINCT')" :disabled="scope.row.COUNT_DISTINCT.isShouldDisable || flattenLookupTables.includes(scope.row.table_alias)"></el-checkbox>
+              </template>
+            </el-table-column>
           </el-table>
         </div>
         <kylin-pager class="ksd-center ksd-mtb-10" ref="pager" :perPageSize="filterArgs.pageSize" :refTag="pageRefTags.batchMeasurePager" :curPage="filterArgs.pageOffset+1" :totalSize="searchTotalSize"  v-on:handleCurrentChange='pageCurrentChange'></kylin-pager>
@@ -184,7 +207,7 @@
     </template>
     <div slot="footer" class="dialog-footer ky-no-br-space">
       <el-button size="medium" @click="handleClose(false)">{{$t('kylinLang.common.cancel')}}</el-button>
-      <el-button type="primary" size="medium" @click="submit">{{$t('kylinLang.common.submit')}}</el-button>
+      <el-button type="primary" size="medium" :loading="isSubmitLoading" @click="submit">{{$t('kylinLang.common.submit')}}</el-button>
     </div>
   </el-dialog>
 </template>
@@ -236,7 +259,7 @@ export default class BatchMeasureModal extends Vue {
   factTable = []
   lookupTable = []
   searchChar = ''
-  expressions = ['SUM', 'MIN', 'MAX', 'COUNT']
+  expressions = ['SUM', 'MIN', 'MAX', 'COUNT', 'COUNT_DISTINCT']
   ST = null
   ccTable = {columns: []}
   filterArgs = {
@@ -248,13 +271,14 @@ export default class BatchMeasureModal extends Vue {
   scrollTableList = []
   targetFixedTable = null
   syncComment = false
+  isSubmitLoading = false
 
   get flattenLookupTables () {
-    return this.modelDesc.anti_flatten_lookups
+    return this.modelDesc?.anti_flatten_lookups ?? []
   }
 
   get unflattenComputedColumns () {
-    return this.modelDesc.anti_flatten_cc.map(it => it.columnName)
+    return this.modelDesc?.anti_flatten_cc.map(it => it.columnName) ?? []
   }
 
   checkHasSameName (arr, val, column) {
@@ -276,76 +300,93 @@ export default class BatchMeasureModal extends Vue {
     return uniqueName
   }
   submit () {
-    let allMeasureArr = [...this.modelDesc.all_measures]
-    let columns = []
-    this.factTable.forEach((t) => {
-      columns.push(...t.columns)
-    })
-    this.lookupTable.forEach((t) => {
-      columns.push(...t.columns)
-    })
-    columns.push(...this.ccTable.columns)
-    if (this.syncComment) {
-      allMeasureArr.forEach(item => {
-        if (item.parameter_value.length > 0) {
-          const column = columns.filter(it => (it.full_colname || `${it.table_alias}.${it.column}`) === item.parameter_value[0].value)
-          column.length > 0 && column[0].comment && (item.comment = column[0].comment)
+    this.isSubmitLoading = true
+    setTimeout(() => {
+      let allMeasureArr = [...this.modelDesc.all_measures]
+      let columns = []
+      this.factTable.forEach((t) => {
+        columns.push(...t.columns)
+      })
+      this.lookupTable.forEach((t) => {
+        columns.push(...t.columns)
+      })
+      columns.push(...this.ccTable.columns)
+      if (this.syncComment) {
+        allMeasureArr.forEach(item => {
+          if (item.parameter_value.length > 0) {
+            const column = columns.filter(it => (it.full_colname || `${it.table_alias}.${it.column}`) === item.parameter_value[0].value)
+            column.length > 0 && column[0].comment && (item.comment = column[0].comment)
+          }
+        })
+      }
+      columns.forEach((column) => {
+        if (column.isMeasureCol) {
+          const colName = column.name.replace(unIncludedNameRegex, '') // 去除不符合度量命名的字符
+          if (column.SUM.value && !column.SUM.isShouldDisable) {
+            // 如果存在同名的，添加上表别名，如果不同名，就是列名+函数
+            const measure = {
+              name: this.checkHasSameName(allMeasureArr, colName + '_SUM', column),
+              guid: sampleGuid(),
+              expression: 'SUM',
+              parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
+              table_guid: column.table_guid,
+              comment: this.syncComment ? column.comment : ''
+            }
+            allMeasureArr.push(measure)
+          }
+          if (column.MIN.value && !column.MIN.isShouldDisable) {
+            const measure = {
+              name: this.checkHasSameName(allMeasureArr, colName + '_MIN', column),
+              guid: sampleGuid(),
+              expression: 'MIN',
+              parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
+              table_guid: column.table_guid,
+              comment: this.syncComment ? column.comment : ''
+            }
+            allMeasureArr.push(measure)
+          }
+          if (column.MAX.value && !column.MAX.isShouldDisable) {
+            const measure = {
+              name: this.checkHasSameName(allMeasureArr, colName + '_MAX', column),
+              guid: sampleGuid(),
+              expression: 'MAX',
+              parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
+              table_guid: column.table_guid,
+              comment: this.syncComment ? column.comment : ''
+            }
+            allMeasureArr.push(measure)
+          }
+          if (column.COUNT.value && !column.COUNT.isShouldDisable) {
+            const measure = {
+              name: this.checkHasSameName(allMeasureArr, colName + '_COUNT', column),
+              guid: sampleGuid(),
+              expression: 'COUNT',
+              parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
+              table_guid: column.table_guid,
+              comment: this.syncComment ? column.comment : ''
+            }
+            allMeasureArr.push(measure)
+          }
+          if (column.COUNT_DISTINCT.value && !column.COUNT_DISTINCT.isShouldDisable) {
+            const measure = {
+              name: this.checkHasSameName(allMeasureArr, colName + '_COUNT_DISTINCT', column),
+              guid: sampleGuid(),
+              expression: 'COUNT_DISTINCT',
+              parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
+              return_type: 'bitmap',
+              table_guid: column.table_guid,
+              comment: this.syncComment ? column.comment : ''
+            }
+            allMeasureArr.push(measure)
+          }
         }
       })
-    }
-    columns.forEach((column) => {
-      if (column.isMeasureCol) {
-        const colName = column.name.replace(unIncludedNameRegex, '') // 去除不符合度量命名的字符
-        if (column.SUM.value && !column.SUM.isShouldDisable) {
-          // 如果存在同名的，添加上表别名，如果不同名，就是列名+函数
-          const measure = {
-            name: this.checkHasSameName(allMeasureArr, colName + '_SUM', column),
-            guid: sampleGuid(),
-            expression: 'SUM',
-            parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
-            table_guid: column.table_guid,
-            comment: this.syncComment ? column.comment : ''
-          }
-          allMeasureArr.push(measure)
-        }
-        if (column.MIN.value && !column.MIN.isShouldDisable) {
-          const measure = {
-            name: this.checkHasSameName(allMeasureArr, colName + '_MIN', column),
-            guid: sampleGuid(),
-            expression: 'MIN',
-            parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
-            table_guid: column.table_guid,
-            comment: this.syncComment ? column.comment : ''
-          }
-          allMeasureArr.push(measure)
-        }
-        if (column.MAX.value && !column.MAX.isShouldDisable) {
-          const measure = {
-            name: this.checkHasSameName(allMeasureArr, colName + '_MAX', column),
-            guid: sampleGuid(),
-            expression: 'MAX',
-            parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
-            table_guid: column.table_guid,
-            comment: this.syncComment ? column.comment : ''
-          }
-          allMeasureArr.push(measure)
-        }
-        if (column.COUNT.value && !column.COUNT.isShouldDisable) {
-          const measure = {
-            name: this.checkHasSameName(allMeasureArr, colName + '_COUNT', column),
-            guid: sampleGuid(),
-            expression: 'COUNT',
-            parameter_value: [{type: 'column', value: column.table_alias + '.' + (column.column ?? column.columnName), table_guid: column.table_guid}],
-            table_guid: column.table_guid,
-            comment: this.syncComment ? column.comment : ''
-          }
-          allMeasureArr.push(measure)
-        }
-      }
-    })
-    this.$set(this.modelDesc, 'all_measures', allMeasureArr)
-    this.$emit('betchMeasures', allMeasureArr)
-    this.handleClose(true)
+      this.$set(this.modelDesc, 'all_measures', allMeasureArr)
+      this.$emit('betchMeasures', allMeasureArr)
+      // this.collectOtherColumns(this.getOtherColumns(columns))
+      this.isSubmitLoading = false
+      this.handleClose(true)
+    }, 100)
   }
 
   // 整理没有选中做 measures 的列，同步注释时要用到
@@ -430,9 +471,10 @@ export default class BatchMeasureModal extends Vue {
   pagerSearchTable () {
     return [{
       guid: sampleGuid(),
-      columns: this.pagerSearchMeasureList,
+      columns: this.searchColumns,
+      pagedColumns: this.pagerSearchMeasureList,
       show: true,
-      nums: {sumNum: 0, minNum: 0, maxNum: 0, countNum: 0}
+      nums: {sumNum: 0, minNum: 0, maxNum: 0, countNum: 0, count_distinct: 0}
     }]
   }
   filterMeasureColumns (table) {
@@ -467,18 +509,26 @@ export default class BatchMeasureModal extends Vue {
     this.filterArgs.pageOffset = size
     this.filterArgs.pageSize = count
   }
+  tablePageCurrentChange (size, count, table) {
+    this.$set(table, 'pageOffset', size)
+    this.$set(table, 'pageSize', count)
+    this.$set(table, 'pagedColumns', table.columns.slice(table.pageOffset * table.pageSize, (table.pageOffset + 1) * table.pageSize))
+  }
   // 总搜索条数
   get searchTotalSize () {
     return this.searchColumns.length
   }
   // 渲染之前选过的可计算列measure
   getRenderCCData () {
-    this.ccTable = {}
+    this.ccTable = {
+      pageOffset: 0,
+      pageSize: pageCount
+    }
     this.$set(this.ccTable, 'show', false)
     this.$set(this.ccTable, 'guid', sampleGuid())
     this.ccTable.columns = objectClone(this.modelDesc.computed_columns) || []
     let meaColNum = 0
-    const nums = {sumNum: 0, minNum: 0, maxNum: 0, countNum: 0}
+    const nums = {sumNum: 0, minNum: 0, maxNum: 0, countNum: 0, count_distinct: 0}
     let filterColumns = []
     this.ccTable.columns.forEach((col) => {
       const returnRegex = new RegExp('(\\w+)(?:\\((\\w+?)(?:\\,(\\w+?))?\\))?')
@@ -487,6 +537,7 @@ export default class BatchMeasureModal extends Vue {
       this.$set(col, 'MIN', {isShouldDisable: false, value: false})
       this.$set(col, 'MAX', {isShouldDisable: false, value: false})
       this.$set(col, 'COUNT', {isShouldDisable: false, value: false})
+      this.$set(col, 'COUNT_DISTINCT', {isShouldDisable: false, value: false})
       this.$set(col, 'isAllSelected', false)
       this.$set(col, 'isMeasureCol', false)
       this.$set(col, 'table_guid', this.factTable[0].guid)
@@ -513,6 +564,7 @@ export default class BatchMeasureModal extends Vue {
     this.ccTable.columns = filterColumns
     this.$set(this.ccTable, 'nums', nums)
     this.$set(this.ccTable, 'meaColNum', meaColNum)
+    this.ccTable.pagedColumns = filterColumns.slice(0, pageCount)
   }
   // 获取所有的table columns，并渲染已经选择过的measure
   getRenderMeasureData () {
@@ -526,7 +578,7 @@ export default class BatchMeasureModal extends Vue {
       }
       this.$set(table, 'show', false)
       let meaColNum = 0
-      const nums = {sumNum: 0, minNum: 0, maxNum: 0, countNum: 0}
+      const nums = {sumNum: 0, minNum: 0, maxNum: 0, countNum: 0, count_distinct: 0}
       // 将已经选上的measure回显到界面上
       let filterColumns = []
       table.columns && table.columns.forEach((col) => {
@@ -537,6 +589,7 @@ export default class BatchMeasureModal extends Vue {
           this.$set(col, 'MIN', {isShouldDisable: false, value: false})
           this.$set(col, 'MAX', {isShouldDisable: false, value: false})
           this.$set(col, 'COUNT', {isShouldDisable: false, value: false})
+          this.$set(col, 'COUNT_DISTINCT', {isShouldDisable: false, value: false})
           this.$set(col, 'isAllSelected', false)
           this.$set(col, 'isMeasureCol', false)
           this.$set(col, 'table_guid', table.guid)
@@ -573,6 +626,9 @@ export default class BatchMeasureModal extends Vue {
       table.columns = filterColumns
       this.$set(table, 'nums', nums)
       this.$set(table, 'meaColNum', meaColNum)
+      this.$set(table, 'pageOffset', 0)
+      this.$set(table, 'pageSize', pageCount)
+      table.pagedColumns = filterColumns.slice(0, pageCount)
     })
     this.getRenderCCData()
   }
@@ -583,16 +639,16 @@ export default class BatchMeasureModal extends Vue {
     })
   }
   handleChange (row, table, property) {
-    if (!(row.SUM.isShouldDisable && row.MIN.isShouldDisable && row.MAX.isShouldDisable && row.COUNT.isShouldDisable)) {
+    if (!(row.SUM.isShouldDisable && row.MIN.isShouldDisable && row.MAX.isShouldDisable && row.COUNT.isShouldDisable && row.COUNT_DISTINCT.isShouldDisable)) {
       if (row[property].value) {
         const cloneRow = objectClone(row)
         cloneRow[property].value = !cloneRow[property].value
-        if (!(cloneRow.SUM.value || cloneRow.MIN.value || cloneRow.MAX.value || cloneRow.COUNT.value)) {
+        if (!(cloneRow.SUM.value || cloneRow.MIN.value || cloneRow.MAX.value || cloneRow.COUNT.value || cloneRow.COUNT_DISTINCT.value)) {
           table.meaColNum++
           row.isMeasureCol = true
         }
       } else {
-        if (!(row.SUM.value || row.MIN.value || row.MAX.value || row.COUNT.value)) {
+        if (!(row.SUM.value || row.MIN.value || row.MAX.value || row.COUNT.value || row.COUNT_DISTINCT.value)) {
           table.meaColNum--
           row.isMeasureCol = false
         }
@@ -601,14 +657,15 @@ export default class BatchMeasureModal extends Vue {
   }
   renderColumn (h, { column, store }, table) {
     table = table || {}
-    let totalNums = 0
-    const len = store.states.data.length
-    for (let i = 0; i < len; i++) {
-      let d = store.states.data[i]
-      if (d[column.property].value) {
-        totalNums++
-      }
-    }
+    const len = table.columns.length
+    const label = column.property === 'COUNT_DISTINCT' ? 'COUNT DISTINCT (Precisely)' : column.property
+    const totalNums = table.columns.filter(d => d[column.property].value).length
+    // for (let i = 0; i < len; i++) {
+    //   let d = store.states.data[i]
+    //   if (d[column.property].value) {
+    //     totalNums++
+    //   }
+    // }
     this.$set(column, 'totalNums', totalNums)
     if (totalNums === len) {
       column.isAllSelected = true
@@ -624,7 +681,7 @@ export default class BatchMeasureModal extends Vue {
           if (!d[column.property].isShouldDisable && !this.flattenLookupTables.includes(d.table_alias) && !this.unflattenComputedColumns.includes(d.columnName)) {
             d[column.property] = {value: val, isShouldDisable: d[column.property].isShouldDisable}
           }
-          if (!(d.SUM.value || d.MIN.value || d.MAX.value || d.COUNT.value)) {
+          if (!(d.SUM.value || d.MIN.value || d.MAX.value || d.COUNT.value || d.COUNT_DISTINCT.value)) {
             d.isMeasureCol = false
           }
         }
@@ -639,7 +696,7 @@ export default class BatchMeasureModal extends Vue {
         disabled={ store.states.data && store.states.data.length === 0 }
         indeterminate={ totalNums > 0 && len > totalNums}
         onChange={ toggleAllMeasures }
-        value={ column.isAllSelected }></el-checkbox> <span class="title">{ column.property }({column.totalNums}/{len})</span>
+        value={ column.isAllSelected }></el-checkbox> <span class="title">{ label }({column.totalNums}/{len})</span>
     </span>)
   }
   getTableTops () {
@@ -692,26 +749,6 @@ export default class BatchMeasureModal extends Vue {
   }
   // 同步注释到名称
   changeSyncName () {
-    // this.factTable.forEach((item, index) => {
-    //   item.columns.forEach((it, idx) => {
-    //     if (!this.syncComment) {
-    //       it.name = it.comment && it.comment.trim() ? it.comment.slice(0, 100) : it.name
-    //     } else {
-    //       this.usedColumns.filter(useColumn => this.expressions.indexOf(useColumn.expression) !== -1 && useColumn.parameter_value[0].value === item.alias + '.' + it.column).length === 0 && (it.name = it.column || '')
-    //     }
-    //     this.$set(this.factTable[index].columns[idx], 'name', it.name)
-    //   })
-    // })
-    // this.lookupTable.forEach((item, index) => {
-    //   item.columns.forEach((it, idx) => {
-    //     if (!this.syncComment) {
-    //       it.name = it.comment && it.comment.trim() ? it.comment.slice(0, 100) : it.name
-    //     } else {
-    //       this.usedColumns.filter(useColumn => this.expressions.indexOf(useColumn.expression) !== -1 && useColumn.parameter_value[0].value === item.alias + '.' + it.column).length === 0 && (it.name = it.column || '')
-    //     }
-    //     this.$set(this.lookupTable[index].columns[idx], 'name', it.name)
-    //   })
-    // })
     this.syncComment = !this.syncComment
   }
 }
