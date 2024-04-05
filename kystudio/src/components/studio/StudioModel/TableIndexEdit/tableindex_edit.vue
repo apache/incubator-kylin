@@ -156,6 +156,7 @@
     })
     tableIndexMeta = JSON.parse(this.tableIndexMetaStr)
     cloneMeta = ''
+    cloneShardbyCol = ''
     displayExcludedTables = false
     isLoadDataLoading = false
     alertTips = []
@@ -239,7 +240,7 @@
       })
     }
     get saveBtnDisable () {
-      return this.cloneMeta === JSON.stringify(this.selectedColumns)
+      return this.cloneMeta === JSON.stringify(this.selectedColumns) && this.cloneShardbyCol === JSON.stringify(this.tableIndexMeta.shard_by_columns)
     }
     @Watch('isShow')
     initTableIndex (val) {
@@ -255,6 +256,7 @@
         }
         this.initColumns()
         this.cloneMeta = JSON.stringify(this.selectedColumns)
+        this.cloneShardbyCol = JSON.stringify(this.tableIndexMeta.shard_by_columns)
       } else {
         this.tableIndexMeta = JSON.parse(this.tableIndexMetaStr)
       }
