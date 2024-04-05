@@ -34,7 +34,7 @@ export const modelRenderConfig = {
     left: 0,
     top: 0
   },
-  beestViewPos: [530, 160], // 最佳可视位置
+  beestViewPos: [630, 160], // 最佳可视位置
   rootBox: rootBox, // 根元素
   drawBox: '.model-edit', // 绘制区域
   joinKind: {

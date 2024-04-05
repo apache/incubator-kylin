@@ -155,9 +155,9 @@ class NModel extends Schama {
     this.clearPFMark() // 清除之前的标识
     // 删除连线的情况
     if (pks.length === fks.length === 0) {
-      delete this.linkUsedColumns[pid + fid]
+      delete this.linkUsedColumns[pid + '$' + fid]
     } else {
-      this.linkUsedColumns[pid + fid] = [...pks, ...fks]
+      this.linkUsedColumns[pid + '$' + fid] = [...pks, ...fks]
     }
     this.renderPFMark() // 重新标记主外键标识
   }
@@ -168,10 +168,15 @@ class NModel extends Schama {
         let alias = nameList[0]
         let columnName = nameList[1]
         let ntable = this.getTableByAlias(alias)
+        let pid = i.split('$')[0]
+        let fid = i.split('$')[1]
+        let joinInfo = this.tables[pid].getJoinInfoByFGuid(fid)
+        let primaryKeys = joinInfo && joinInfo.join.primary_key
+        let foreignKeys = joinInfo && joinInfo.join.foreign_key
         if (ntable) {
-          if (index === 0) {
+          if (primaryKeys && primaryKeys.includes(col)) {
             ntable.changeColumnProperty(columnName, 'isPK', false, this)
-          } else {
+          } else if (foreignKeys && foreignKeys.includes(col)) {
             ntable.changeColumnProperty(columnName, 'isFK', false, this)
           }
         }
@@ -180,15 +185,20 @@ class NModel extends Schama {
   }
   renderPFMark () {
     for (let i in this.linkUsedColumns) {
-      this.linkUsedColumns[i].forEach((col, index) => {
+      this.linkUsedColumns[i].forEach((col) => {
         let nameList = col.split('.')
         let alias = nameList[0]
         let columnName = nameList[1]
         let ntable = this.getTableByAlias(alias)
+        let pid = i.split('$')[0]
+        let fid = i.split('$')[1]
+        let joinInfo = this.tables[pid].getJoinInfoByFGuid(fid)
+        let primaryKeys = joinInfo && joinInfo.join.primary_key
+        let foreignKeys = joinInfo && joinInfo.join.foreign_key
         if (ntable) {
-          if (index === 0) {
+          if (primaryKeys && primaryKeys.includes(col)) {
             ntable.changeColumnProperty(columnName, 'isPK', true, this)
-          } else {
+          } else if (foreignKeys && foreignKeys.includes(col)) {
             ntable.changeColumnProperty(columnName, 'isFK', true, this)
           }
         }
@@ -295,7 +305,7 @@ class NModel extends Schama {
     var fid = conn.sourceId
     var pid = conn.targetId
     delete this.allConnInfo[pid + '$' + fid]
-    delete this.linkUsedColumns[pid]
+    delete this.linkUsedColumns[pid + '$' + fid]
     this.plumbTool.deleteConnect(conn)
     this.tables[pid].removeJoinInfo(fid)
     this.collectLinkedColumn(pid, fid, [], [])
@@ -631,7 +641,7 @@ class NModel extends Schama {
           joinInfo.join.foreign_key = joinInfo.join.foreign_key.map((x) => {
             return x.replace(/^.*?\./, nftable.alias + '.')
           })
-          this.linkUsedColumns[pid + fid] = [...joinInfo.join.primary_key, ...joinInfo.join.foreign_key]
+          this.linkUsedColumns[pid + '$' + fid] = [...joinInfo.join.primary_key, ...joinInfo.join.foreign_key]
         }
       }
     }
@@ -1105,6 +1115,8 @@ class NModel extends Schama {
     let nTable = this.getTableByGuid(guid)
     if (nTable) {
       let offset = nTable.getTableInViewOffset()
+      this._mount.marginClient.left = 0
+      this._mount.marginClient.top = 0
       this.moveModelPosition(offset.x, offset.y)
     }
   }
@@ -1115,6 +1127,8 @@ class NModel extends Schama {
     let offsetLeft = ptable.drawSize.left - ftable.drawSize.left
     let offsetTop = ptable.drawSize.top - ftable.drawSize.top
     this.setTableInView(pid)
+    this._mount.marginClient.left = 0
+    this._mount.marginClient.top = 0
     this.moveModelPosition(offsetLeft / 2, offsetTop / 2)
   }
   addTable (options) {
