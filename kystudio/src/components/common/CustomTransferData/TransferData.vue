@@ -1,186 +1,186 @@
 <template>
-    <div class="sec-index-container">
-      <el-alert v-for="(it, index) in alertItems" :key="index" :title="it.text" :type="it.type" show-icon class="ksd-mb-8" :closable="false"></el-alert>
-      <div class="transfer-container">
-        <div class="left_layout" :style="leftStyle">
-          <div class="search_layout">
-            <el-input size="small" :placeholder="$t('kylinLang.common.search')" v-model.trim="searchVar" prefix-icon="el-ksd-n-icon-search-outlined"></el-input>
-          </div>
-          <div class="sec-index-content">
-            <div class="dropdowns">
-              <template v-if="filterModelColumns.length">
-                <el-checkbox class="select-all" v-if="isAllSelect"  :value="isSelectAll" :indeterminate="filterTypeOptionSelectedColumns.length !== 0 && filterModelColumns.length > filterTypeOptionSelectedColumns.length" @change="selectAll">
-                  <span>{{$t('kylinLang.common.selectAll')}}</span>
-                </el-checkbox>
-                <span v-if="searchVar" class="disable-block">
-                  <el-tooltip placement="top" class="sort-colum-dropdown" :content="$t('disableSortFilterTips')">
-                    <el-tag is-light :type="!columnSort ? 'info' : ''"><i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('column')}}{{columnSort ? `: ${$t(columnSort)}` : ''}}</span></el-tag>
-                  </el-tooltip>
-                  <el-tooltip placement="top" class="column-type-dropdown" :content="$t('disableSortFilterTips')">
-                    <el-tag is-light :type="!typeOptions.length ? 'info' : ''"><i class="el-ksd-n-icon-filter-outlined ksd-mr-2"></i><span>{{$t('type')}}{{typeOptions.length ? `: ${typeOptions.length}` : ''}}</span></el-tag>
-                  </el-tooltip>
-                </span>
-                <span v-else>
-                  <el-dropdown class="sort-colum-dropdown" placement="bottom-start" @command="handleSortCommand" trigger="click">
-                    <el-tag is-light :type="!columnSort ? 'info' : ''"><i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('column')}}{{columnSort ? `: ${$t(columnSort)}` : ''}}</span></el-tag>
-                    <el-dropdown-menu slot="dropdown" :append-to-body="false">
-                      <el-dropdown-item :class="{'is-active': columnSort === 'ascending'}" command="ascending">{{$t('ascending')}}</el-dropdown-item>
-                      <el-dropdown-item :class="{'is-active': columnSort === 'descending'}" command="descending">{{$t('descending')}}</el-dropdown-item>
-                    </el-dropdown-menu>
-                  </el-dropdown>
-                  <el-dropdown class="column-type-dropdown" placement="bottom-start" :hide-on-click="false" trigger="click">
-                    <el-tag is-light :type="!typeOptions.length ? 'info' : ''"><i class="el-ksd-n-icon-filter-outlined ksd-mr-2"></i><span>{{$t('type')}}{{typeOptions.length ? `: ${typeOptions.length}` : ''}}</span></el-tag>
-                    <el-dropdown-menu slot="dropdown" :append-to-body="false">
-                      <el-checkbox-group v-model="typeOptions">
-                        <el-dropdown-item v-for="(item, index) in columnTypes" :key="index"><el-checkbox :label="item" size="small">{{item}}</el-checkbox></el-dropdown-item>
-                      </el-checkbox-group>
-                    </el-dropdown-menu>
-                  </el-dropdown>
-                </span>
-                <template v-if="isTextRecognition">
-                  <span class="dive ksd-ml-4 ksd-mr-6">|</span>
-                  <el-tooltip placement="top" :content="$t('textRecognitionTips')">
-                    <el-button size="small" nobg-text icon="el-ksd-n-icon-view-outlined" @click="handleTableIndexRecognize">{{ $t('textRecognition') }}</el-button>
-                  </el-tooltip>
-                </template>
+  <div class="sec-index-container">
+    <el-alert v-for="(it, index) in alertItems" :key="index" :title="it.text" :type="it.type" show-icon class="ksd-mb-8" :closable="false"></el-alert>
+    <div class="transfer-container">
+      <div class="left_layout" :style="leftStyle">
+        <div class="search_layout">
+          <el-input size="small" :placeholder="$t('kylinLang.common.search')" v-model.trim="searchVar" prefix-icon="el-ksd-n-icon-search-outlined"></el-input>
+        </div>
+        <div class="sec-index-content">
+          <div class="dropdowns">
+            <template v-if="filterModelColumns.length">
+              <el-checkbox class="select-all" v-if="isAllSelect"  :value="isSelectAll" :indeterminate="filterTypeOptionSelectedColumns.length !== 0 && filterModelColumns.length > filterTypeOptionSelectedColumns.length" @change="selectAll">
+                <span>{{$t('kylinLang.common.selectAll')}}</span>
+              </el-checkbox>
+              <span v-if="searchVar" class="disable-block">
+                <el-tooltip placement="top" class="sort-colum-dropdown" :content="$t('disableSortFilterTips')">
+                  <el-tag is-light :type="!columnSort ? 'info' : ''"><i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('column')}}{{columnSort ? `: ${$t(columnSort)}` : ''}}</span></el-tag>
+                </el-tooltip>
+                <el-tooltip placement="top" class="column-type-dropdown" :content="$t('disableSortFilterTips')">
+                  <el-tag is-light :type="!typeOptions.length ? 'info' : ''"><i class="el-ksd-n-icon-filter-outlined ksd-mr-2"></i><span>{{$t('type')}}{{typeOptions.length ? `: ${typeOptions.length}` : ''}}</span></el-tag>
+                </el-tooltip>
+              </span>
+              <span v-else>
+                <el-dropdown class="sort-colum-dropdown" placement="bottom-start" @command="handleSortCommand" trigger="click">
+                  <el-tag is-light :type="!columnSort ? 'info' : ''"><i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('column')}}{{columnSort ? `: ${$t(columnSort)}` : ''}}</span></el-tag>
+                  <el-dropdown-menu slot="dropdown" :append-to-body="false">
+                    <el-dropdown-item :class="{'is-active': columnSort === 'ascending'}" command="ascending">{{$t('ascending')}}</el-dropdown-item>
+                    <el-dropdown-item :class="{'is-active': columnSort === 'descending'}" command="descending">{{$t('descending')}}</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+                <el-dropdown class="column-type-dropdown" placement="bottom-start" :hide-on-click="false" trigger="click">
+                  <el-tag is-light :type="!typeOptions.length ? 'info' : ''"><i class="el-ksd-n-icon-filter-outlined ksd-mr-2"></i><span>{{$t('type')}}{{typeOptions.length ? `: ${typeOptions.length}` : ''}}</span></el-tag>
+                  <el-dropdown-menu slot="dropdown" :append-to-body="false">
+                    <el-checkbox-group v-model="typeOptions">
+                      <el-dropdown-item v-for="(item, index) in columnTypes" :key="index"><el-checkbox :label="item" size="small">{{item}}</el-checkbox></el-dropdown-item>
+                    </el-checkbox-group>
+                  </el-dropdown-menu>
+                </el-dropdown>
+              </span>
+              <template v-if="isTextRecognition">
+                <span class="dive ksd-ml-4 ksd-mr-6">|</span>
+                <el-tooltip placement="top" :content="$t('textRecognitionTips')">
+                  <el-button size="small" nobg-text icon="el-ksd-n-icon-view-outlined" @click="handleTableIndexRecognize">{{ $t('textRecognition') }}</el-button>
+                </el-tooltip>
               </template>
-              
-            </div>
-            <div class="result-content" :class="{'is-no-footer': !hasLeftFooter}">
-              <div v-for="item in pagedModelColumns" :key="item.id" class="result-content_item">
-                <div class="checkbox-list">
-                  <el-checkbox v-model="item.selected" :disabled="item.disabled" @change="handleIndexColumnChange(item)">
-                    <el-tooltip :content="$t('excludedTableIconTip')" effect="dark" placement="top"><i class="excluded_table-icon el-icon-ksd-exclude" v-if="item.excluded"></i></el-tooltip>
-                    <span :style="{'max-width': dragData.width - 140 + 'px', width: 'auto'}" :title="item.label" class="ksd-nobr-text">{{item.label}}</span>
-                  </el-checkbox>
-                </div>
-                <div class="item-type">{{item.type}}</div>
-                <div class="hover-icons">
-                  <el-tooltip placement="top">
-                    <div slot="content" style="word-break: break-all">
-                      <div v-if="item.name">{{ $t('kylinLang.dataSource.dimensionName') }}: {{ item.name }}</div>
-                      <div>{{ $t('kylinLang.model.columnName') }}: {{ item.label }}</div>
-                      <div v-if="item.cardinality">{{ $t('cardinality') }}: {{ item.cardinality }}</div>
-                      <div v-if="item.comment">{{ $t('kylinLang.dataSource.comment') }}: {{ item.comment }}</div>
-                    </div>
-                    <i class="el-ksd-n-icon-info-circle-outlined"></i>
-                  </el-tooltip>
-                </div>
+            </template>
+            
+          </div>
+          <div class="result-content" :class="{'is-no-footer': !hasLeftFooter}">
+            <div v-for="item in pagedModelColumns" :key="item.id" class="result-content_item">
+              <div class="checkbox-list">
+                <el-checkbox v-model="item.selected" :disabled="item.disabled" @change="handleIndexColumnChange(item)">
+                  <el-tooltip :content="$t('excludedTableIconTip')" effect="dark" placement="top"><i class="excluded_table-icon el-icon-ksd-exclude" v-if="item.excluded"></i></el-tooltip>
+                  <span :style="{'max-width': dragData.width - 140 + 'px', width: 'auto'}" :title="item.label" class="ksd-nobr-text">{{item.label}}</span>
+                </el-checkbox>
               </div>
-              <!-- <div class="load-more-layout" v-if="showLoadMore('left')" @click="addPagination('left')">{{$t('kylinLang.common.loadMore')}}</div> -->
-            </div>
-            <empty-data size="small" :image="require('../../../assets/img/empty/empty_state_not_found.svg')" :content="$t('kylinLang.common.noData')" v-if="!pagedModelColumns.length" />
-            <div class="transfer-footer" v-if="hasLeftFooter">
-              <slot name="left-footer"></slot>
-            </div>
-          </div>
-        </div>
-        <div class="drag-line" unselectable="on" v-drag:change.width="dragData">
-          <div class="ky-drag-layout-line"></div>
-        </div>
-        <div class="right_layout">
-          <div class="title-layout">
-            <p class="title">{{rightTitle}}</p>
-            <slot name="help"></slot>
-          </div>
-          <div class="search_layout" v-if="showRightSearch">
-            <el-input size="small" :placeholder="$t('kylinLang.common.search')" v-model.trim="searchUsedContent" prefix-icon="el-ksd-n-icon-search-outlined"></el-input>
-          </div>
-          <div v-show="searchVar&&pagedSelectedColumns.length" class="search-num">{{ filterSelectedColumns.length }}{{ $t('searchResultes') }}</div>
-          <div :class="['selected-results', {'over-limit': showOverLimit && selectedColumns.length > limitLen}]">
-            <div class="dropdowns" v-show="pagedSelectedColumns.length && isSortAble">
-              <span v-if="searchVar || !selectedData.length || !isAnyCardinalityCol" class="disable-block">
-                <el-tooltip placement="top" :disabled="!selectedData.length" class="sort-colum-dropdown">
-                  <div slot="content" v-if="searchVar">{{ $t('disableSortFilterTips') }}</div>
-                  <div slot="content" v-else>{{ $t('disabledSortTips') }} <a class="ky-a-like" @click="goToDataSource">{{ $t('goToDataSource') }}</a></div>
-                  <el-tag is-light :type="!selectedColumnSortByCardinality ? 'info' : ''">
-                    <i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('cardinality')}}{{selectedColumnSortByCardinality ? `: ${$t(selectedColumnSortByCardinality)}` : ''}}</span>
-                    <el-tooltip placement="top" v-if="isPartCardinalityCol" :content="$t('isPartCardinalityCol')">
-                      <i class="el-ksd-n-icon-warning-filled ksd-fs-12"></i>
-                    </el-tooltip>
-                  </el-tag>
+              <div class="item-type">{{item.type}}</div>
+              <div class="hover-icons">
+                <el-tooltip placement="top">
+                  <div slot="content" style="word-break: break-all">
+                    <div v-if="item.name">{{ $t('kylinLang.dataSource.dimensionName') }}: {{ item.name }}</div>
+                    <div>{{ $t('kylinLang.model.columnName') }}: {{ item.label }}</div>
+                    <div v-if="item.cardinality">{{ $t('cardinality') }}: {{ item.cardinality }}</div>
+                    <div v-if="item.comment">{{ $t('kylinLang.dataSource.comment') }}: {{ item.comment }}</div>
+                  </div>
+                  <i class="el-ksd-n-icon-info-circle-outlined"></i>
                 </el-tooltip>
-              </span>
-              <span v-else>
-                <el-dropdown class="sort-colum-dropdown" placement="bottom-start" @command="handleSortCardinality" trigger="click">
-                  <el-tag is-light :type="!selectedColumnSortByCardinality ? 'info' : ''">
-                    <i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('cardinality')}}{{selectedColumnSortByCardinality ? `: ${$t(selectedColumnSortByCardinality)}` : ''}}</span>
-                    <el-tooltip placement="top" v-if="isPartCardinalityCol" :content="$t('isPartCardinalityCol')">
-                      <i class="el-ksd-n-icon-warning-filled ksd-fs-12"></i>
-                    </el-tooltip>
-                  </el-tag>
-                  <el-dropdown-menu slot="dropdown" :append-to-body="false">
-                    <el-dropdown-item :class="{'is-active': selectedColumnSortByCardinality === 'ascending'}" command="ascending">{{$t('ascending')}}</el-dropdown-item>
-                    <el-dropdown-item :class="{'is-active': selectedColumnSortByCardinality === 'descending'}" command="descending">{{$t('descending')}}</el-dropdown-item>
-                  </el-dropdown-menu>
-                </el-dropdown>
-              </span>
-              <span v-if="searchVar || !selectedData.length" class="disable-block">
-                <el-tooltip placement="top" class="sort-colum-dropdown" :disabled="!selectedData.length" :content="$t('disableSortFilterTips')">
-                  <el-tag is-light :type="!selectedColumnSort ? 'info' : ''"><i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('column')}}{{selectedColumnSort ? `: ${$t(selectedColumnSort)}` : ''}}</span></el-tag>
-                </el-tooltip>
-              </span>
-              <span v-else>
-                <el-dropdown class="sort-colum-dropdown" placement="bottom-start"  @command="handleSortSelectedCommand" trigger="click">
-                  <el-tag is-light :type="!selectedColumnSort ? 'info' : ''"><i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('column')}}{{selectedColumnSort ? `: ${$t(selectedColumnSort)}` : ''}}</span></el-tag>
-                  <el-dropdown-menu slot="dropdown" :append-to-body="false">
-                    <el-dropdown-item :class="{'is-active': selectedColumnSort === 'ascending'}" command="ascending">{{$t('ascending')}}</el-dropdown-item>
-                    <el-dropdown-item :class="{'is-active': selectedColumnSort === 'descending'}" command="descending">{{$t('descending')}}</el-dropdown-item>
-                  </el-dropdown-menu>
-                </el-dropdown>
-              </span>
-            </div>
-            <div class="selected-results_layout" :class="{'is-no-footer': !(showOverLimit && selectedColumns.length > limitLen) && !(draggable && searchVar), 'is-search-mode': searchVar}">
-              <div :class="['selected-results_item', {'drag-item': draggable&&!searchVar, 'is-shared-col': it.isShared}]" v-for="it in pagedSelectedColumns" :key="it.key" :id="it.key">
-                <p class="label">
-                  <span class="num" :class="{'is-alive': isShowNum, 'is-disable-drag': isShowNum&&draggable&&searchVar}" :style="{'scale': ((getIndex(it.key) + 1) + '').length > 2 ? 1 - 0.2 * (((getIndex(it.key) + 1) + '').length - 2) : 1}" v-if="isShowNum">{{ getIndex(it.key) + 1 }}</span>
-                  <el-tooltip placement="top" :content="$t('dragToMove')" v-show="draggable&&!searchVar">
-                    <i class="el-ksd-n-icon-grab-dots-outlined" :class="{'is-alive': draggable&&!searchVar}"></i>
-                  </el-tooltip><el-tooltip :content="$t('excludedTableIconTip')" effect="dark" placement="top"><i class="excluded_table-icon el-icon-ksd-exclude" v-if="it.excluded"></i></el-tooltip>
-                  <el-button type="primary" size="mini" class="shardby is-shardby" v-if="it.isShared" text icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
-                  <span class="top-icon ignore-drag" v-if="topColAble"><el-button type="primary" size="mini" v-if="getIndex(it.key) !== 0" text @click.native="topColumn($event, it.key)" icon="el-ksd-n-icon-top-filled"></el-button></span>
-                  <span class="ksd-nobr-text">{{it.label}}</span>
-                </p>
-                <div class="right-actions">
-                  <el-tooltip placement="top" :content="$t('cardinality')">
-                    <span class="cardinality ksd-nobr-text" @mouseenter.stop>{{it.cardinality}}</span>
-                  </el-tooltip>
-                </div>
-                <div class="hover-icons ignore-drag">
-                  <el-tooltip placement="top">
-                    <div slot="content" style="word-break: break-all">
-                      <div v-if="it.name">{{ $t('kylinLang.dataSource.dimensionName') }}: {{ it.name }}</div>
-                      <div>{{ $t('kylinLang.model.columnName') }}: {{ it.label }}</div>
-                      <div v-if="it.cardinality">{{ $t('cardinality') }}: {{ it.cardinality }}</div>
-                      <div v-if="it.comment">{{ $t('kylinLang.dataSource.comment') }}: {{ it.comment }}</div>
-                    </div>
-                    <i class="el-ksd-n-icon-info-circle-outlined ksd-ml-5"></i>
-                  </el-tooltip>
-                  <el-tooltip placement="top" v-if="!it.isShared&sharedByAble" :content="shardByIndex !== -1 ? $t('replaceShardBy') : $t('setShardBy')">
-                    <el-button type="primary" size="mini" class="shardby"  @click.stop="setShardBy(it.key)" text icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
-                  </el-tooltip><el-tooltip placement="top" v-if="it.isShared&sharedByAble"  :content="$t('removeShardBy')">
-                    <el-button type="primary" size="mini" class="shardby is-shardby" text @click.stop="unSetSharyBy(it.key)" icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
-                  </el-tooltip><el-tooltip placement="top" :content="$t('remove')">
-                    <i class="el-ksd-n-icon-close-outlined close-btn" @click.stop="removeColumn(it)"></i>
-                  </el-tooltip>
-                </div>
               </div>
-              <!-- <div class="load-more-layout" v-if="showLoadMore('right')" @click="addPagination('right')">{{$t('kylinLang.common.loadMore')}}</div> -->
             </div>
-            <empty-data size="small" :image="require('../../../assets/img/empty/empty_state_not_found.svg')" :content="searchVar ? $t('kylinLang.common.noData') : rightTitleTip" v-if="!pagedSelectedColumns.length" />
+            <!-- <div class="load-more-layout" v-if="showLoadMore('left')" @click="addPagination('left')">{{$t('kylinLang.common.loadMore')}}</div> -->
           </div>
-          <div class="over-limit-tips" v-if="showOverLimit && selectedColumns.length > limitLen"><el-tooltip placement="top" :content="$t('limitTooltip')"><span class="text"><el-icon class="ksd-mr-4" name="el-ksd-n-icon-warning-color-filled" type="mult"></el-icon>{{$t('overLimitTips')}}</span></el-tooltip><div class="line"></div></div>
-          <div class="over-limit-tips" v-if="draggable && searchVar"><span class="text"><el-icon class="ksd-mr-4" name="el-ksd-n-icon-warning-color-filled" type="mult"></el-icon>{{$t('disableDragtips')}}</span><div class="line"></div></div>
+          <empty-data size="small" :image="require('../../../assets/img/empty/empty_state_not_found.svg')" :content="$t('kylinLang.common.noData')" v-if="!pagedModelColumns.length" />
+          <div class="transfer-footer" v-if="hasLeftFooter">
+            <slot name="left-footer"></slot>
+          </div>
         </div>
       </div>
-      <div class="search-results_layout">
-        <p class="search-results_item">{{$t('selectedNum', {num: selectedData.length})}}</p>
-        <span class="dive ksd-ml-12 ksd-mr-12">|</span>
-        <p class="search-results_item">{{$t('allResultNum', {num: unSelectedData.length})}}</p>
+      <div class="drag-line" unselectable="on" v-drag:change.width="dragData">
+        <div class="ky-drag-layout-line"></div>
+      </div>
+      <div class="right_layout">
+        <div class="title-layout">
+          <p class="title">{{rightTitle}}</p>
+          <slot name="help"></slot>
+        </div>
+        <div class="search_layout" v-if="showRightSearch">
+          <el-input size="small" :placeholder="$t('kylinLang.common.search')" v-model.trim="searchUsedContent" prefix-icon="el-ksd-n-icon-search-outlined"></el-input>
+        </div>
+        <div v-show="searchVar&&pagedSelectedColumns.length" class="search-num">{{ filterSelectedColumns.length }}{{ $t('searchResultes') }}</div>
+        <div :class="['selected-results', {'over-limit': showOverLimit && selectedColumns.length > limitLen}]">
+          <div class="dropdowns" v-show="pagedSelectedColumns.length && isSortAble">
+            <span v-if="searchVar || !selectedData.length || !isAnyCardinalityCol" class="disable-block">
+              <el-tooltip placement="top" :disabled="!selectedData.length" class="sort-colum-dropdown">
+                <div slot="content" v-if="searchVar">{{ $t('disableSortFilterTips') }}</div>
+                <div slot="content" v-else>{{ $t('disabledSortTips') }} <a class="ky-a-like" @click="goToDataSource">{{ $t('goToDataSource') }}</a></div>
+                <el-tag is-light :type="!selectedColumnSortByCardinality ? 'info' : ''">
+                  <i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('cardinality')}}{{selectedColumnSortByCardinality ? `: ${$t(selectedColumnSortByCardinality)}` : ''}}</span>
+                  <el-tooltip placement="top" v-if="isPartCardinalityCol" :content="$t('isPartCardinalityCol')">
+                    <i class="el-ksd-n-icon-warning-filled ksd-fs-12"></i>
+                  </el-tooltip>
+                </el-tag>
+              </el-tooltip>
+            </span>
+            <span v-else>
+              <el-dropdown class="sort-colum-dropdown" placement="bottom-start" @command="handleSortCardinality" trigger="click">
+                <el-tag is-light :type="!selectedColumnSortByCardinality ? 'info' : ''">
+                  <i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('cardinality')}}{{selectedColumnSortByCardinality ? `: ${$t(selectedColumnSortByCardinality)}` : ''}}</span>
+                  <el-tooltip placement="top" v-if="isPartCardinalityCol" :content="$t('isPartCardinalityCol')">
+                    <i class="el-ksd-n-icon-warning-filled ksd-fs-12"></i>
+                  </el-tooltip>
+                </el-tag>
+                <el-dropdown-menu slot="dropdown" :append-to-body="false">
+                  <el-dropdown-item :class="{'is-active': selectedColumnSortByCardinality === 'ascending'}" command="ascending">{{$t('ascending')}}</el-dropdown-item>
+                  <el-dropdown-item :class="{'is-active': selectedColumnSortByCardinality === 'descending'}" command="descending">{{$t('descending')}}</el-dropdown-item>
+                </el-dropdown-menu>
+              </el-dropdown>
+            </span>
+            <span v-if="searchVar || !selectedData.length" class="disable-block">
+              <el-tooltip placement="top" class="sort-colum-dropdown" :disabled="!selectedData.length" :content="$t('disableSortFilterTips')">
+                <el-tag is-light :type="!selectedColumnSort ? 'info' : ''"><i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('column')}}{{selectedColumnSort ? `: ${$t(selectedColumnSort)}` : ''}}</span></el-tag>
+              </el-tooltip>
+            </span>
+            <span v-else>
+              <el-dropdown class="sort-colum-dropdown" placement="bottom-start"  @command="handleSortSelectedCommand" trigger="click">
+                <el-tag is-light :type="!selectedColumnSort ? 'info' : ''"><i class="el-ksd-n-icon-table-rank-filled ksd-mr-2"></i><span>{{$t('column')}}{{selectedColumnSort ? `: ${$t(selectedColumnSort)}` : ''}}</span></el-tag>
+                <el-dropdown-menu slot="dropdown" :append-to-body="false">
+                  <el-dropdown-item :class="{'is-active': selectedColumnSort === 'ascending'}" command="ascending">{{$t('ascending')}}</el-dropdown-item>
+                  <el-dropdown-item :class="{'is-active': selectedColumnSort === 'descending'}" command="descending">{{$t('descending')}}</el-dropdown-item>
+                </el-dropdown-menu>
+              </el-dropdown>
+            </span>
+          </div>
+          <div class="selected-results_layout" :class="{'is-no-footer': !(showOverLimit && selectedColumns.length > limitLen) && !(draggable && searchVar), 'is-search-mode': searchVar}">
+            <div :class="['selected-results_item', {'drag-item': draggable&&!searchVar, 'is-shared-col': it.isShared}]" v-for="it in pagedSelectedColumns" :key="it.key" :id="it.key">
+              <p class="label">
+                <span class="num" :class="{'is-alive': isShowNum, 'is-disable-drag': isShowNum&&draggable&&searchVar}" :style="{'scale': ((getIndex(it.key) + 1) + '').length > 2 ? 1 - 0.2 * (((getIndex(it.key) + 1) + '').length - 2) : 1}" v-if="isShowNum">{{ getIndex(it.key) + 1 }}</span>
+                <el-tooltip placement="top" :content="$t('dragToMove')" v-show="draggable&&!searchVar">
+                  <i class="el-ksd-n-icon-grab-dots-outlined" :class="{'is-alive': draggable&&!searchVar}"></i>
+                </el-tooltip><el-tooltip :content="$t('excludedTableIconTip')" effect="dark" placement="top"><i class="excluded_table-icon el-icon-ksd-exclude" v-if="it.excluded"></i></el-tooltip>
+                <el-button type="primary" size="mini" class="shardby is-shardby" v-if="it.isShared" text icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
+                <span class="top-icon ignore-drag" v-if="topColAble"><el-button type="primary" size="mini" v-if="getIndex(it.key) !== 0" text @click.native="topColumn($event, it.key)" icon="el-ksd-n-icon-top-filled"></el-button></span>
+                <span class="ksd-nobr-text">{{it.label}}</span>
+              </p>
+              <div class="right-actions">
+                <el-tooltip placement="top" :content="$t('cardinality')">
+                  <span class="cardinality ksd-nobr-text" @mouseenter.stop>{{it.cardinality}}</span>
+                </el-tooltip>
+              </div>
+              <div class="hover-icons ignore-drag">
+                <el-tooltip placement="top">
+                  <div slot="content" style="word-break: break-all">
+                    <div v-if="it.name">{{ $t('kylinLang.dataSource.dimensionName') }}: {{ it.name }}</div>
+                    <div>{{ $t('kylinLang.model.columnName') }}: {{ it.label }}</div>
+                    <div v-if="it.cardinality">{{ $t('cardinality') }}: {{ it.cardinality }}</div>
+                    <div v-if="it.comment">{{ $t('kylinLang.dataSource.comment') }}: {{ it.comment }}</div>
+                  </div>
+                  <i class="el-ksd-n-icon-info-circle-outlined ksd-ml-5"></i>
+                </el-tooltip>
+                <el-tooltip placement="top" v-if="!it.isShared&sharedByAble" :content="shardByIndex !== -1 ? $t('replaceShardBy') : $t('setShardBy')">
+                  <el-button type="primary" size="mini" class="shardby"  @click.stop="setShardBy(it.key)" text icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
+                </el-tooltip><el-tooltip placement="top" v-if="it.isShared&sharedByAble"  :content="$t('removeShardBy')">
+                  <el-button type="primary" size="mini" class="shardby is-shardby" text @click.stop="unSetSharyBy(it.key)" icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
+                </el-tooltip><el-tooltip placement="top" :content="$t('remove')">
+                  <i class="el-ksd-n-icon-close-outlined close-btn" @click.stop="removeColumn(it)"></i>
+                </el-tooltip>
+              </div>
+            </div>
+            <!-- <div class="load-more-layout" v-if="showLoadMore('right')" @click="addPagination('right')">{{$t('kylinLang.common.loadMore')}}</div> -->
+          </div>
+          <empty-data size="small" :image="require('../../../assets/img/empty/empty_state_not_found.svg')" :content="searchVar ? $t('kylinLang.common.noData') : rightTitleTip" v-if="!pagedSelectedColumns.length" />
+        </div>
+        <div class="over-limit-tips" v-if="showOverLimit && selectedColumns.length > limitLen"><el-tooltip placement="top" :content="$t('limitTooltip')"><span class="text"><el-icon class="ksd-mr-4" name="el-ksd-n-icon-warning-color-filled" type="mult"></el-icon>{{$t('overLimitTips')}}</span></el-tooltip><div class="line"></div></div>
+        <div class="over-limit-tips" v-if="draggable && searchVar"><span class="text"><el-icon class="ksd-mr-4" name="el-ksd-n-icon-warning-color-filled" type="mult"></el-icon>{{$t('disableDragtips')}}</span><div class="line"></div></div>
       </div>
     </div>
-  </template>
-  <script>
+    <div class="search-results_layout">
+      <p class="search-results_item">{{$t('selectedNum', {num: selectedData.length})}}</p>
+      <span class="dive ksd-ml-12 ksd-mr-12">|</span>
+      <p class="search-results_item">{{$t('allResultNum', {num: unSelectedData.length})}}</p>
+    </div>
+  </div>
+</template>
+<script>
   import { Component, Vue } from 'vue-property-decorator'
   import { objectClone, indexOfObjWithSomeKey, kylinConfirm } from 'util'
   import Sortable, { AutoScroll } from 'sortablejs/modular/sortable.core.esm.js'
@@ -565,7 +565,7 @@
     selectAll () {
       let selectedList = objectClone(this.selectedColumns)
       // 除去disabled的列，
-      this.isSelectAll = this.filterModelColumns.filter(c => !c.disabled).length > this.filterSelectedColumns.length
+      this.isSelectAll = this.filterModelColumns.filter(c => !c.disabled).length > this.filterTypeOptionSelectedColumns.length
       this.filterModelColumns.forEach((c) => {
         !c.disabled && (c.selected = this.isSelectAll)
         if (this.isSelectAll) {
@@ -700,8 +700,8 @@
       this.$message({ type: 'success', message: this.$t('unSetShardBySuccess') })
     }
   }
-  </script>
-  <style lang="less">
+</script>
+<style lang="less">
   @import '../../../assets/styles/variables.less';
   .sec-index-container {
     width: 100%;
@@ -822,6 +822,9 @@
         height: 28px;
         padding: 8px 0;
         border-top: 1px solid @ke-border-divider-color;
+        .exclude-checkbox {
+          margin: 6px 8px;
+        }
       }
     }
     .right_layout {
@@ -1193,4 +1196,4 @@
       }
     }
   }
-  </style>
+</style>

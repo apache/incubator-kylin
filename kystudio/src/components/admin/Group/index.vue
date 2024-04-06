@@ -135,7 +135,7 @@ export default class SecurityGroup extends Vue {
   inputFilter (value) {
     this.pagination.page_offset = 0
     this.filterName = value
-    this.loadGroupUsers(value)
+    this.loadGroupUsers()
   }
 
   get emptyText () {
@@ -163,11 +163,11 @@ export default class SecurityGroup extends Vue {
     }
   }
 
-  loadGroupUsers (filterGroupName) {
+  loadGroupUsers () {
     this.isLoadingUserGroups = true
     this.loadGroupUsersList({
       ...this.pagination,
-      user_group_name: filterGroupName
+      user_group_name: this.filterName
     }).then(() => {
       this.isLoadingUserGroups = false
     }, (res) => {

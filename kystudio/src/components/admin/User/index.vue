@@ -211,7 +211,7 @@ export default class SecurityUser extends Vue {
   inputFilter (value) {
     this.pagination.page_offset = 0
     this.filterName = value
-    this.loadUsers(value)
+    this.loadUsers()
   }
 
   get emptyText () {
@@ -221,16 +221,16 @@ export default class SecurityUser extends Vue {
   handleCurrentChange (pager, pageSize) {
     this.pagination.page_offset = pager
     this.pagination.page_size = pageSize
-    this.loadUsers(this.filterName)
+    this.loadUsers()
   }
 
-  async loadUsers (name) {
+  async loadUsers () {
     this.isLoadingUsers = true
     try {
       const parameter = {
         ...this.pagination,
         // project: this.currentSelectedProject, // 处理资源组时，发现这个接口不用传 project 参数
-        name: name || '',
+        name: this.filterName,
         group_uuid: this.currentGroup && this.currentGroup.uuid
       }
       const res = !this.currentGroup
@@ -254,7 +254,7 @@ export default class SecurityUser extends Vue {
   async editUser (editType, userDetail) {
     if (!this.isTestingSecurityProfile) return
     const isSubmit = await this.callUserEditModal({ editType, userDetail })
-    isSubmit && this.loadUsers(this.filterName)
+    isSubmit && this.loadUsers()
   }
 
   async editUserDataPermission (row) {
