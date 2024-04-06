@@ -93,7 +93,7 @@ export default {
     buildIndex: 'Build Index',
     batchBuildSubTitle: 'Please choose which data ranges you\'d like to build with the added indexes.',
     refrashWarningSegment: 'Only ONLINE segments could be refreshed',
-    closeSCD2ModalOnlineTip: 'This model can\'t go online as it includes non-equal join conditions(≥, <). Please delete those join conditions, or turn on `Support History table` in project settings.',
+    closeSCD2ModalOnlineTip: 'This model can\'t go online as it includes non-equal join conditions. Please delete those join conditions, or turn on `Support History table` in project settings.',
     storageTip: 'Calculates the amount of data built in this model',
     subPartitionValuesManage: 'Manage Sub-Partition Values',
     segmentHoletips: 'There exists a gap in the segment range, and the data of this range cannot be queried. Please confirm whether to add the following segments to fix.',

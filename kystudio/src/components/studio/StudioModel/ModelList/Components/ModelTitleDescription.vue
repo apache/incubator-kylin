@@ -1,64 +1,64 @@
 <template>
-    <div class="model-alias-label" v-if="modelData">
-      <div class="alias">
-        <el-popover
-          ref="statusPopover"
-          popper-class="status-tooltip"
-          placement="top-start"
-          trigger="hover"
-          :disabled="!modelData.status"
-        >
-          <span v-html="$t('modelStatus_c')" />
-          <span>{{modelData.status}}</span>
-          <div v-if="modelData.status === 'WARNING' && modelData.empty_indexes_count">{{$t('emptyIndexTips')}}</div>
-          <div v-if="modelData.status === 'WARNING' && (modelData.segment_holes && modelData.segment_holes.length && modelData.model_type === 'BATCH') || (modelData.batch_segment_holes && modelData.batch_segment_holes.length && modelData.model_type === 'HYBRID')">
-            <span>{{modelData.model_type === 'HYBRID' ? $t('modelSegmentHoleTips1') : $t('modelSegmentHoleTips')}}</span><span
-              v-if="!['modelEdit'].includes(source)"
-              style="color:#0988DE;cursor: pointer;"
-              @click="autoFix(modelData.alias, modelData.model_type === 'HYBRID' ? modelData.batch_id : modelData.uuid, modelData.model_type === 'HYBRID' ? modelData.batch_segment_holes : modelData.segment_holes)">{{$t('seeDetail')}}</span>
+  <div class="model-alias-label" v-if="modelData">
+    <div class="alias">
+      <el-popover
+        ref="statusPopover"
+        popper-class="status-tooltip"
+        placement="top-start"
+        trigger="hover"
+        :disabled="!modelData.status"
+      >
+        <span v-html="$t('modelStatus_c')" />
+        <span>{{modelData.status}}</span>
+        <div v-if="modelData.status === 'WARNING' && modelData.empty_indexes_count">{{$t('emptyIndexTips')}}</div>
+        <div v-if="modelData.status === 'WARNING' && (modelData.segment_holes && modelData.segment_holes.length && modelData.model_type === 'BATCH') || (modelData.batch_segment_holes && modelData.batch_segment_holes.length && modelData.model_type === 'HYBRID')">
+          <span>{{modelData.model_type === 'HYBRID' ? $t('modelSegmentHoleTips1') : $t('modelSegmentHoleTips')}}</span><span
+            v-if="!['modelEdit'].includes(source)"
+            style="color:#0988DE;cursor: pointer;"
+            @click="autoFix(modelData.alias, modelData.model_type === 'HYBRID' ? modelData.batch_id : modelData.uuid, modelData.model_type === 'HYBRID' ? modelData.batch_segment_holes : modelData.segment_holes)">{{$t('seeDetail')}}</span>
+        </div>
+        <div v-if="modelData.status === 'WARNING' && (modelData.segment_holes && modelData.segment_holes.length && modelData.model_type !== 'BATCH')">
+          <span>{{$t('modelSegmentHoleTips2')}}</span>
+        </div>
+        <div v-if="modelData.status === 'WARNING' && modelData.inconsistent_segment_count">
+          <span>{{$t('modelMetadataChangedTips')}}</span><span
+            v-if="!['modelEdit'].includes(source)"
+            style="color:#0988DE;cursor: pointer;"
+            @click="openComplementSegment(modelData, true)">{{$t('seeDetail')}}</span>
+        </div>
+        <div v-if="modelData.status === 'OFFLINE' && modelData.forbidden_online">
+          <span>{{$t('SCD2ModalOfflineTip')}}</span>
+        </div>
+        <div v-if="modelData.status === 'OFFLINE' && !modelData.has_segments">
+          <span>{{$t('noSegmentOnlineTip')}}</span>
+        </div>
+        <div v-if="modelData.status === 'OFFLINE' && !$store.state.project.multi_partition_enabled && modelData.multi_partition_desc">
+          <span>{{$t('multilParTip')}}</span>
+        </div>
+      </el-popover>
+      <el-popover
+        ref="titlePopover"
+        placement="top-start"
+        width="250"
+        trigger="hover"
+        popper-class="title-popover-layout"
+      >
+        <div class="title-popover">
+          <p class="title ksd-mb-20">{{modelData.alias || modelData.name}}</p>
+          <div :class="['label', {'en': $lang === 'en'}]">
+            <div class="group ksd-mb-8" v-if="!onlyShowModelName"><span class="title">{{$t('kylinLang.model.ownerGrid')}}</span><span class="item">{{modelData.owner}}</span></div>
+            <div class="group"><span class="title">{{$t('description')}}</span><span class="item">{{modelData.description || '-'}}</span></div>
           </div>
-          <div v-if="modelData.status === 'WARNING' && (modelData.segment_holes && modelData.segment_holes.length && modelData.model_type !== 'BATCH')">
-            <span>{{$t('modelSegmentHoleTips2')}}</span>
-          </div>
-          <div v-if="modelData.status === 'WARNING' && modelData.inconsistent_segment_count">
-            <span>{{$t('modelMetadataChangedTips')}}</span><span
-              v-if="!['modelEdit'].includes(source)"
-              style="color:#0988DE;cursor: pointer;"
-              @click="openComplementSegment(modelData, true)">{{$t('seeDetail')}}</span>
-          </div>
-          <div v-if="modelData.status === 'OFFLINE' && modelData.forbidden_online">
-            <span>{{$t('SCD2ModalOfflineTip')}}</span>
-          </div>
-          <div v-if="modelData.status === 'OFFLINE' && !modelData.has_segments">
-            <span>{{$t('noSegmentOnlineTip')}}</span>
-          </div>
-          <div v-if="modelData.status === 'OFFLINE' && !$store.state.project.multi_partition_enabled && modelData.multi_partition_desc">
-            <span>{{$t('multilParTip')}}</span>
-          </div>
-        </el-popover>
-        <el-popover
-          ref="titlePopover"
-          placement="top-start"
-          width="250"
-          trigger="hover"
-          popper-class="title-popover-layout"
-        >
-          <div class="title-popover">
-            <p class="title ksd-mb-20">{{modelData.alias || modelData.name}}</p>
-            <div :class="['label', {'en': $lang === 'en'}]">
-              <div class="group ksd-mb-8" v-if="!onlyShowModelName"><span class="title">{{$t('kylinLang.model.ownerGrid')}}</span><span class="item">{{modelData.owner}}</span></div>
-              <div class="group"><span class="title">{{$t('description')}}</span><span class="item">{{modelData.description || '-'}}</span></div>
-            </div>
-          </div>
-        </el-popover>
-        <span :class="['filter-status', (modelData.status || 'OFFLINE')]" v-popover:statusPopover v-if="!onlyShowModelName"></span>
-        <span class="model-alias-title" @mouseenter.prevent v-popover:titlePopover>{{modelData.alias || modelData.name}}</span>
-      </div>
-      <el-tooltip class="last-modified-tooltip" effect="dark" :content="`${$t('dataLoadTime')}${modelData.gmtTime}`" placement="bottom" :disabled="hideTimeTooltip" v-if="!onlyShowModelName">
-        <span>{{getLastTime}}</span>
-      </el-tooltip>
+        </div>
+      </el-popover>
+      <span :class="['filter-status', (modelData.status || 'OFFLINE')]" v-popover:statusPopover v-if="!onlyShowModelName"></span>
+      <span class="model-alias-title" @mouseenter.prevent v-popover:titlePopover>{{modelData.alias || modelData.name}}</span>
     </div>
-  </template>
+    <el-tooltip class="last-modified-tooltip" effect="dark" :content="`${$t('dataLoadTime')}${modelData.gmtTime}`" placement="bottom" :disabled="hideTimeTooltip" v-if="!onlyShowModelName">
+      <span>{{getLastTime}}</span>
+    </el-tooltip>
+  </div>
+</template>
   
   <script>
   import Vue from 'vue'
@@ -96,7 +96,7 @@
         seeDetail: 'View Details',
         description: 'Description',
         dataLoadTime: 'Last Updated Time: ',
-        SCD2ModalOfflineTip: 'This model includes non-equal join conditions (≥, <), which are not supported at the moment. Please delete those join conditions, or turn on `Support History table` in project settings.',
+        SCD2ModalOfflineTip: 'This model includes non-equal join conditions, which are not supported at the moment. Please delete those join conditions, or turn on `Support History table` in project settings.',
         noSegmentOnlineTip: 'This model can\'t go online as it doesn\'t have segments. Models with no segment couldn\'t serve queries. Please add a segment.',
         multilParTip: 'This model used multilevel partitioning, which are not supported at the moment. Please set subpartition as \'None\' in model partition dialog, or turn on \'Multilevel Partitioning\' in project settings.',
         lastUpdate: 'Last Updated: '

@@ -154,7 +154,9 @@ export default class TableJoinModal extends Vue {
   columnsLinkKind = [
     {label: '=', value: 'EQUAL'},
     {label: '>=', value: 'GREATER_THAN_OR_EQUAL'},
-    {label: '<', value: 'LESS_THAN'}
+    {label: '<', value: 'LESS_THAN'},
+    {label: '>', value: 'GREATER_THAN'},
+    {label: '<=', value: 'LESS_THAN_OR_EQUAL'}
   ]
   columnJoinType = 0
   isErrorValue = []
@@ -455,8 +457,10 @@ export default class TableJoinModal extends Vue {
     this.isErrorValue = []
     this.errorFlag = []
     let joins = joinColumns.foreign_key.map((item, index) => ({fk: item, op: joinColumns.op[index], pk: joinColumns.primary_key[index], index, joinExpression: `${item}&${joinColumns.primary_key[index]}`}))
-    let greater_than = joins.filter(it => it.op === 'GREATER_THAN_OR_EQUAL' && it.fk && it.pk)
+    let greater_than_or_equal = joins.filter(it => it.op === 'GREATER_THAN_OR_EQUAL' && it.fk && it.pk)
     let less_than = joins.filter(it => it.op === 'LESS_THAN' && it.fk && it.pk)
+    let less_than_or_equal = joins.filter(it => it.op === 'LESS_THAN_OR_EQUAL' && it.fk && it.pk)
+    let greater_than = joins.filter(it => it.op === 'GREATER_THAN' && it.fk && it.pk)
     // let equals = joins.filter(it => it.op === 'EQUAL' && it.fk && it.pk)
     // 两张表仅可使用同一关联关系一次
     const pAlias = this.form.tables[this.form.pid].name.split('.')[1]
@@ -472,43 +476,6 @@ export default class TableJoinModal extends Vue {
       this.isErrorValue.push(4)
       flag = false
     }
-    // let correctTableName = (pid, fid) => {
-    //   return {
-    //     pTable: this.form.tables[pid].name.replace(/^(\w+)\./, ''),
-    //     tTable: this.form.tables[fid].name.replace(/^(\w+)\./, '')
-    //   }
-    // }
-    // let fk = joinColumns.foreign_key.map(it => it.replace(/(\w+)\./, `${correctTableName(this.form.pid, this.form.fid).tTable}.`))
-    // let pk = joinColumns.primary_key.map(it => it.replace(/(\w+)\./, `${correctTableName(this.form.pid, this.form.fid).pTable}.`))
-    // let combination = fk.map((item, index) => `${item}&${pk[index]}`)
-    // let joinInfoHistory = Object.keys(this.form.modelInstance.linkUsedColumns).filter(it => it.indexOf(this.form.fid) >= 0 && it !== `${this.form.pid}${this.form.fid}`)
-    // if (joinInfoHistory.length) {
-    //   let tables = []
-    //   joinInfoHistory.map(item => this.form.modelInstance.linkUsedColumns[item]).forEach((list, idx) => {
-    //     let joinId = joinInfoHistory[idx]
-    //     let start = joinId.indexOf(this.form.fid)
-    //     let uid = []
-    //     if (start === 0) {
-    //       uid = [joinId.slice(0, this.form.fid.length), joinId.slice(this.form.fid.length, joinId.length)]
-    //     } else {
-    //       uid = [joinId.slice(joinId.length - this.form.fid.length, joinId.length), joinId.slice(0, joinId.length - this.form.fid.length)]
-    //     }
-    //     for (let i = 0; i <= list.length / 2 - 1; i++) {
-    //       tables.push(`${list[i + list.length / 2].replace(/(\w+)\./, `${correctTableName(uid[1], uid[0]).tTable}.`)}&${list[i].replace(/(\w+)\./, `${correctTableName(uid[1], uid[0]).pTable}.`)}`)
-    //     }
-    //   })
-    //   if (tables.length) {
-    //     let cludesIndex = []
-    //     combination.forEach((v, index) => {
-    //       tables.includes(v) && cludesIndex.push(index)
-    //     })
-    //     if (cludesIndex.length) {
-    //       this.errorFlag = [...this.errorFlag, ...cludesIndex]
-    //       this.isErrorValue.push(4)
-    //       flag = false
-    //     }
-    //   }
-    // }
     // 至少有一个equal连接关系
     if (!joinColumns.op.includes('EQUAL')) {
       this.isErrorValue.push(3)
@@ -525,20 +492,40 @@ export default class TableJoinModal extends Vue {
     // 连接关系 >= 和 < 成对出现, 且位于中间的列必须一致(此处判断放在最后处理)
     let checkFun = () => {
       let fl = true
-      let firstV = greater_than.shift(0)
+      let firstV = greater_than_or_equal.shift(0)
       while (firstV) {
-        let idx = less_than.findIndex(it => it.fk === firstV.fk)
+        let idx = less_than.findIndex(it => it.fk === firstV.fk || it.pk === firstV.pk)
+        let idx2 = less_than_or_equal.findIndex(it => it.fk === firstV.fk || it.pk === firstV.pk)
         if (idx >= 0) {
           less_than.splice(idx, 1)
+        } else if (idx2 >= 0) {
+          less_than_or_equal.splice(idx2, 1)
         } else {
           this.errorFlag.push(firstV.index)
           fl = false
         }
-        firstV = greater_than.shift(0)
+        firstV = greater_than_or_equal.shift(0)
       }
-      if (less_than.length) {
-        this.errorFlag = [...this.errorFlag, ...less_than.map(it => it.index)]
+      if (firstV && (less_than.length || less_than_or_equal.length)) {
+        this.errorFlag = [...this.errorFlag, ...less_than.map(it => it.index), ...less_than_or_equal.map(it => it.index)]
         fl = false
+      }
+      if (fl) {
+        let firstV2 = greater_than.shift(0)
+        while (firstV2) {
+          let idx3 = less_than_or_equal.findIndex(it => it.fk === firstV2.fk || it.pk === firstV2.pk)
+          if (idx3 >= 0) {
+            less_than_or_equal.splice(idx3, 1)
+          } else {
+            this.errorFlag.push(firstV2.index)
+            fl = false
+          }
+          firstV2 = greater_than.shift(0)
+        }
+        if (less_than_or_equal.length) {
+          this.errorFlag = [...this.errorFlag, ...less_than_or_equal.map(it => it.index)]
+          fl = false
+        }
       }
       return fl
     }
