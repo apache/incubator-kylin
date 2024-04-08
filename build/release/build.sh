@@ -29,7 +29,7 @@ echo 'Build front-end'
 if [ "${WITH_FRONT}" = "1" ]; then
     cd kystudio
     echo 'Install front-end dependencies'
-    npm install      || { exit 1; }
+    npm install --registry=https://registry.npmjs.org/ --legacy-peer-deps || { exit 1; }
     echo 'Install front-end end'
     npm run build		 || { exit 1; }
     echo 'build front-end dist end'
