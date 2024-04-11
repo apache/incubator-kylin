@@ -1,4 +1,5 @@
 import { AGGREGATE_TYPE } from '../../../config'
+import { objectClone } from '../../../util/index'
 
 const types = {
   SHOW_MODAL: 'SHOW_MODAL',
