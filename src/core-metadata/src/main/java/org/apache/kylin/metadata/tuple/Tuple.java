@@ -62,9 +62,7 @@ public class Tuple implements ITuple {
     @Override
     public ITuple makeCopy() {
         Tuple ret = new Tuple(this.info);
-        for (int i = 0; i < this.values.length; ++i) {
-            ret.values[i] = this.values[i];
-        }
+        System.arraycopy(this.values, 0, ret.values, 0, this.values.length);
         return ret;
     }
 

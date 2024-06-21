@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.kyligence.kap.job.rest;
+package org.apache.kylin.job.rest;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

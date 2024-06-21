@@ -109,7 +109,7 @@ public class JobMybatisConfig implements InitializingBean {
                 jobLockFile = "script/schema_job_lock_h2.sql";
                 database = Database.H2.databaseId;
             } else {
-                String errorMsg = String.format("driver class name = %1, should add support", driverClassName);
+                String errorMsg = String.format("driver class name = %s, should add support", driverClassName);
                 log.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
