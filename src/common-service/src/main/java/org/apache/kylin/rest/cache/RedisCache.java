@@ -117,7 +117,6 @@ public class RedisCache extends AbstractKylinCache implements KylinCache {
             return;
         }
         Map<String, JedisPool> clusterNodes = jedisCluster.getClusterNodes();
-        StringBuilder masterNodes = new StringBuilder();
         StringBuilder slaveNodes = new StringBuilder();
         masters = Sets.newHashSet();
         Jedis resource = null;
@@ -128,7 +127,6 @@ public class RedisCache extends AbstractKylinCache implements KylinCache {
                     slaveNodes.append(host).append(" ");
                 } else {
                     masters.add(host);
-                    masterNodes.append(host).append(" ");
                 }
             } catch (Exception e) {
                 logger.error("redis {} is not reachable", host);
