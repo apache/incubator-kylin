@@ -53,11 +53,12 @@ Please visit [Software Requirement](how_to_package#software_reqiurement), and ma
 
 - Build front-end source code.
   
-    (Please use node.js **v12.14.0**, for how to use a specific version of node.js, please check [how to switch to a specific node js](how_to_package#install_older_node) )
+    (Please use node.js **v18.20.4**, for how to use a specific version of node.js, please check [how to switch to a specific node js](how_to_package#install_older_node) )
     
     ```shell
     cd kystudio
-    npm install
+    npm install -g yarn
+    yarn install
     ```
 #### Step 3: Install IntelliJ IDEA and build the source
 
@@ -82,11 +83,23 @@ Please visit [Software Requirement](how_to_package#software_reqiurement), and ma
 
 1. Download spark and create running IDEA configuration for debug purpose and initialize the frontend env.
   ```shell
-  ./dev-support/local/local.sh init
+  ./dev-support/contributor/local/local.sh init
   ```
 
 Following is the shell output.
-![local.sh init](images/how_to_debug_kylin_in_local/IDEA_LOCAL_INIT.png)
+
+```
+(base) ➜  kylin git:(kylin5) ✗ ./dev-support/contributor/local/local.sh init
+# KYLIN_HOME=/path/to/kylin
+# SPARK_HOME=/path/to/kylin/build/spark
+* Spark already exists, will be deleted and re-downloaded
+* Downloading spark...
+spark_pkg_file_name : spark-newten-3.3.0-4.6.26.0.tgz
+* Setting IDEA run configurations...
+# IDEA run configuration version is community...
+* Build Frontend...
+* Init Done!
+```
 
 ### Prepare the Requirements
 
@@ -103,21 +116,47 @@ Following is the setting page of Docker Desktop of MacBook.
 3. Start Zookeeper service via docker compose on laptop.
 
   ```shell
-  ./dev-support/local/local.sh up
+  ./dev-support/contributor/local/local.sh up
   ```
 
-![local.sh up](images/how_to_debug_kylin_in_local/docker_up.png)
+Following is the shell output.
+
+```
+(base) ➜  kylin git:(kylin5) ✗ ./dev-support/contributor/local/local.sh up
+# KYLIN_HOME=/path/to/kylin
+# SPARK_HOME=/path/to/kylin/build/spark
+* Starting container...
+[+] Running 9/9
+ ⠿ zookeeper Pulled                                         469.1s
+   ⠿ b2ddfd337773 Pull complete                             403.5s
+   ⠿ 35794a35c4aa Pull complete                             403.8s
+   ⠿ 261269474501 Pull complete                             466.3s
+   ⠿ 48a873c16c38 Pull complete                             466.4s
+   ⠿ 91bcf425c56c Pull complete                             466.4s
+   ⠿ 71c2395ae368 Pull complete                             466.5s
+   ⠿ 5515e61ba09a Pull complete                             466.7s
+   ⠿ 8ce907db3e1a Pull complete                             466.8s
+[+] Running 2/2
+ ⠿ Network local_local  Created                             0.0s
+ ⠿ Container zookeeper  Started                             0.5s
+* Up Done!
+```
 
 #### Check status of Require services
 - Check health of Zookeeper, you can use following command to check status
 
 ```shell
-./dev-support/local/local.sh ps
+./dev-support/contributor/local/local.sh ps
 ```
 
 Following output content shows all hadoop component are in health state.
 
-![sandbox.sh ps](images/how_to_debug_kylin_in_local/docker_ps.png)
+```
+# KYLIN_HOME=/path/to/kylin
+# SPARK_HOME=/path/to/kylin/build/spark
+NAME        IMAGE          COMMAND       SERVICE              CREATED        STATUS        PORTS
+zookeeper   zookeeper:3.6  "/docker-entrypoint.…"   zookeeper 2 minutes ago  Up 2 minutes        2888/tcp, 3888/tcp, 0.0.0.0:2181->2181/tcp, 8080/tcp
+```
 
 ### Debug Kylin in IDEA
 
