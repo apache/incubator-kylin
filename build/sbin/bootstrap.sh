@@ -372,6 +372,8 @@ function startKylin(){
 
     prepareEnv
 
+    prepareFairScheduler
+
     #this is necessary in FI
     source "${KYLIN_HOME}"/sbin/load-zookeeper-config.sh
 
