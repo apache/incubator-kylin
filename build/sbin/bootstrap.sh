@@ -287,16 +287,16 @@ function clearRedundantProcess {
     fi
 }
 
-function checkKeMetaList() {
+function checkKylinMetaList() {
     if [[ $(skipCheckOrNot $KYLIN_SKIP_CHECK_MODE) ]]; then
       return 0
     fi
 
-    verboseLog "checking ke meta"
+    verboseLog "checking kylin meta"
 
-    runToolInternal io.kyligence.kap.tool.upgrade.UpdateSessionTableColumnLengthCLI
+    runToolInternal org.apache.kylin.tool.upgrade.UpdateSessionTableColumnLengthCLI
 
-    runToolInternal io.kyligence.kap.tool.security.AdminUserInitCLI
+    runToolInternal org.apache.kylin.tool.security.AdminUserInitCLI
 
 }
 
@@ -384,7 +384,7 @@ function startKylin(){
 
     checkSparkDir
 
-    checkKeMetaList
+    checkKylinMetaList
 
     checkLog4jConf
 
