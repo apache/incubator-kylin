@@ -29,7 +29,7 @@ cd build/
 rm -rf ${package_name}
 mkdir ${package_name}
 
-cp -rf VERSION SPARK_VERSION commit_SHA1 lib ${package_name}/
+cp -rf VERSION commit_SHA1 lib ${package_name}/
 cp ../LICENSE ${package_name}/
 cp ../NOTICE ${package_name}/
 
@@ -86,7 +86,7 @@ cp -rf sbin/ ${package_name}/sbin/
 
 spark_version_pom=`mvn -f ../pom.xml help:evaluate -Dexpression=spark.version | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' `
 echo "Prepare download spark scripts for end user with version ${spark_version_pom}."
-sed -i "s/SPARK_VERSION_IN_BINARY/${spark_version_pom}/g" ../build/sbin/download-spark-user.sh
+echo "$spark_version_pom" >  ${package_name}/SPARK_VERSION
 
 rm -rf ext lib commit_SHA1 VERSION # keep the spark folder on purpose
 

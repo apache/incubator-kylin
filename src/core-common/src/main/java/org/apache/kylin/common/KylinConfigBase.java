@@ -2975,10 +2975,7 @@ public abstract class KylinConfigBase implements Serializable {
         String kylinHome = getKylinHomeWithoutWarn();
         File libX64 = new File(kylinHome + "/lib/" + ASYNC_PROFILER_LIB_LINUX_X64);
         File libArm64 = new File(kylinHome + "/lib/" + ASYNC_PROFILER_LIB_LINUX_ARM64);
-        File libX64Musl = new File(kylinHome + "/lib/" + ASYNC_PROFILER_LIB_LINUX_MUSL_X64);
-        File libArm64Musl = new File(kylinHome + "/lib/" + ASYNC_PROFILER_LIB_LINUX_MUSL_ARM64);
-        return libX64.getCanonicalPath() + "," + libArm64.getCanonicalPath() + "," + libX64Musl.getCanonicalPath() + ","
-                + libArm64Musl.getCanonicalPath();
+        return libX64.getCanonicalPath() + "," + libArm64.getCanonicalPath();
     }
 
     private String getLogPropertyFile(String filename) {
