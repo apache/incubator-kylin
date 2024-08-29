@@ -24,9 +24,9 @@ function help() {
   echo "  -D                    -D[ skipCheck ]"
   echo "                        skip some check when bootstrap, eg. bash kylin.sh -DskipCheck start"
   echo "  -C                    -C[ true | false ], default true, use the local properties or not"
-  echo "  start                 start ke"
-  echo "  restart               restart ke"
-  echo "  stop                  stop ke"
+  echo "  start                 start kylin"
+  echo "  restart               restart kylin"
+  echo "  stop                  stop kylin"
   echo "  io.kyligence.*        run tool"
   echo "  interactive Enter for bootstrap"
 }
