@@ -11,7 +11,9 @@ export function getStepLineName (that, name) {
     'Build Snapshot': that.$t('buildSnapshot'),
     'Clean Up Intermediate Table': that.$t('clearUpIntermediateTable'),
     'Optimize layout data': that.$t('LAYOUT_DATA_OPTIMIZE'),
-    LAYOUT_DATA_OPTIMIZE: that.$t('LAYOUT_DATA_OPTIMIZE')
+    LAYOUT_DATA_OPTIMIZE: that.$t('LAYOUT_DATA_OPTIMIZE'),
+    'Load Internal Table': that.$t('loadInternalTableStep'),
+    'Load Gluten Cache': that.$t('loadGlutenCacheStep')
   }
   return stepMap[name]
 }
@@ -38,7 +40,9 @@ export function getSubTasksName (that, name) {
     'delete useless layout data': that.$t('deleteUselessLayoutData'),
     'Optimize layout data by repartition': that.$t('optimizeLayoutDataByRepartition'),
     'Optimize layout data by zorder': that.$t('optimizeLayoutDataByZorder'),
-    'Optimize layout data by compaction': that.$t('optimizeLayoutDataByCompaction')
+    'Optimize layout data by compaction': that.$t('optimizeLayoutDataByCompaction'),
+    'Load Internal Table': that.$t('loadInternalTableStep'),
+    'Load Gluten Cache': that.$t('loadGlutenCacheStep')
   }
   return subTaskNameMap[name]
 }

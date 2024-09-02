@@ -13,6 +13,7 @@ export default {
       { "id": "setting", "value": "setting", "title": "setting" },
       { "id": "source", "value": "source", "title": "Source" },
       { "id": "model", "value": "modellist", "title": "modelList" },
+      { "id": "internalTable", "value": "internaltable", "title": "internalTable" },
       { "id": "index", "value": "index", "title": "Index" },
       { "id": "modelEdit", "value": "modeledit", "title": "Model Edit" },
       { "id": "modelDetails", "value": "modeldetails", "title": "Model Details" },
@@ -155,12 +156,12 @@ export default {
       "keyPattern": "groupRole-projectRole-menu",
       "entries": [
         { "key": "systemAdmin-*-[project,user,group,groupDetail,projectAuthority,diagnostic]", "value": "admin,project,user,group,groupDetail,diagnostic,projectAuthority" },
-        { "key": "systemAdmin-*-[dashboard,query,insight,queryHistory,studio,setting,source,model,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob]", "value": "dashboard,query,insight,queryHistory,studio,setting,source,model,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob,admin" },
+        { "key": "systemAdmin-*-[dashboard,query,insight,queryHistory,studio,setting,source,model,internalTable,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob]", "value": "dashboard,query,insight,queryHistory,studio,setting,source,model,internalTable,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob,admin" },
         { "key": "systemUser-admin-[project,user,group,groupDetail,projectAuthority]", "value": "project,admin,projectAuthority" },
-        { "key": "systemUser-admin-[dashboard,query,insight,queryHistory,studio,setting,source,model,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob]", "value": "dashboard,query,insight,queryHistory,studio,setting,source,model,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob,admin" },
-        { "key": "systemUser-management-*", "value": "dashboard,query,insight,queryHistory,studio,source,model,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob" },
-        { "key": "systemUser-operation-*", "value": "dashboard,query,insight,queryHistory,studio,model,modelDetails,snapshot,ddl,index,monitor,job,streamingJob,modelSubPartitionValues" },
-        { "key": "systemUser-read-*", "value": "dashboard,query,insight,queryHistory,studio,model,modelDetails,snapshot,ddl,index" },
+        { "key": "systemUser-admin-[dashboard,query,insight,queryHistory,studio,setting,source,model,internalTable,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob]", "value": "dashboard,query,insight,queryHistory,studio,setting,source,model,internalTable,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob,admin" },
+        { "key": "systemUser-management-*", "value": "dashboard,query,insight,queryHistory,studio,source,model,internalTable,index,modelEdit,modelDetails,modelSubPartitionValues,snapshot,ddl,logicalView,monitor,job,streamingJob" },
+        { "key": "systemUser-operation-*", "value": "dashboard,query,insight,queryHistory,studio,model,internalTable,modelDetails,snapshot,ddl,index,monitor,job,streamingJob,modelSubPartitionValues" },
+        { "key": "systemUser-read-*", "value": "dashboard,query,insight,queryHistory,studio,model,internalTable,modelDetails,snapshot,ddl,index" },
         { "key": "systemUser-default-*", "value": "dashboard" }
       ]
     },

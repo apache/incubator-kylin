@@ -495,6 +495,7 @@ exports.default = {
     datasource: 'Data Source',
     source: 'Data Source',
     modelList: 'Model',
+    internalTable: 'Internal Table',
     index: 'Index',
     modeledit: 'Model Edit',
     snapshot: 'Snapshot',

@@ -38,7 +38,7 @@
           ref="jobsTable"
           :data="jobsList"
           highlight-current-row
-          :default-sort = "{prop: 'create_time', order: 'descending'}"
+          :default-sort="{prop: 'create_time', order: 'descending'}"
           :empty-text="emptyText"
           @sort-change="sortJobList"
           @selection-change="handleSelectionChange"
@@ -85,8 +85,8 @@
                 <common-tip :content="$t('snapshotDisableTips')" v-if="['SNAPSHOT_BUILD', 'SNAPSHOT_REFRESH'].includes(scope.row.job_name) && !scope.row.target_subject_error && !$store.state.project.snapshot_manual_management_enabled">
                   <span class="is-disabled">{{scope.row.target_subject}}</span>
                 </common-tip>
-                <a class="link" v-if="['SNAPSHOT_BUILD', 'SNAPSHOT_REFRESH'].includes(scope.row.job_name) && $store.state.project.snapshot_manual_management_enabled&&!scope.row.target_subject_error" @click="gotoSnapshotList(scope.row)">{{scope.row.target_subject}}</a>
-                <a class="link" v-if="!tableJobTypes.includes(scope.row.job_name)&&!scope.row.target_subject_error" @click="gotoModelList(scope.row)">{{scope.row.target_subject}}</a>
+                <a class="link" v-if="scope.row.job_name === null" @click="gotoInternalTableList(scope.row)">{{scope.row.target_subject}}</a>
+                <a class="link" v-if="scope.row.job_name !== null && !tableJobTypes.includes(scope.row.job_name) && !scope.row.target_subject_error" @click="gotoModelList(scope.row)">{{scope.row.target_subject}}</a>
               </p>
             </template>
           </el-table-column>
@@ -633,6 +633,14 @@ export default class JobsList extends Vue {
     }
     return true
   }
+
+  gotoInternalTableList (item) {
+    // 暂停轮询，清掉计时器
+    clearTimeout(this.stCycle)
+    this.isPausePolling = true
+    this.$router.push({ name: 'InternalTable', params: { } })
+  }
+
   gotoModelList (item) {
     // 暂停轮询，清掉计时器
     clearTimeout(this.stCycle)

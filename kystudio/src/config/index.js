@@ -59,6 +59,7 @@ export const menusData = [
     icon: 'el-ksd-icon-nav_model_24',
     children: [
       { name: 'source', path: '/studio/source' },
+      { name: 'internalTable', path: '/studio/internal_table' },
       { name: 'modelList', path: '/studio/model' },
       { name: 'snapshot', path: '/studio/snapshot' },
       { name: 'ddl', path: '/studio/ddl' },

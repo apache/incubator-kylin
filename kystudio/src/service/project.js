@@ -68,6 +68,9 @@ export default {
   fetchProjectSettings: (project) => {
     return Vue.resource(apiUrl + 'projects/' + project + '/project_config').get()
   },
+  updateInternalTableEnabled (params) {
+    return Vue.resource(apiUrl + 'projects/' + params.project + '/internal_table_enabled').update(params)
+  },
   updateProjectGeneralInfo (body) {
     return Vue.resource(apiUrl + 'projects/' + body.project + '/project_general_info').update(body)
   },

@@ -76,6 +76,7 @@ export default {
     SUB_PARTITION_REFRESH: 'Refresh Sub-partitions Data',
     SUB_PARTITION_BUILD: 'Build Sub-partitions Data',
     SNAPSHOT_BUILD: 'Build Snapshot',
+    INTERNAL_TABLE_BUILD: 'Load internal table',
     LAYOUT_DATA_OPTIMIZE: 'Storage Optimization',
     clearUpIntermediateTable: 'Garbage CleanUp',
     project: 'Project',
@@ -145,6 +146,8 @@ export default {
     errorStepTips: 'Job interrupted, "{name}" step error',
     noErrorMsg: 'No error message',
     chRestartTips: 'Can\'t restart the current job where some data has been loaded.',
-    fullOptimization: 'Full Optimization'
+    fullOptimization: 'Full Optimization',
+    loadInternalTableStep: 'Load Internal Table',
+    loadGlutenCacheStep: 'Load Internal Table Cache'
   }
 }

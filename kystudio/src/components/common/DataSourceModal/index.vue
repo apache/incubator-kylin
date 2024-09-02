@@ -29,6 +29,7 @@
         :selected-tables="form.selectedTables"
         :selected-databases="form.selectedDatabases"
         :need-sampling="form.needSampling"
+        :load-as-internal-table="form.loadAsInternalTable"
         :sampling-rows="form.samplingRows"
         @input="handleInputTableOrDatabase">
       </SourceHive>

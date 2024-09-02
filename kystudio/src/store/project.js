@@ -266,6 +266,9 @@ export default {
     [types.RESET_PROJECT_CONFIG]: function ({ commit }, para) {
       return api.project.resetConfig(para)
     },
+    [types.UPDATE_INTERNAL_TABLE_ENABLED]: function ({ commit }, para) {
+      return api.project.updateInternalTableEnabled(para)
+    },
     [types.UPDATE_DEFAULT_DB_SETTINGS]: function ({ commit }, para) {
       return api.project.updateDefaultDBSettings(para)
     },
@@ -342,6 +345,9 @@ export default {
     },
     currentSelectedProject: (state) => {
       return state.selected_project
+    },
+    currentSelectedProjectInternalTableEnabled: (state) => {
+      return (state.projectConfig && state.projectConfig.projectDefaultDB && state.projectConfig.projectDefaultDB.override_kylin_properties['kylin.internal-table-enabled'] === 'true') || false
     },
     currentProjectData: (state, getters, rootState) => {
       const _filterable = state.allProject.filter(p => {

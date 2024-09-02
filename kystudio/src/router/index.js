@@ -62,8 +62,11 @@ let routerOptions = {
         name: 'Source',
         path: 'studio/source',
         component: () => import('../components/studio/StudioSource/index.vue')
-      },
-      {
+      }, {
+        name: 'InternalTable',
+        path: 'studio/internal_table',
+        component: () => import('../components/studio/InternalTable/List/index.vue')
+      }, {
         name: 'ModelList',
         path: 'studio/model',
         component: () => import('../components/studio/StudioModel/ModelList/index.vue')
