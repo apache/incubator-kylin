@@ -95,13 +95,15 @@
             min-width="180"
             show-overflow-tooltip>
             <template slot-scope="scope">
-              <template v-if="scope.row.job_name !== 'SNAPSHOT_REFRESH' && scope.row.job_name !== 'SNAPSHOT_BUILD'">
-                <span v-if="scope.row.data_range_end==9223372036854776000">{{$t('fullLoad')}}</span>
+              <template v-if="scope.row.job_name !== 'SNAPSHOT_REFRESH' && scope.row.job_name !== 'SNAPSHOT_BUILD' && scope.row.job_name !== 'LAYOUT_DATA_OPTIMIZE'">
+                <span v-if="scope.row.data_range_end==9223372036854776000 && ![...delSecJobTypes, ...otherJobTypes].includes(scope.row.job_name)">{{$t('fullLoad')}}</span>
+                <span v-else-if="scope.row.data_range_end==9223372036854776000 && [...delSecJobTypes, ...otherJobTypes].includes(scope.row.job_name)">{{$t('full')}}</span>
                 <span v-else>{{scope.row.data_range_start | toServerGMTDate}} - {{scope.row.data_range_end | toServerGMTDate}}</span>
               </template>
               <template v-else>
                 <span v-if="scope.row.snapshot_data_range === 'FULL'">{{$t('fullLoad')}}</span>
                 <span v-else-if="scope.row.snapshot_data_range === 'INC'">{{$t('increamLoad')}}</span>
+                <span v-else-if="scope.row.job_name === 'LAYOUT_DATA_OPTIMIZE'">{{$t('fullOptimization')}}</span>
                 <span v-else>{{scope.row.snapshot_data_range ? JSON.parse(scope.row.snapshot_data_range).splice(0, 10).join(', ') : ''}}</span>
               </template>
             </template>
@@ -441,8 +443,10 @@ export default class JobsList extends Vue {
   jobsList = []
   jobTotal = 0
   allStatus = ['PENDING', 'RUNNING', 'FINISHED', 'ERROR', 'DISCARDED', 'STOPPED']
-  jobTypeFilteArr = ['INDEX_REFRESH', 'INDEX_MERGE', 'INDEX_BUILD', 'INC_BUILD', 'TABLE_SAMPLING', 'SNAPSHOT_BUILD', 'SNAPSHOT_REFRESH', 'SUB_PARTITION_BUILD', 'SUB_PARTITION_REFRESH']
-  tableJobTypes = ['TABLE_SAMPLING', 'SNAPSHOT_BUILD', 'SNAPSHOT_REFRESH']
+  jobTypeFilteArr = ['INDEX_REFRESH', 'INDEX_MERGE', 'INDEX_BUILD', 'INC_BUILD', 'TABLE_SAMPLING', 'SNAPSHOT_BUILD', 'SNAPSHOT_REFRESH', 'SUB_PARTITION_BUILD', 'SUB_PARTITION_REFRESH', 'EXPORT_TO_SECOND_STORAGE', 'SECOND_STORAGE_NODE_CLEAN', 'SECOND_STORAGE_MODEL_CLEAN', 'SECOND_STORAGE_SEGMENT_CLEAN', 'SECOND_STORAGE_INDEX_CLEAN', 'SECOND_STORAGE_REFRESH_SECONDARY_INDEXES', 'LAYOUT_DATA_OPTIMIZE']
+  tableJobTypes = ['TABLE_SAMPLING', 'SNAPSHOT_BUILD', 'SNAPSHOT_REFRESH', 'SECOND_STORAGE_NODE_CLEAN']
+  delSecJobTypes = ['SECOND_STORAGE_NODE_CLEAN', 'SECOND_STORAGE_MODEL_CLEAN', 'SECOND_STORAGE_SEGMENT_CLEAN', 'SECOND_STORAGE_INDEX_CLEAN']
+  otherJobTypes = ['SECOND_STORAGE_REFRESH_SECONDARY_INDEXES']
   targetId = ''
   searchLoading = false
   batchBtnsEnabled = {

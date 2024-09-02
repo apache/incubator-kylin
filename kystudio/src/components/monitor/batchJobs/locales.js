@@ -76,7 +76,7 @@ export default {
     SUB_PARTITION_REFRESH: 'Refresh Sub-partitions Data',
     SUB_PARTITION_BUILD: 'Build Sub-partitions Data',
     SNAPSHOT_BUILD: 'Build Snapshot',
-    SNAPSHOT_REFRESH: 'Refresh Snapshot',
+    LAYOUT_DATA_OPTIMIZE: 'Storage Optimization',
     clearUpIntermediateTable: 'Garbage CleanUp',
     project: 'Project',
     adminTips: 'Admin user can view all job information via Select All option in the project list.',
@@ -119,6 +119,10 @@ export default {
     sampleTableData: 'Sample Table Data',
     buildIndexesByLayer: 'Build indexes by layer',
     updateFlatTableStatistics: 'Update flat table statistics',
+    deleteUselessLayoutData: 'Delete invalid data',
+    optimizeLayoutDataByRepartition: 'Index data repartition',
+    optimizeLayoutDataByZorder: 'Z-order sorting',
+    optimizeLayoutDataByCompaction: 'Modify index file size',
     durationStart: 'Start Time: ',
     durationEnd: 'End Time: ',
     jobParams: 'Job Parameters',
@@ -139,6 +143,8 @@ export default {
     step_stopped: 'Paused',
     step_skip: 'Skipped',
     errorStepTips: 'Job interrupted, "{name}" step error',
-    noErrorMsg: 'No error message'
+    noErrorMsg: 'No error message',
+    chRestartTips: 'Can\'t restart the current job where some data has been loaded.',
+    fullOptimization: 'Full Optimization'
   }
 }

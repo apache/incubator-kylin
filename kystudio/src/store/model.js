@@ -405,6 +405,18 @@ export default {
     },
     [types.VALIDATE_EXPORT_TDS] (_, params) {
       return api.model.validateExportTds(params)
+    },
+    [types.UPDATE_STORAGE_TYPE]: function ({ commit }, para) {
+      return api.model.updateModelStorageType(para)
+    },
+    [types.SAVE_OPTIMIZE_LAYOUT_DATA]: function ({ commit }, para) {
+      return api.model.saveOptimizeLayoutData(para)
+    },
+    [types.GET_INDEX_DETAIL]: function ({ commit }, para) {
+      return api.model.getIndexDetail(para)
+    },
+    [types.DOWNLOAD_OPTIMIZE_LAYOUT_TEMPLATE]: function ({ commit }) {
+      return api.model.downloadOptimizeLayoutTemplate()
     }
   },
   getters: {

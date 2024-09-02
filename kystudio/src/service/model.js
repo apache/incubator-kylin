@@ -329,5 +329,32 @@ export default {
   },
   validateExportTds: (para) => {
     return Vue.resource(apiUrl + 'models/validate_export?project=' + para.project + '&model=' + para.modelId + '&element=' + para.element).get()
+  },
+  saveSecondaryStorageIndexes (para) {
+    return Vue.resource(apiUrl + 'storage/index').save(para)
+  },
+  getSecondaryStorageIndexes (para) {
+    return Vue.resource(apiUrl + 'storage/index').get(para)
+  },
+  materializeSecondaryStorageIndexes (para) {
+    return Vue.resource(apiUrl + 'storage/index/secondary/materialize').save(para)
+  },
+  deleteSecondaryOrderByIndex (para) {
+    return Vue.resource(apiUrl + 'storage/index/primary').delete(para)
+  },
+  deleteSecondarySkippingIndex (para) {
+    return Vue.resource(apiUrl + 'storage/index/secondary').delete(para)
+  },
+  updateModelStorageType (para) {
+    return Vue.resource(apiUrl + `models/${para.model_id}/storage_type`).update(para.data)
+  },
+  saveOptimizeLayoutData (para) {
+    return Vue.resource(apiUrl + `models/${para.model_id}/optimize_layout_data`).save(para)
+  },
+  getIndexDetail (para) {
+    return Vue.resource(apiUrl + `models/${para.project}/${para.model_id}/${para.index_id}/layout_detail`).get()
+  },
+  downloadOptimizeLayoutTemplate () {
+    return Vue.resource(apiUrl + 'models/optimize_layout_data_template').get()
   }
 }

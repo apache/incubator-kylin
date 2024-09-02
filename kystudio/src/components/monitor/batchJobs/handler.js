@@ -9,7 +9,9 @@ export function getStepLineName (that, name) {
     'Update Metadata': that.$t('updateMetadata'),
     'Table Sampling': that.$t('tableSampling'),
     'Build Snapshot': that.$t('buildSnapshot'),
-    'Clean Up Intermediate Table': that.$t('clearUpIntermediateTable')
+    'Clean Up Intermediate Table': that.$t('clearUpIntermediateTable'),
+    'Optimize layout data': that.$t('LAYOUT_DATA_OPTIMIZE'),
+    LAYOUT_DATA_OPTIMIZE: that.$t('LAYOUT_DATA_OPTIMIZE')
   }
   return stepMap[name]
 }
@@ -32,7 +34,11 @@ export function getSubTasksName (that, name) {
     'Sample Table Data': that.$t('sampleTableData'),
     'Build Snapshot': that.$t('buildSnapshot'),
     'Build indexes by layer': that.$t('buildIndexesByLayer'),
-    'Update flat table statistics': that.$t('updateFlatTableStatistics')
+    'Update flat table statistics': that.$t('updateFlatTableStatistics'),
+    'delete useless layout data': that.$t('deleteUselessLayoutData'),
+    'Optimize layout data by repartition': that.$t('optimizeLayoutDataByRepartition'),
+    'Optimize layout data by zorder': that.$t('optimizeLayoutDataByZorder'),
+    'Optimize layout data by compaction': that.$t('optimizeLayoutDataByCompaction')
   }
   return subTaskNameMap[name]
 }
