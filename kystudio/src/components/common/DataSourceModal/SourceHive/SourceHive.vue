@@ -137,6 +137,7 @@ import arealabel from '../../area_label.vue'
       default: () => []
     },
     needSampling: Boolean,
+    loadAsInternalTable: Boolean,
     samplingRows: {
       default: 20000000
     },
@@ -151,7 +152,8 @@ import arealabel from '../../area_label.vue'
   },
   computed: {
     ...mapGetters([
-      'currentSelectedProject'
+      'currentSelectedProject',
+      'currentSelectedProjectInternalTableEnabled'
     ]),
     ...mapState({
       loadHiveTableNameEnabled: state => state.system.loadHiveTableNameEnabled
@@ -591,6 +593,15 @@ export default class SourceHive extends Vue {
       this.contentStyle.height = '367px'
     }
   }
+
+  handleInternalTableOption (loadAsInternalTable) {
+    this.$emit('input', { loadAsInternalTable })
+    if (!loadAsInternalTable) {
+      this.errorMsg = ''
+      this.contentStyle.height = '367px'
+    }
+  }
+
   handleSamplingRows (samplingRows) {
     if (samplingRows && samplingRows < 10000) {
       this.errorMsg = this.$t('minNumber')
@@ -722,9 +733,12 @@ export default class SourceHive extends Vue {
     position: relative;
     // height: 453px;
   }
+  .source-options {
+    display: flex;
+    padding: 0 8px;
+  }
   .sample-block {
-    margin-left: calc(400px + 25px + 10px);
-    margin-top: -13px;
+    flex: 1;
     .sample-desc {
       color: @text-title-color;
       word-break: break-word;
@@ -834,8 +848,8 @@ export default class SourceHive extends Vue {
     background-color: @regular-background-color;
     // bottom: 25px;
     margin-top: 10px;
-    right: 20px;
-    width: 485px;
+    right: 24px;
+    width: 466px;
     .infoIcon{
       position: absolute;
       top: 10px;

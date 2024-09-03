@@ -67,13 +67,13 @@
         >
         </el-table-column>
       </el-table>
-      <kap-pager
+      <kylin-pager
         :totalSize="internalTableDataListTotal"
         :perPageSize="internalTableDataListPageLimit"
         :curPage="internalTableDataListPageOffset + 1"
         @handleCurrentChange='handlePagerChange'
         class="ksd-mtb-16 ksd-center">
-      </kap-pager>
+      </kylin-pager>
     </div>
     <LoadData v-show="showLoadData" :tableInfo="tableInfo" :handleClose="handleCloseLoadData"/>
   </el-dialog>
