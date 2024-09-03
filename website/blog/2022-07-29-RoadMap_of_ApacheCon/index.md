@@ -149,7 +149,6 @@ Kylin 5 新增了详尽的查询历史信息，为每个查询存储了 Kylin �
 
 ### Kylin 5 官网和试用链接
 - 初版 Kylin 5.0 用户文档：https://kylin.apache.org/5.0
-- Kylin 5.0 社区开发路线：https://kylin.apache.org/5.0/docs/development/roadmap
 - Kylin 5.0 预览版 Standalone Docker Image：https://kylin.apache.org/5.0/docs/quickstart/intro
 
 ## 社区未来展望

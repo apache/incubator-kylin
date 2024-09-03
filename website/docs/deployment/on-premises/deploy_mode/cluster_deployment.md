@@ -31,7 +31,7 @@ We will go through each one of them:
 
 Kylin uses RDBMS to store metadata, please refer to [Use RDBMS as Metastore](../rdbms_metastore/intro.md).
 
-Kylin uses Time-series database to store metrics (mostly for monitor purpose), please refer to [Use InfluxDB as Time-Series Database](../../../operations/monitoring/influxdb/influxdb.md). 
+Kylin uses Time-series database to store metrics (mostly for monitor purpose), please refer to [Use InfluxDB as Time-Series Database](../../../operations/system-monitoring/influxdb/influxdb.md). 
 
 ### Kylin Nodes Introduction
 

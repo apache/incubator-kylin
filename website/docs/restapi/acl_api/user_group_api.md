@@ -1,8 +1,8 @@
 ---
-title: User Group Management API
+title: User Group Management
 language: en
-sidebar_label: User Group Management API
-pagination_label: User Group Management API
+sidebar_label: User Group Management
+pagination_label: User Group Management
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

@@ -1,8 +1,8 @@
 ---
-title: Job API
+title: Job Management
 language: en
-sidebar_label: Job API
-pagination_label: Job API
+sidebar_label: Job Management
+pagination_label: Job Management
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

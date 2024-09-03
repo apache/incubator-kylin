@@ -1,8 +1,8 @@
 ---
-title: User Management API
+title: User Management
 language: en
-sidebar_label: User Management API
-pagination_label: User Management API
+sidebar_label: User Management
+pagination_label: User Management
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

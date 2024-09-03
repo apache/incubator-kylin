@@ -30,7 +30,7 @@ Kylin supports data sampling during data loading. If you want to manually sample
 
 2. In the project list at the top of the page, select the target project. 
 
-   Create a project if you have not created any projects yet. For more information, see [Create project](../operations/project-operation/project_management.md).
+   Create a project if you have not created any projects yet. For more information, see [Create project](../operations/project-managing/project_management.md).
 
 3. In the left navigation panel, click **Data Assets** > **Data Source**.
 

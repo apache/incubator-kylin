@@ -1,8 +1,8 @@
 ---
-title: Model Build API
+title: Model Data Loading
 language: en
-sidebar_label: Model Build API
-pagination_label: Model Build API
+sidebar_label: Model Data Loading
+pagination_label: Model Data Loading
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

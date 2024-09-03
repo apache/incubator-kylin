@@ -62,7 +62,7 @@ The start time range of Segment should greater than `1970-01-02`.
    
    Besides the above methods, you can also increase the model data range by adding a new segment. Click the **+ Segment** button under segment list. Then click the **Incremental Build** button in the pop-up window. After that, a building job will be submitted and the third segment will be shown when the job is finished.
 
-   Note: If you want to use this function, you need to enable **Creating Reserved Segments**. Please refer to [Project Settings](../../operations/project-operation/project_settings.md) for more information.
+   Note: If you want to use this function, you need to enable **Creating Reserved Segments**. Please refer to [Project Settings](../../operations/project-managing/project_settings.md) for more information.
    
    ![Add segment](images/load_by_date/add_segment.png)
    ![Segment list](images/load_by_date/model_list_3.png)

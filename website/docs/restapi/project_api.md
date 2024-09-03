@@ -1,8 +1,8 @@
 ---
-title: Project Setting API
+title: Project Management
 language: en
-sidebar_label: Project Setting API
-pagination_label: Project Setting API
+sidebar_label: Project Management
+pagination_label: Project Management
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
@@ -366,7 +366,7 @@ last_update:
           "data_load_empty_notification_enabled":true,
           "job_error_notification_enabled":false,
           "job_notification_emails":[
-              "nnnn@kyligence.io","tttt@kyligence.io"
+              "nnnn@yourmail.io","tttt@yourmail.io"
           ]
       }'
   ```

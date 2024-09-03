@@ -1,8 +1,8 @@
 ---
-title: Access and Authentication API
+title: Access and Authentication
 language: en
-sidebar_label: Access and Authentication API
-pagination_label: Access and Authentication API
+sidebar_label: Access and Authentication
+pagination_label: Access and Authentication
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

@@ -1,8 +1,8 @@
 ---
-title: Multi-level Partitioning Model API
+title: Multi-level Partitioning
 language: en
-sidebar_label: Multi-level Partitioning Model API
-pagination_label: Multi-level Partitioning Model API
+sidebar_label: Multi-level Partitioning
+pagination_label: Multi-level Partitioning
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
@@ -21,7 +21,7 @@ last_update:
 
 
 ### Set partition column {#Set partition column}
-For multi-level partition model define partition column, please refer to [Define Partition Column](model_management_api.md) directly.
+For multi-level partition model define partition column, please refer to [Define Partition Column](intro.md) directly.
 
 ### Add Sub-Partition value {#Add Sub-Partition value}
 You can add it by specifying `sub_partition_values` when [Load Segment](model_build_api.md) directly or execute following API.

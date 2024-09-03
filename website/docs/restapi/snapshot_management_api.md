@@ -1,8 +1,8 @@
 ---
-title: Snapshot Management API
+title: Snapshot Management
 language: en
-sidebar_label: Snapshot Management API
-pagination_label: Snapshot Management API
+sidebar_label: Snapshot Management
+pagination_label: Snapshot Management
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

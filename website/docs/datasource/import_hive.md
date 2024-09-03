@@ -1,8 +1,8 @@
 ---
-title: Hive data source
+title: Use Hive as Data Source
 language: en
-sidebar_label: Hive data source
-pagination_label: Hive data source
+sidebar_label: Use Hive as Data Source
+pagination_label: Use Hive as Data Source
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
@@ -20,7 +20,7 @@ Leveraging the capability of Apache Hive, Kylin has effectively solved the query
 
 Apache Hive is a distributed, fault-tolerant data warehouse software that enables analytics at a massive scale. With Apache Hive to map structured data into tables and precomputation offered by Kylin, you can easily identify and manage your business' most valuable data, and uncover new insights from any size dataset, at any time, and from anywhere. 
 
-This article introduces how to load Hive data source to a Kylin [project](../operations/project-operation/project_management.md) for [model designing](../modeling/intro.md) and [data analysis](../query/intro.md). 
+This article introduces how to load Hive data source to a Kylin [project](../operations/project-managing/project_management.md) for [model designing](../modeling/intro.md) and [data analysis](../query/intro.md). 
 
 ### Notes
 
@@ -36,7 +36,7 @@ This article introduces how to load Hive data source to a Kylin [project](../ope
 
 2. In the project list at the top of the page, select the target project.
 
-   Create a new project if you have not created any projects yet. For more information, see [Create project](../operations/project-operation/project_management.md).
+   Create a new project if you have not created any projects yet. For more information, see [Create project](../operations/project-managing/project_management.md).
 
 3. In the left navigation panel, click **Data Assets** > **Data Source**.
 

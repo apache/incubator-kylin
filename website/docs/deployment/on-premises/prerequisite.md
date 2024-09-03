@@ -24,6 +24,7 @@ Prior to installing Kylin, please check the following prerequisites are met.
     - [Account Authority](#account)
     - [Metastore Configuration](#metadata)
     - [Check Zookeeper](#zookeeper)
+    - [Network Port Requirements](#ports)
 - Recommended Resource and Configuration
     - [Hadoop Cluster Resource Allocation](#resource)
     - [Recommended Hardware Configuration](#hardware)
@@ -147,6 +148,31 @@ The following steps can be used to quickly verify the connectivity between ZooKe
 6. Clean up the new Client section in step 2 and the environment variables `unset JVMFLAGS` declared in step 3
 
 If you download ZooKeeper from the non-official website, you can consult the operation and maintenance personnel before performing the above operations.
+
+### <span id="ports">Network Port Requirements</span>
+Kylin needs to communicate with different components. The following are the ports that need to be opened to Kylin. This table only includes the default configuration of the Hadoop environment, and does not include the configuration differences between Hadoop platforms.
+
+| Component            | Port          | Function                                                     | Required |
+| -------------------- | ------------- | ------------------------------------------------------------ | -------- |
+| SSH                  | 22            | SSH to connect to the port of the virtual machine where Kylin is located | Y        |
+| Kylin                | 7070          | Kylin access port                                            | Y        |
+| Kylin                | 7443          | Kylin HTTPS access port                                      | N        |
+| HDFS                 | 8020          | HDFS receives client connection RPC port                     | Y        |
+| HDFS                 | 50010         | Access HDFS DataNode, data transmission port                 | Y        |
+| Hive                 | 10000         | HiveServer2 access port                                      | N        |
+| Hive                 | 9083          | Hive Metastore access port                                   | Y        |
+| Zookeeper            | 2181          | Zookeeper access port                                        | Y        |
+| Yarn                 | 8088          | Yarn Web UI access port                                      | Y        |
+| Yarn                 | 8090          | Yarn Web UI HTTPS access port                                | N        |
+| Yarn                 | 8050 / 8032   | Yarn ResourceManager communication port                      | Y        |
+| Spark                | 4041          | Kylin query engine Web UI default port        | Y        |
+| Spark                | 18080         | Spark History Server port                                    | N        |
+| Spark                | (1024, 65535] | The ports occupied by Spark Driver and Executor are random   | Y        |
+| Influxdb             | 8086          | Influxdb HTTP port                                           | N        |
+| Influxdb             | 8088          | Influxdb RPC port                                            | N        |
+| PostgreSQL           | 5432          | PostgreSQL access port                                       | Y        |
+| MySQL                | 3306          | MySQL access port                                            | Y        |
+
 
 ### <span id="resource">Hadoop Cluster Resource Allocation</span>
 

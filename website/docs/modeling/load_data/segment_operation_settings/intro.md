@@ -1,14 +1,14 @@
 ---
-title: Segment Operation and Settings
+title: Segment Management
 language: en
-sidebar_label: Segment Operation and Settings
-pagination_label: Segment Operation and Settings
+sidebar_label: Segment Management
+pagination_label: Segment Management
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
 pagination_next: null
 keywords:
-    - segment operation and settings
+    - segment management
 draft: false
 last_update:
     date: 08/19/2022
@@ -91,4 +91,4 @@ You have 6 types of segment operations on the **Data Asset -> model **page.
 
 ### <span id="setting"> Segment Settings</span>
 
-You can set some to manage segments automatically in the **Setting -> Segment Settings** page. Please refer to [Project Settings](../../../operations/project-operation/project_settings.md) for the specific requirements.
+You can set some to manage segments automatically in the **Setting -> Segment Settings** page. Please refer to [Project Settings](../../../operations/project-managing/project_settings.md) for the specific requirements.

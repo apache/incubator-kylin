@@ -1,14 +1,15 @@
 ---
-title: Model Import And Export API
+title: Model Import & Export
 language: en
-sidebar_label: Model Import And Export API
-pagination_label: Model Import And Export API
+sidebar_label: Model Import & Export
+pagination_label: Model Import & Export
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
 pagination_next: null
 keywords:
-    - model import and export api
+    - model import
+    - model export
 draft: false
 last_update:
     date: 08/12/2022

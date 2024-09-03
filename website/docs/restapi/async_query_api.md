@@ -1,8 +1,8 @@
 ---
-title: Async Query API
+title: Async Query
 language: en
-sidebar_label: Async Query API
-pagination_label: Async Query API
+sidebar_label: Async Query
+pagination_label: Async Query
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

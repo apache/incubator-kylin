@@ -1,11 +1,11 @@
 ---
-title: Kylin 5 Tutorial
+title: Kylin Tutorial
 language: en
-sidebar_label: Tutorial
-pagination_label: Tutorial
+sidebar_label: Kylin Tutorial
+pagination_label: Kylin Tutorial
 toc_min_heading_level: 2
 toc_max_heading_level: 6
-pagination_prev: quickstart/deploy_kylin
+pagination_prev: quickstart/intro
 pagination_next: quickstart/sample_dataset
 keywords:
       - tutorial
@@ -177,7 +177,7 @@ You can submit a query to analyze your business data and experience the sub-seco
 
 ### <span id="job">Job Monitor</span>
 
-Different jobs are triggered during the process of using Kylin, such as the job of building index, loading data, and sampling table. You can view the job list in the navigation bar **Monitor -> Job** interface. For more detailed instructions, please see the [Monitor Job](../operations/monitoring/intro.md) section.
+Different jobs are triggered during the process of using Kylin, such as the job of building index, loading data, and sampling table. You can view the job list in the navigation bar **Monitor -> Job** interface. For more detailed instructions, please see the [Monitor Job](../operations/system-monitoring/intro.md) section.
 
 Job monitoring can help you effectively manage the use of Kylin. You can check the status of the job to determine whether the operation is complete, whether the operating environment is stable, and so on. The following diagram shows the job monitoring interface in the built-in demo where all jobs are successfully completed.
 

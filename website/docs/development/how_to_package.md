@@ -6,7 +6,7 @@ pagination_label: How to package
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: development/how_to_test
-pagination_next: development/how_to_release
+pagination_next: null
 keywords:
     - package
 draft: false

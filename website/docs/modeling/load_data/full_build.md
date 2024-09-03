@@ -16,8 +16,6 @@ last_update:
 
 If you want to load all the data in the source table, you can choose full load. The main contents are as follows:
 
-- [<span id="expert">Full Load</span>](#full-load-in-ai-augmented-mode-project)
-
 ### <span id="expert">Full Load</span>
 
 If you do not set a time partition column for your model, it will be full load each time.

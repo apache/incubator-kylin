@@ -21,7 +21,7 @@ The Kylin supports the integration of multiple data sources, such as Hive. You c
 
 Click the links below to learn how to load different types of data sources.
 
-- [Hive data source](import_hive.md)
+- [Use Hive as Data Source](import_hive.md)
 - [Data Sampling](data_sampling.md)
 
 

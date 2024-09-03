@@ -1,14 +1,14 @@
 ---
-title: Load Data
+title: Data Loading
 language: en
-sidebar_label: Load Data
-pagination_label: Load Data
+sidebar_label: Data Loading
+pagination_label: Data Loading
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
 pagination_next: null
 keywords:
-    - load data
+    - data loading
 draft: false
 last_update:
     date: 08/19/2022

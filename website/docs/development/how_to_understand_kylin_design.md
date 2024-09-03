@@ -5,7 +5,7 @@ sidebar_label: Overall Design of Kylin 5
 pagination_label: Overall Design of Kylin 5
 toc_min_heading_level: 2
 toc_max_heading_level: 6
-pagination_prev: development/how_to_release
+pagination_prev: null
 pagination_next: null
 showLastUpdateAuthor: true
 showLastUpdateTime: true

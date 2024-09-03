@@ -41,7 +41,7 @@ According to different business needs, it supports the automatic merging of proj
 - Project-level: Used for all models in a project, with the same merge strategy.
 - Model-level: used for multiple models in a project, with different automatic merging strategies.
 
-Please refer to **Segment Settings** and **Model/Index Group Rewrite Settings** of [Project Settings](../../../operations/project-operation/project_settings.md) for the specific requirements.
+Please refer to **Segment Settings** and **Model/Index Group Rewrite Settings** of [Project Settings](../../../operations/project-managing/project_settings.md) for the specific requirements.
 
 #### <span id="strategy">Auto-merge strategy</span>
 - Merge Timing: The system triggers an automatic merge attempt every time a new segment in the project becomes complete. To ensure query performance, all segments will not be merged at once.

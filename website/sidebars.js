@@ -22,17 +22,17 @@ const sidebars = {
     ],
     DocumentSideBar: [
         {
+            type: 'doc',
+            id: 'quickstart/overview'
+        },
+        {
             type: 'category',
             label: 'Quick Start',
             link: {
                 type: 'doc',
-                id: 'quickstart/overview',
+                id: 'quickstart/intro'
             },
             items: [
-                {
-                    type: 'doc',
-                    id: 'quickstart/deploy_kylin',
-                },
                 {
                     type: 'doc',
                     id: 'quickstart/tutorial',
@@ -64,52 +64,20 @@ const sidebars = {
                             id: 'deployment/on-premises/prerequisite',
                         },
                         {
-                            type: 'doc',
-                            id: 'deployment/on-premises/network_port_requirements',
-                        },
-                        {
                             type: 'category',
-                            label: 'Use RDBMS as Metastore',
+                            label: 'Metastore',
                             link: {
                                 type: 'doc',
                                 id: 'deployment/on-premises/rdbms_metastore/intro',
                             },
                             items: [
                                 {
-                                    type: 'category',
-                                    label: 'MySQL',
-                                    link: {
-                                        type: 'doc',
-                                        id: 'deployment/on-premises/rdbms_metastore/mysql/intro',
-                                    },
-                                    items: [
-                                        {
-                                            type: 'doc',
-                                            id: 'deployment/on-premises/rdbms_metastore/mysql/install_mysql'
-                                        },
-                                        {
-                                            type: 'doc',
-                                            id: 'deployment/on-premises/rdbms_metastore/mysql/mysql_metastore'
-                                        },
-                                    ],
+                                    type: 'doc',
+                                    id: 'deployment/on-premises/rdbms_metastore/use_mysql_as_metadb'
                                 },
                                 {
-                                    type: 'category',
-                                    label: 'PostgreSQL',
-                                    link: {
-                                        type: 'doc',
-                                        id: 'deployment/on-premises/rdbms_metastore/postgresql/intro',
-                                    },
-                                    items: [
-                                        {
-                                            type: 'doc',
-                                            id: 'deployment/on-premises/rdbms_metastore/postgresql/install_postgresql'
-                                        },
-                                        {
-                                            type: 'doc',
-                                            id: 'deployment/on-premises/rdbms_metastore/postgresql/default_metastore'
-                                        },
-                                    ],
+                                    type: 'doc',
+                                    id: 'deployment/on-premises/rdbms_metastore/usepg_as_metadb'
                                 },
                                 {
                                     type: 'doc',
@@ -175,20 +143,6 @@ const sidebars = {
                 },
                 {
                     type: 'category',
-                    label: 'On Cloud',
-                    link: {
-                        type: 'doc',
-                        id: 'deployment/on-cloud/intro',
-                    },
-                    items: [
-                        {
-                            type: 'doc',
-                            id: 'deployment/on-cloud/intro'
-                        },
-                    ]
-                },
-                {
-                    type: 'category',
                     label: 'System Configuration',
                     link: {
                         type: 'doc',
@@ -229,220 +183,6 @@ const sidebars = {
         },
         {
             type: 'category',
-            label: 'Operation and Maintenance Guide',
-            link: {
-                type: 'doc',
-                id: 'operations/intro',
-            },
-            items: [
-                {
-                    type: 'doc',
-                    id: 'operations/overview'
-                },
-                {
-                    type: 'category',
-                    label: 'Project Operation',
-                    link: {
-                        type: 'doc',
-                        id: 'operations/project-operation/intro'
-                    },
-                    items: [
-                        {
-                            type: 'doc',
-                            id: 'operations/project-operation/project_management'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/project-operation/project_settings'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/project-operation/toolbar'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/project-operation/alerting'
-                        },
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Access Control',
-                    link: {
-                        type: 'doc',
-                        id: 'operations/access-control/intro'
-                    },
-                    items: [
-                        {
-                            type: 'doc',
-                            id: 'operations/access-control/user_management'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/access-control/group_management'
-                        },
-                        {
-                            type: 'category',
-                            label: 'Data Access Control',
-                            link: {
-                                type: 'doc',
-                                id: 'operations/access-control/data-access-control/intro'
-                            },
-                            items: [
-                                {
-                                    type: 'doc',
-                                    id: 'operations/access-control/data-access-control/project_acl'
-                                },
-                            ],
-                        },
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'System Operation',
-                    link: {
-                        type: 'doc',
-                        id: 'operations/system-operation/intro',
-                    },
-                    items: [
-                        {
-                            type: 'category',
-                            label: 'Diagnosis',
-                            link: {
-                                type: 'doc',
-                                id: 'operations/system-operation/diagnosis/intro',
-                            },
-                            items: [
-                                {
-                                    type: 'doc',
-                                    id: 'operations/system-operation/diagnosis/diagnosis',
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'operations/system-operation/diagnosis/query_flame_graph',
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'operations/system-operation/diagnosis/build_flame_graph',
-                                },
-                            ],
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/system-operation/update-session-table',
-                        },
-                        {
-                            type: 'category',
-                            label: 'CLI Operation Tool',
-                            link: {
-                                type: 'doc',
-                                id: 'operations/system-operation/cli_tool/intro',
-                            },
-                            items: [
-                                {
-                                    type: 'doc',
-                                    id: 'operations/system-operation/cli_tool/environment_dependency_check',
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'operations/system-operation/cli_tool/diagnosis'
-                                },
-                                {
-                                    type: 'category',
-                                    label: 'Metadata Tool',
-                                    link: {
-                                        type: 'doc',
-                                        id: 'operations/system-operation/cli_tool/metadata_tool/intro',
-                                    },
-                                    items: [
-                                        {
-                                            type: 'doc',
-                                            id: 'operations/system-operation/cli_tool/metadata_tool/metadata_backup_restore'
-                                        },
-                                    ],
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'operations/system-operation/cli_tool/rollback'
-                                },
-                            ],
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/system-operation/maintenance_mode'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/system-operation/guardian',
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/system-operation/junk_file_clean',
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/system-operation/limit_query',
-                        },
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Monitoring',
-                    link: {
-                        type: 'doc',
-                        id: 'operations/monitoring/intro',
-                    },
-                    items: [
-                        {
-                            type: 'category',
-                            label: 'InfluxDB',
-                            link: {
-                                type: 'doc',
-                                id: 'operations/monitoring/influxdb/intro',
-                            },
-                            items: [
-                                {
-                                    type: 'doc',
-                                    id: 'operations/monitoring/influxdb/influxdb'
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'operations/monitoring/influxdb/influxdb_maintenance'
-                                },
-                            ],
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/monitoring/metrics_intro',
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/monitoring/service'
-                        },
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Logs',
-                    link: {
-                        type: 'doc',
-                        id: 'operations/logs/intro',
-                    },
-                    items: [
-                        {
-                            type: 'doc',
-                            id: 'operations/logs/system_log'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'operations/logs/audit_log'
-                        },
-                    ],
-                },
-            ],
-        },
-        {
-            type: 'category',
             label: 'Datasource',
             link: {
                 type: 'doc',
@@ -465,7 +205,29 @@ const sidebars = {
         },
         {
             type: 'category',
-            label: 'Modeling',
+            label: 'Internal Table',
+            link: {
+                type: 'doc',
+                id: 'internaltable/intro',
+            },
+            items: [
+                {
+                    type: 'doc',
+                    id: 'internaltable/internal_table_management'
+                },
+                {
+                    type: 'doc',
+                    id: 'internaltable/load_data_into_internal_table'
+                },
+                {
+                    type: 'doc',
+                    id: 'internaltable/query_internal_table'
+                }
+            ],
+        },
+        {
+            type: 'category',
+            label: 'Model',
             link: {
                 type: 'doc',
                 id: 'modeling/intro'
@@ -473,15 +235,59 @@ const sidebars = {
             items: [
                 {
                     type: 'doc',
-                    id: 'modeling/data_modeling'
-                },
-                {
-                    type: 'doc',
                     id: 'modeling/manual_modeling'
                 },
                 {
+                    type: 'category',
+                    label: 'Auto Modeling',
+                    link: {
+                        type: 'doc',
+                        id: 'modeling/auto_modeling/intro'
+                    },
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'modeling/auto_modeling/data_modeling_by_SQL'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'modeling/auto_modeling/basic_concept_actions'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'modeling/auto_modeling/rule_setting'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'modeling/auto_modeling/scalar_subquery'
+                        },
+                    ],
+                },
+                {
+                    type: 'category',
+                    label: 'Auto Index Optimization',
+                    link: {
+                        type: 'doc',
+                        id: 'modeling/auto_modeling/optimize_index/intro'
+                    },
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'modeling/auto_modeling/optimize_index/index_optimization'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'modeling/auto_modeling/optimize_index/review_index'
+                        },
+                    ],
+                },
+                {
                     type: 'doc',
-                    id: 'modeling/model_concepts_operations'
+                    id: 'modeling/model_management'
+                },
+                {
+                    type: 'doc',
+                    id: 'modeling/snapshot_management'
                 },
                 {
                     type: 'category',
@@ -583,7 +389,7 @@ const sidebars = {
                 },
                 {
                     type: 'category',
-                    label: 'Load Data',
+                    label: 'Data Loading',
                     link: {
                         type: 'doc',
                         id: 'modeling/load_data/intro'
@@ -617,34 +423,31 @@ const sidebars = {
                         },
                     ],
                 },
-            ],
-        },
-        {
-            type: 'category',
-            label: 'Monitor Job',
-            link: {
-                type: 'doc',
-                id: 'monitor/intro'
-            },
-            items: [
                 {
-                    type: 'doc',
-                    id: 'monitor/job_concept_settings'
-                },
-                {
-                    type: 'doc',
-                    id: 'monitor/job_operations'
-                },
-                {
-                    type: 'doc',
-                    id: 'monitor/job_diagnosis'
-                },
-                {
-                    type: 'doc',
-                    id: 'monitor/job_exception_resolve'
+                    type: 'category',
+                    label: 'Streaming',
+                    link: {
+                        type: 'doc',
+                        id: 'modeling/real-time/intro'
+                    },
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'modeling/real-time/prerequisite'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'modeling/real-time/real-time'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'modeling/real-time/custom-parser'
+                        },
+                    ],
                 },
             ],
         },
+
         {
             type: 'category',
             label: 'Query',
@@ -813,15 +616,241 @@ const sidebars = {
         },
         {
             type: 'category',
-            label: 'Snapshot Management',
+            label: 'Maintenance Guide',
             link: {
                 type: 'doc',
-                id: 'snapshot/intro'
+                id: 'operations/intro',
             },
             items: [
                 {
                     type: 'doc',
-                    id: 'snapshot/snapshot_management'
+                    id: 'operations/overview'
+                },
+                {
+                    type: 'category',
+                    label: 'Project Managing',
+                    link: {
+                        type: 'doc',
+                        id: 'operations/project-managing/intro'
+                    },
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'operations/project-managing/project_management'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/project-managing/project_settings'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/project-managing/toolbar'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/project-managing/alerting'
+                        },
+                    ],
+                },
+                {
+                    type: 'category',
+                    label: 'Access Control',
+                    link: {
+                        type: 'doc',
+                        id: 'operations/access-control/intro'
+                    },
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'operations/access-control/user_management'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/access-control/group_management'
+                        },
+                        {
+                            type: 'category',
+                            label: 'Data Access Control',
+                            link: {
+                                type: 'doc',
+                                id: 'operations/access-control/data-access-control/intro'
+                            },
+                            items: [
+                                {
+                                    type: 'doc',
+                                    id: 'operations/access-control/data-access-control/project_acl'
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    type: 'category',
+                    label: 'System Operation',
+                    link: {
+                        type: 'doc',
+                        id: 'operations/system-operation/intro',
+                    },
+                    items: [
+                        {
+                            type: 'category',
+                            label: 'Diagnosis',
+                            link: {
+                                type: 'doc',
+                                id: 'operations/system-operation/diagnosis/intro',
+                            },
+                            items: [
+                                {
+                                    type: 'doc',
+                                    id: 'operations/system-operation/diagnosis/diagnosis',
+                                },
+                                {
+                                    type: 'doc',
+                                    id: 'operations/system-operation/diagnosis/query_flame_graph',
+                                },
+                                {
+                                    type: 'doc',
+                                    id: 'operations/system-operation/diagnosis/build_flame_graph',
+                                },
+                            ],
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/system-operation/update-session-table',
+                        },
+                        {
+                            type: 'category',
+                            label: 'CLI Operation Tool',
+                            link: {
+                                type: 'doc',
+                                id: 'operations/system-operation/cli_tool/intro',
+                            },
+                            items: [
+                                {
+                                    type: 'doc',
+                                    id: 'operations/system-operation/cli_tool/environment_dependency_check',
+                                },
+                                {
+                                    type: 'doc',
+                                    id: 'operations/system-operation/cli_tool/diagnosis'
+                                },
+                                {
+                                    type: 'category',
+                                    label: 'Metadata Tool',
+                                    link: {
+                                        type: 'doc',
+                                        id: 'operations/system-operation/cli_tool/metadata_tool/intro',
+                                    },
+                                    items: [
+                                        {
+                                            type: 'doc',
+                                            id: 'operations/system-operation/cli_tool/metadata_tool/metadata_backup_restore'
+                                        },
+                                    ],
+                                },
+                                {
+                                    type: 'doc',
+                                    id: 'operations/system-operation/cli_tool/rollback'
+                                },
+                            ],
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/system-operation/maintenance_mode'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/system-operation/guardian',
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/system-operation/junk_file_clean',
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/system-operation/limit_query',
+                        },
+                    ],
+                },
+                {
+                    type: 'category',
+                    label: 'Job Monitoring',
+                    link: {
+                        type: 'doc',
+                        id: 'operations/job-monitoring/intro'
+                    },
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'operations/job-monitoring/job_concept_settings'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/job-monitoring/job_operations'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/job-monitoring/job_diagnosis'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/job-monitoring/job_exception_resolve'
+                        },
+                    ],
+                },
+                {
+                    type: 'category',
+                    label: 'System Monitoring',
+                    link: {
+                        type: 'doc',
+                        id: 'operations/system-monitoring/intro',
+                    },
+                    items: [
+                        {
+                            type: 'category',
+                            label: 'InfluxDB',
+                            link: {
+                                type: 'doc',
+                                id: 'operations/system-monitoring/influxdb/intro',
+                            },
+                            items: [
+                                {
+                                    type: 'doc',
+                                    id: 'operations/system-monitoring/influxdb/influxdb'
+                                },
+                                {
+                                    type: 'doc',
+                                    id: 'operations/system-monitoring/influxdb/influxdb_maintenance'
+                                },
+                            ],
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/system-monitoring/metrics_intro',
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/system-monitoring/service'
+                        },
+                    ],
+                },
+                {
+                    type: 'category',
+                    label: 'Logs',
+                    link: {
+                        type: 'doc',
+                        id: 'operations/logs/intro',
+                    },
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'operations/logs/system_log'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'operations/logs/audit_log'
+                        },
+                    ],
                 },
             ],
         },
@@ -867,16 +896,12 @@ const sidebars = {
                 },
                 {
                     type: 'category',
-                    label: 'Model API',
+                    label: 'Model Management',
                     link: {
                         type: 'doc',
                         id: 'restapi/model_api/intro',
                     },
                     items: [
-                        {
-                            type: 'doc',
-                            id: 'restapi/model_api/model_management_api'
-                        },
                         {
                             type: 'doc',
                             id: 'restapi/model_api/model_build_api'
@@ -906,6 +931,10 @@ const sidebars = {
                 {
                     type: 'doc',
                     id: 'restapi/data_source_api'
+                },
+                {
+                    type: 'doc',
+                    id: 'restapi/custom_jar_manager_api'
                 },
                 {
                     type: 'doc',
@@ -963,10 +992,6 @@ const sidebars = {
             items: [
                 {
                     type: 'doc',
-                    id: 'development/roadmap'
-                },
-                {
-                    type: 'doc',
                     id: 'development/coding_convention'
                 },
                 {
@@ -995,10 +1020,6 @@ const sidebars = {
                 },
                 {
                     type: 'doc',
-                    id: 'development/how_to_release'
-                },
-                {
-                    type: 'doc',
                     id: 'development/how_to_subscribe_mailing_list'
                 },
                 {
@@ -1015,13 +1036,6 @@ const sidebars = {
             id: 'community',
             label: 'Community',
         },
-    ],
-    PowerBySideBar:[
-        {
-            type: 'doc',
-            id: 'powerBy',
-            label: 'PowerBy',
-        }
     ],
 };
 

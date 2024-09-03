@@ -1,8 +1,8 @@
 ---
-title: Data ACL API (BETA)
+title: Data ACL (BETA)
 language: en
-sidebar_label: Data ACL API
-pagination_label: Data ACL API
+sidebar_label: Data ACL
+pagination_label: Data ACL
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
@@ -273,7 +273,7 @@ last_update:
   ```
 
 
-### Update Acl
+### Update ACL
 
 - `PUT http://localhost:port/kylin/api/acl/{type}/{name}?project=m`
 

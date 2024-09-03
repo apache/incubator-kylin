@@ -1,8 +1,8 @@
 ---
-title: Data Source API
+title: Data Source
 language: en
-sidebar_label: Data Source API
-pagination_label: Data Source API
+sidebar_label: Data Source
+pagination_label: Data Source
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

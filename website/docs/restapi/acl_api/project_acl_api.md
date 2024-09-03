@@ -1,8 +1,8 @@
 ---
-title: Project ACL API
+title: Project ACL
 language: en
-sidebar_label: Project ACL API
-pagination_label: Project ACL API
+sidebar_label: Project ACL
+pagination_label: Project ACL
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

@@ -5,7 +5,7 @@ sidebar_label: Coding and Naming Convention
 pagination_label: Coding and Naming Convention
 toc_min_heading_level: 2
 toc_max_heading_level: 6
-pagination_prev: development/roadmap
+pagination_prev: development/intro
 pagination_next: development/how_to_contribute
 keywords:
     - contribute

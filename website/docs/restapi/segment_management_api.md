@@ -1,8 +1,8 @@
 ---
-title: Segment Management API
+title: Segment Management
 language: en
-sidebar_label: Segment Management API
-pagination_label: Segment Management API
+sidebar_label: Segment Management
+pagination_label: Segment Management
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

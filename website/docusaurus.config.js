@@ -6,8 +6,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Welcome to Kylin 5',
-  tagline: 'Apache Kylin 5.0 is a unified and powerful OLAP platform for Hadoop and Cloud.',
+  title: 'More Smart, Unified and Powerful OLAP platform',
+  tagline: 'Apache Kylin is a high performance and smart OLAP engine.',
   url: 'https://kylin.apache.org',
   baseUrl: '/5.0/',
   onBrokenLinks: 'warn',
@@ -140,7 +140,7 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       navbar: {
-        title: 'Apache Kylin 5.0',
+        title: 'Apache Kylin',
         logo: {
           alt: 'Kylin Logo',
           src: 'img/kylin_logo.png',
@@ -150,18 +150,12 @@ const config = {
             type: 'doc',
             docId: 'quickstart/overview',
             position: 'left',
-            label: 'Document',
-          },
-          {
-            type: 'doc',
-            docId: 'development/roadmap',
-            position: 'left',
-            label: 'Development',
+            label: 'Documentation',
           },
           {
             type: 'doc',
             docId: 'download',
-            position: 'right',
+            position: 'left',
             label: 'Download',
           },
           {
@@ -170,10 +164,10 @@ const config = {
             position: 'left',
             label: 'Community',
           },
-          {to: '/blog', label: 'Tech Blog', position: 'left'},
+          {to: '/blog', label: 'Blogs', position: 'left'},
           {
             href: 'https://github.com/apache/kylin',
-            label: 'GitHub',
+            label: 'Source Code',
             position: 'right',
           },
         ],
@@ -196,8 +190,8 @@ const config = {
                 to: '/docs/quickstart/tutorial',
               },
               {
-                label: 'How to write this doc',
-                to: '/docs/development/how_to_write_doc',
+                label: 'How to contribute',
+                to: '/docs/development/how_to_contribute',
               },
               {
                 label: 'Roadmap',
@@ -230,21 +224,13 @@ const config = {
             title: 'More',
             items: [
               {
-                label: 'Blog',
+                label: 'Blogs',
                 to: '/blog',
               },
               {
-                label: 'GitHub Repo',
+                label: 'Source Code',
                 href: 'https://github.com/apache/kylin',
-              },
-              {
-                label: 'PowerBy',
-                to: 'docs/powerBy',
-              },
-              {
-                label: 'Doc of previous version',
-                href: 'https://kylin.apache.org',
-              },
+              }
             ],
           },
         ],

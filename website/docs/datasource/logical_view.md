@@ -14,7 +14,6 @@ last_update:
     date: 02/28/2023
 ---
 
-## Logical View
 - Logical view is a special view maintained only in KYLIN rather than a real view in hive. Once created, you can use it like a normal Hive view.
 - Logical view feature is turned off by default, you can set `kylin.source.ddl.logical-view.enabled=true` to turn this feature on.
 - All logical views are in the same database, you can set the database name by the following parameters, be careful not to have the same name as the normal Hive database:

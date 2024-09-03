@@ -1,8 +1,8 @@
 ---
-title: Query API
+title: Query
 language: en
-sidebar_label: Query API
-pagination_label: Query API
+sidebar_label: Query
+pagination_label: Query
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null

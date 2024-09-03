@@ -200,7 +200,7 @@ Apache Kylin's website and documentation is using [Docusaurus](https://docusauru
 The Kylin [website material](https://github.com/apache/kylin/tree/doc5.0) is maintained under the `doc5.0` branch.
 
 1. __Home Page__: Home page of Docs
-2. __Document__: General docs about Apache Kylin, including _Installation_, _Tutorial_, etc.
+2. __Documentation__: General docs about Apache Kylin, including _Installation_, _Tutorial_, etc.
 3. __Development__: _"development"_ For the developer to contribute, develop, integrate with other applications and extend Apache Kylin
 4. __Download__: _"Download"_ Apache Kylin packages
 5. __Community__: Apache Kylin Community information
@@ -237,7 +237,6 @@ doc5.0
 │ │ ├── ...
 │ ├── operations
 │ │ ├── ...
-│ ├── powerBy.md
 │ ├── query
 │ │ ├── ...
 │ ├── quickstart

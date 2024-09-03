@@ -6,7 +6,7 @@ pagination_label: Guide of Developer
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
-pagination_next: development/roadmap
+pagination_next: development/intro
 keywords:
     - developer
 draft: false
@@ -33,7 +33,3 @@ Track issues on the **Kylin Project** on the [Apache JIRA](http://issues.apache.
 
 ### Wiki
 Please check [How to contribute wiki](https://cwiki.apache.org/confluence/display/KYLIN/How+to+contribute+wiki).
-
-### Roadmap
-
-Please check the [Roadmap of Kylin 5.0](./roadmap.md)

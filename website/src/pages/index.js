@@ -18,7 +18,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs/quickstart/deploy_kylin">
-            Pull Kylin 5.0 Docker for quick start.  ⏱️
+            Quick Start
           </Link>
         </div>
       </div>

@@ -1,8 +1,8 @@
 ---
-title: ACL Management API
+title: ACL Management
 language: en
-sidebar_label: ACL Management API
-pagination_label: ACL Management API
+sidebar_label: ACL Management
+pagination_label: ACL Management
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
