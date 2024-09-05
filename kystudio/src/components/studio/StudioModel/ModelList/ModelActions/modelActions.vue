@@ -776,6 +776,10 @@ export default class ModelActions extends Vue {
     background: none;
     color: #bbbbbb;
   }
+  &:active {
+    color: @text-disabled-color !important;
+    cursor: not-allowed;
+  }
 }
 .export_tds_dialog {
   .export-tds-alert {

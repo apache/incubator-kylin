@@ -71,7 +71,8 @@ export const menusData = [
     path: '/monitor',
     icon: 'el-ksd-icon-nav_monitor_24',
     children: [
-      {name: 'job', path: '/monitor/job'}
+      {name: 'job', path: '/monitor/job'},
+      { name: 'streamingjob', path: '/monitor/streamingJob' }
     ]
   },
   {
@@ -139,6 +140,7 @@ export const pageRefTags = {
   projectDetail: 'projectDetail',
   sqlListsPager: 'sqlListsPager',
   jobPager: 'jobPager',
+  streamingJobPager: 'streamingJobPager',
   queryHistoryPager: 'queryHistoryPager',
   queryResultPager: 'queryResultPager',
   modleConfigPager: 'modleConfigPager',

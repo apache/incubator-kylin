@@ -51,13 +51,6 @@
               <div class="checkbox-list">
                 <el-checkbox v-model="item.selected" :disabled="item.disabled" @change="handleIndexColumnChange(item)">
                   <el-tooltip :content="$t('excludedTableIconTip')" effect="dark" placement="top"><i class="excluded_table-icon el-icon-ksd-exclude" v-if="item.excluded"></i></el-tooltip>
-                  <el-button
-                    type="primary"
-                    size="mini"
-                    class="shardby is-shardby"
-                    v-if="it.isShared&&showShardBy"
-                    text
-                    icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
                   <span :style="{'max-width': dragData.width - 140 + 'px', width: 'auto'}" :title="item.label" class="ksd-nobr-text">{{item.label}}</span>
                 </el-checkbox>
               </div>
@@ -144,7 +137,13 @@
                 <el-tooltip placement="top" :content="$t('dragToMove')" v-show="draggable&&!searchVar">
                   <i class="el-ksd-n-icon-grab-dots-outlined" :class="{'is-alive': draggable&&!searchVar}"></i>
                 </el-tooltip><el-tooltip :content="$t('excludedTableIconTip')" effect="dark" placement="top"><i class="excluded_table-icon el-icon-ksd-exclude" v-if="it.excluded"></i></el-tooltip>
-                <el-button type="primary" size="mini" class="shardby is-shardby" v-if="it.isShared" text icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
+                <el-button
+                  type="primary"
+                  size="mini"
+                  class="shardby is-shardby"
+                  v-if="it.isShared&&showShardBy"
+                  text
+                  icon="el-ksd-n-icon-symbol-s-circle-filled"></el-button>
                 <span class="top-icon ignore-drag" v-if="topColAble"><el-button type="primary" size="mini" v-if="getIndex(it.key) !== 0" text @click.native="topColumn($event, it.key)" icon="el-ksd-n-icon-top-filled"></el-button></span>
                 <span class="ksd-nobr-text">{{it.label}}</span>
               </p>

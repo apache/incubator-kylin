@@ -246,6 +246,9 @@ export default {
     queryDownloadMaxSize: (state) => {
       return state.queryDownloadMaxSize
     },
+    isStreamingEnabled: (state) => {
+      return state.streamingEnabled === 'true'
+    },
     isNonAdminGenQueryDiagPackage: (state) => {
       return state.isNonAdminGenQueryDiagPackage === 'true'
     },

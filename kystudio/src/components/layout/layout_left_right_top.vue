@@ -336,6 +336,8 @@ export default class LayoutLeftRightTop extends Vue {
         return this.availableMenus.includes(menuName.toLowerCase()) && this.$store.state.project.snapshot_manual_management_enabled && !this.currentSelectedProjectInternalTableEnabled
       case 'internalTable':
         return this.availableMenus.includes(menuName.toLowerCase()) && this.currentSelectedProjectInternalTableEnabled
+      case 'streamingjob':
+        return this.availableMenus.includes(menuName.toLowerCase()) && this.$store.state.system.streamingEnabled === 'true'
       case 'ddl':
         return this.availableMenus.includes(menuName.toLowerCase()) && this.$store.state.system.ddlEnabled === 'true' && !this.currentSelectedProjectInternalTableEnabled
       case 'logicalView':

@@ -489,6 +489,7 @@ exports.default = {
     acceleration: 'Acceleration',
     design: 'Studio',
     job: 'Batch Job',
+    streamingjob: 'Streaming Job',
     cluster: 'Cluster',
     admin: 'Admin',
     user: 'User',
