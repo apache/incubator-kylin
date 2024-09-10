@@ -115,7 +115,7 @@ import { kylinConfirm, handleSuccess, handleError } from '../../util/business'
       queryTimeOut: 'The request timeout, please check the network situation and Kylin service instance status.',
       queryTimeOutInCloud: 'The request timeout, please check the network situation and Kylin 5 service instance status.',
       queryInternalTable: 'Query Internal Table',
-      queryInternalTableTips: 'After it is checked, the model matching phase is skipped and the inner table data is directly queried'
+      queryInternalTableTips: 'After it is checked, the model matching phase is skipped and the internal table data is directly queried'
     }
   }
 })

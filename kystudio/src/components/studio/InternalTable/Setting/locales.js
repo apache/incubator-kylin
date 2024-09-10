@@ -14,7 +14,7 @@ export default {
     partitionDefaultOptionLabel: 'No Partition',
     bucketDefaultOptionLabel: 'No Bucket Column',
     confirmTitle: 'Save the settings of internal table',
-    confirmPrompt: 'Do you want to save this modification? After saving, the running inner table data loading task will be stopped.',
+    confirmPrompt: 'Do you want to save this modification? After saving, the running internal table data loading task will be stopped.',
     confirmCreatePrompt: 'Do you want to create internal table?',
     validateErrorSelect: 'Please select one',
     validateErrorNumber: 'Please input integer from 1 to 5000',

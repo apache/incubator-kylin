@@ -2,7 +2,7 @@ export default {
   en: {
     switchTitle: 'Internal Table',
     switchLabel: 'Internal Table Function',
-    functionDesc: 'After the inner table function is enabled, the query is not pressed down to the data source, but answered by the inner table.',
+    functionDesc: 'After the internal table function is enabled, the query is not pressed down to the data source, but answered by the internal table.',
     confirmTitle: 'Modify Internal Table Function',
     confirmPrompt: 'Confirm to {status} internal table function?'
   },

@@ -44,7 +44,7 @@ export default {
     loadTableTips3_1: 'Up to ',
     loadTableTips3_2: '1000 tables',
     loadTableTips3_3: ' could be loaded per time.',
-    loadAsInternalTableOption: 'Load as native table',
-    loadAsInternalTableDesc: 'Default to load as non-partitioned table. You can set the partitioned column on the inner table management page'
+    loadAsInternalTableOption: 'Load as internal table',
+    loadAsInternalTableDesc: 'Default to load as non-partitioned table. You can set the partitioned column on the internal table management page'
   }
 }
