@@ -141,9 +141,11 @@ date: 2023-01-16T10:00
 
     Kylin 节点停止时，会将当前节点所有子进程都杀死。最终是调用 sbin/ kill-process-tree.sh 脚本，对每个子进程，先 kill，kill 后还没停止的话，等 5s，还没停止的话，再执行 kill -9 pid。
     节点停止时，真个 kill 过程，超时时间是 1 分钟，会打印相关日志。<br></br>
-    成功： Destroy process {pid} of job {jobId} SUCCEED.<br></br>
-    失败： Destroy process {pid} of job {jobId} FAILED.<br></br>
+```
+    成功： Destroy process {pid} of job {jobId} SUCCEED.
+    失败： Destroy process {pid} of job {jobId} FAILED.
     超时： Destroy process {pid} of job {jobId} TIMEOUT exceed 60s.
+```
 
     **负载不均衡**
 
@@ -171,14 +173,14 @@ date: 2023-01-16T10:00
 ### How Kylin load ResourceStore when started
 
 #### Query Node
-关键日志： "start restore, current max_id is {}"
+关键日志： `"start restore, current max_id is {}"`
 1. Query 节点会先从 hdfs 上读取备份的最新元数据，加载到内存中
 2. 再根据 _image 中记录的 audit log offset，从 offset 开始，将数据库中的 audit log 读取到内存中，一次最多读 1000 条，目前这个数值不可配置。
 3. 在此过程中，all/job 节点还会同时写元数据，写 audit log，所以还会启动一个定时任务，每隔几秒（ kylin.metadata.audit-log.catchup-interval ）
    去 catch up audit log，保证 query 节点与 all 节点元数据保持一致。
 
 #### Leader(All/Job)
-关键日志 ："current maxId is {}"
+关键日志 ：`"current maxId is {}"`
 
 1. Leader 节点在启动时，先从元数据库恢复元数据；
 2. 再开启定时任务，catch up 最新的元数据；

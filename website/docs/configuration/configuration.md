@@ -106,14 +106,15 @@ To override default configurations, create a `kylin.properties.override` file in
 
 ### Modifying JVM Settings
 
-In the **$KYLIN_HOME/conf/setenv.sh.template** file, you'll find a sample setting for the `KYLIN_JVM_SETTINGS` environment variable. This default setting uses relatively little memory, but you can adjust it according to your own environment. The default JVM configuration is as follows:
+In the `$KYLIN_HOME/conf/setenv.sh.template` file, you'll find a sample setting for the `KYLIN_JVM_SETTINGS` environment variable. This default setting uses relatively little memory, but you can adjust it according to your own environment. The default JVM configuration is as follows:
+
 ```properties
 export KYLIN_JVM_SETTINGS="-server -Xms1g -Xmx8g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:G1HeapRegionSize=16m -XX:+PrintFlagsFinal -XX:+PrintReferenceGC -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCDateStamps -XX:+PrintAdaptiveSizePolicy -XX:+UnlockDiagnosticVMOptions -XX:+G1SummarizeConcMark  -Xloggc:$KYLIN_HOME/logs/kylin.gc.$$  -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=64M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${KYLIN_HOME}/logs"
 ```
 
-If you want to modify this configuration, you need to create a copy of the template file, name it `setenv.sh`, and place it in the **$KYLIN_HOME/conf/** directory. You can then modify the configuration in the new file as needed. 
+If you want to modify this configuration, you need to create a copy of the template file, name it `setenv.sh`, and place it in the `$KYLIN_HOME/conf/` directory. You can then modify the configuration in the new file as needed. 
 
-The parameter **-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${KYLIN_HOME}/logs** generates logs when an `OutOfMemory` error occurs. The default log file path is **${KYLIN_HOME}/logs**, but you can modify it if required.
+The parameter `-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${KYLIN_HOME}/logs` generates logs when an `OutOfMemory` error occurs. The default log file path is `${KYLIN_HOME}/logs`, but you can modify it if required.
 ```bash
 export JAVA_VM_XMS=1g        #The initial memory of the JVM when kylin starts.
 export JAVA_VM_XMX=8g        #The maximum memory of the JVM when kylin starts.

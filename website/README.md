@@ -34,10 +34,10 @@ website
 │       └── index.js
 ├── static 
 │   └── img
-├── docusaurus.config.js 
+├── docusaurus.config.ts
 ├── package.json 
 ├── README.md
-├── sidebars.js
+├── sidebars.ts
 └── yarn.lock
 ```
 

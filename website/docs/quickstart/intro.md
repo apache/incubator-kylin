@@ -5,13 +5,13 @@ sidebar_label: Quick Start
 pagination_label: Quick Start
 toc_min_heading_level: 2
 toc_max_heading_level: 6
-pagination_prev: quickstart/overview
+pagination_prev: overview
 pagination_next: quickstart/tutorial
 keywords:
     - Deploy
 draft: false
 last_update:
-    date: 09/13/2022
+    date: 09/13/2024
 ---
 
 In this guide, we will explain how to quickly install and start Kylin 5. Before you begin, ensure you have met the [Prerequisites](../deployment/on-premises/prerequisite.md).
@@ -43,7 +43,7 @@ docker pull apachekylin/apache-kylin-standalone:5.0.0-GA
    cd /usr/local
    tar -zxvf apache-kylin-[Version].tar.gz
    ```
-   The decompressed directory is referred to as **$KYLIN_HOME** or **root directory**.
+   The decompressed directory is referred to as `$KYLIN_HOME` or **root directory**.
 
 4. Download Spark
 
@@ -56,12 +56,12 @@ docker pull apachekylin/apache-kylin-standalone:5.0.0-GA
 
    If you have PostgreSQL or MySQL installed in your environment, you can use either as a metastore. Follow the links below for installation and configuration instructions:
 
-   * [PostgreSQL Metastore Setup](../deployment/on-premises/rdbms_metastore/postgresql/default_metastore.md)
-   * [MySQL Metastore Setup](../deployment/on-premises/rdbms_metastore/mysql/mysql_metastore.md)
+    * [Use PostgreSQL as Metastore](../deployment/on-premises/rdbms_metastore/usepg_as_metadb.md).
+    * [Use MySQL as Metastore](../deployment/on-premises/rdbms_metastore/use_mysql_as_metadb.md).
 
    For production environments, we strongly recommend setting up a dedicated metastore using either PostgreSQL or MySQL to ensure reliability.
-   
-6. Install InfluxDB(**Out-dated**).
+
+6. Install InfluxDB(**Deprecated**).
 
    Kylin utilizes InfluxDB to store system monitoring data. This step is optional, but highly recommended for production environments to leverage monitoring capabilities.
    
@@ -101,7 +101,7 @@ In the `conf` directory under the root directory of the installation package, yo
    ```properties
    kylin.metadata.url={metadata_name}@jdbc,driverClassName=org.postgresql.Driver,url=jdbc:postgresql://{host}:{port}/kylin,username={user},password={password}
    ```
-   For more PostgreSQL configuration, please refer to [Use PostgreSQL as Metastore](../deployment/on-premises/rdbms_metastore/postgresql/default_metastore.md). For information for MySQL configuration, please refer to [Use MySQL as Metastore](../deployment/on-premises/rdbms_metastore/mysql/mysql_metastore.md). 
+   For more PostgreSQL configuration, please refer to [Use PostgreSQL as Metastore](../deployment/on-premises/rdbms_metastore/usepg_as_metadb.md). For information for MySQL configuration, please refer to [Use MySQL as Metastore](../deployment/on-premises/rdbms_metastore/use_mysql_as_metadb.md). 
 
    > **Note**: please name the `{metadata_name}` with letters, numbers, or underscores. The name can't start with numbers, such as `1a` is illegal and `a1` is legal.
 
@@ -132,7 +132,7 @@ In the `conf` directory under the root directory of the installation package, yo
 
    If you need to encrypt kylin.env.zookeeper.zk-auth , you can do it like this：
 
-   **i.** run following commands in ${KYLIN_HOME}, it will print encrypted value
+   **i.** run following commands in `${KYLIN_HOME}`, it will print encrypted value
     ```
     ./bin/kylin.sh org.apache.kylin.tool.general.CryptTool -e AES -s <value>
     ```
@@ -146,7 +146,7 @@ In the `conf` directory under the root directory of the installation package, yo
     `kylin.storage.columnar.spark-conf.spark.driver.host={hostIp}`
     `kylin.engine.spark-conf.spark.driver.host={hostIp}`
 
-  You can modify the {hostIp} according to the following example:
+  You can modify the `{hostIp}` according to the following example:
   ```properties
   kylin.storage.columnar.spark-conf.spark.driver.host=10.1.3.71
   kylin.engine.spark-conf.spark.driver.host=10.1.3.71
@@ -218,7 +218,7 @@ Sample hive tables are created successfully
 ```
 
 
-We will be using SSB dataset as the data sample to introduce Kylin in several sections of this product manual. The SSB dataset simulates transaction data for the online store, see more details in [Sample Dataset](sample_dataset.md). Below is a brief introduction.
+We will be using SSB dataset as the data sample to introduce Kylin in several sections of this product manual. The SSB dataset simulates transaction data for the online store, see more details in [Sample Dataset](./tutorial.md#ssb). Below is a brief introduction.
 
 
 | Table       | Description                           | Introduction                                                 |
@@ -287,10 +287,6 @@ You can modify the following configuration in the `$KYLIN_HOME/conf/kylin.proper
 ```properties
 server.port=7070
 ```
-
-**Q: Does Kylin support Kerberos integration?**
-
-Yes, if your cluster enables Kerberos authentication protocol, the Spark embedded in Kylin needs proper configuration to access your cluster resource securely. For more information, please refer to [Integrate with Kerberos](#TODO)(Details doc will come soon).
 
 **Q: Is the query pushdown engine turned on by default?**
 

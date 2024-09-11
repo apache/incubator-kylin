@@ -4,7 +4,7 @@
 Learn more from https://docusaurus.io/ .
 
 #### Install nodejs
-Make sure node.js 16.14 or above is installed.
+Make sure node.js 18.20.4 or above is installed.
 
 Check version
 ```shell
@@ -34,10 +34,14 @@ website
 │       └── index.js
 ├── static 
 │   └── img
-├── docusaurus.config.js 
+├── versioned_docs
+│   └── version-5.0.0
+├── versioned_sidebars
+│   └── version-5.0.0-sidebars.json
+├── docusaurus.config.ts 
 ├── package.json 
 ├── README.md
-├── sidebars.js
+├── sidebars.ts
 └── yarn.lock
 ```
 
@@ -58,7 +62,7 @@ npm run deploy
 
 - [x] Search in document
 - [ ] SEO
-- [ ] Multi Version
+- [x] Multi Version
 - [ ] i18n
 
 ### Tech Article

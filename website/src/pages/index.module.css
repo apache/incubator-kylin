@@ -16,6 +16,10 @@
   }
 }
 
+.hero__subtitle {
+  width: 50px;
+}
+
 .buttons {
   display: flex;
   align-items: center;

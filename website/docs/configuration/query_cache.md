@@ -66,4 +66,6 @@ To overcome this limitation, you can configure a Redis cluster as a distributed 
 
 **Limitation：**Due to metadata inconsistency between Query nodes and All/Job nodes, the redis cache swith `kylin.cache.redis.enabled=true` should be configured along with `kylin.server.store-type=jdbc`. 
 
-Redis passwords can be encrypted, please refer to: [Use MySQL as Metastore](../deployment/on-premises/rdbms_metastore/mysql/mysql_metastore.md)
+:::info Caution
+Redis passwords can be encrypted, please refer to: [Use MySQL as Metastore](../deployment/on-premises/rdbms_metastore/use_mysql_as_metadb.md)
+:::
