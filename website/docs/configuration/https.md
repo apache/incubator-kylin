@@ -1,8 +1,8 @@
 ---
-title: HTTPS Configuration
+title: HTTPS Connection
 language: en
-sidebar_label: HTTPS Configuration
-pagination_label: HTTPS Configuration
+sidebar_label: HTTPS Connection
+pagination_label: HTTPS Connection
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
@@ -11,10 +11,10 @@ keywords:
     - https configuration
 draft: false
 last_update:
-    date: 08/16/2022
+    date: 09/12/2024
 ---
 
-Kylin 5.0 provides a HTTPS connection. It is disabled by default. If you need to enable it, please follow the steps below.
+Kylin 5.0 offers a secure HTTPS connection, which is disabled by default. To enable it, follow the step-by-step instructions outlined below.
 
 ### Use Default Certificate
 
@@ -46,7 +46,7 @@ Kylin also supports third-party certificates, you just need to provide the certi
 kylin.server.https.enable=true
 # port number
 kylin.server.https.port=7443
-# ormat of keystore, Tomcat 8 supports JKS, PKCS11 or PKCS12 format
+# format of keystore, Tomcat 8 supports JKS, PKCS11 or PKCS12 format
 kylin.server.https.keystore-type=JKS
 # location of your certificate file
 kylin.server.https.keystore-file=${KYLIN_HOME}/server/.keystore

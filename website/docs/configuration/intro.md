@@ -1,21 +1,20 @@
 ---
-title: System Configuration
+title: Overview
 language: en
-sidebar_label: System Configuration
-pagination_label: System Configuration
+sidebar_label: Overview
+pagination_label: Overview
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
 pagination_next: null
 keywords:
-    - system configuration
+    - configuration
 draft: false
 last_update:
-    date: 08/16/2022
+    date: 09/12/2024
 ---
 
-After deploying Kylin on your cluster, configure Kylin so that it can interact with Apache Hadoop and Apache Hive. You can also optimize the performance of Kylin by configuring to your own environment.
-
+After deploying Kylin on your cluster, configure Kylin to enable seamless interaction with Apache Hadoop and Apache Hive. Additionally, optimize Kylin's performance by tailoring its configuration to your specific environment, ensuring a finely-tuned setup that meets your unique needs.
 This chapter introduces some configurations for Kylin.
 
 ### Kylin Configuration File List
@@ -29,6 +28,4 @@ This chapter introduces some configurations for Kylin.
 | Hadoop               | hadoop_conf/mapred-site.xml             | Map Reduce configuration file used in Hadoop,which defines the default number of reduce tasks, the default upper and lower limits of the memory that the task can use, etc. |
 | Hive                 | hadoop_conf/hive-site.xml               | Hive configuration file, which defines Hive parameters such as hive data storage directory and database address, etc. |
 
->Note:
->
->+ Unless otherwise specified, the configuration file `kylin.properties` mentioned in this manual refers to the corresponding configuration file in the list.
+Unless otherwise specified, all references to `kylin.properties` in this manual point to the configuration file listed in the [Kylin Configuration File List](#kylin-configuration-file-list) section.

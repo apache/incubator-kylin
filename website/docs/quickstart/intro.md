@@ -14,14 +14,11 @@ last_update:
     date: 09/13/2022
 ---
 
-In this guide, we will explain how to quickly install and start Kylin 5.
-
-Before proceeding, please make sure the [Prerequisite](../deployment/on-premises/prerequisite.md) is met.
+In this guide, we will explain how to quickly install and start Kylin 5. Before you begin, ensure you have met the [Prerequisites](../deployment/on-premises/prerequisite.md).
 
 ## <span id="docker">Play Kylin in docker</span>
 
-If we want to learn what new features did Kylin 5 provided, and you only have a laptop,
-we recommend you to pulling the docker image and check the [standalone image in dockerhub](https://hub.docker.com/r/apachekylin/apache-kylin-standalone) .
+To explore new features in Kylin 5 on a laptop, we recommend pulling the Docker image and checking the [Apache Kylin Standalone Image on Docker Hub](https://hub.docker.com/r/apachekylin/apache-kylin-standalone).
 
 ```shell
 docker pull apachekylin/apache-kylin-standalone:5.0.0-GA
@@ -57,20 +54,16 @@ docker pull apachekylin/apache-kylin-standalone:5.0.0-GA
 
 5. Prepare RDBMS metastore.
 
-   If PostgreSQL or MySQL has been installed already in your environment, you can choose one of them as the metastore. 
+   If you have PostgreSQL or MySQL installed in your environment, you can use either as a metastore. Follow the links below for installation and configuration instructions:
+
+   * [PostgreSQL Metastore Setup](../deployment/on-premises/rdbms_metastore/postgresql/default_metastore.md)
+   * [MySQL Metastore Setup](../deployment/on-premises/rdbms_metastore/mysql/mysql_metastore.md)
+
+   For production environments, we strongly recommend setting up a dedicated metastore using either PostgreSQL or MySQL to ensure reliability.
    
-   **Note**: 
-   
-   + For the production environment, we recommend to set up a dedicated metastore. You can use PostgreSQL or MySQL. 
-   
-   Please refer to the below links for complete steps to install and configure:
-   
-   * [Use PostgreSQL as Metastore](../deployment/on-premises/rdbms_metastore/postgresql/default_metastore.md).
-   * [Use MySQL as Metastore](../deployment/on-premises/rdbms_metastore/mysql/mysql_metastore.md).
-   
-6. (out-dated) Install InfluxDB.
-  
-   Kylin uses InfluxDB to save various system monitoring information. If you do not need to view related information, you can skip this step. It is strongly recommended to complete this step in a production environment and use related monitoring functions.
+6. Install InfluxDB(**Out-dated**).
+
+   Kylin utilizes InfluxDB to store system monitoring data. This step is optional, but highly recommended for production environments to leverage monitoring capabilities.
    
    ```sh
    # download influxdb
@@ -132,7 +125,7 @@ In the `conf` directory under the root directory of the installation package, yo
    If you use ACL for Zookeeper, need setting the follow configuration
 
    | Properties                                                  | Description                                                                                                          |
-      | ------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+   | ------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
    | kylin.env.zookeeper-acl-enabled                             | Whether to enable Zookeeper ACL. The default value is disabled.                                                      |
    | kylin.env.zookeeper.zk-auth                                 | The user password and authentication method used by Zookeeper. The default value is empty.                           |
    | kylin.env.zookeeper.zk-acl                                  | ACL permission setting. The default value is `world:anyone:rwcda`. By default, all users can perform all operations. |

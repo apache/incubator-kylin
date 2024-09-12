@@ -1,8 +1,8 @@
 ---
-title: Hadoop Queue Configuration
+title: Hadoop Queue
 language: en
-sidebar_label: Hadoop Queue Configuration
-pagination_label: Hadoop Queue Configuration
+sidebar_label: Hadoop Queue
+pagination_label: Hadoop Queue
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
@@ -11,11 +11,10 @@ keywords:
     - hadoop queue configuration
 draft: false
 last_update:
-    date: 09/13/2022
+    date: 09/12/2024
 ---
 
-In the case of a multiple-tenants environment, to securely share a large cluster, each tenant needs to have the allocated resources in a timely manner under the constraints of the allocated capacities. To achieve computing resources allocation and separation, each Kylin instance or project can be configured to use a different YARN queue.  
-
+In a multi-tenant environment, sharing a large cluster securely requires each tenant to have allocated resources in a timely manner, within the constraints of their allocated capacities. To achieve this, each Kylin instance or project can be configured to utilize a separate YARN queue, enabling efficient computing resource allocation and separation.
 
 ### <span id="instance">Instance-level YARN Queue Setting</span>
 
@@ -25,11 +24,14 @@ In the screenshot below, a new YARN queue `learn_kylin` has been set up.
 
 ![](images/hadoop_queue/1.png)
 
-Then you may modify `kylin.properties` to configure the YARN queue used in Kylin for building or querying (you will need to change the YOUR_QUEUE_NAME to your queue name).
+To configure the YARN queue used in Kylin, modify the `kylin.properties` file by replacing `YOUR_QUEUE_NAME` with the name of your YARN queue. This setting applies to both building and querying operations.
 
 ```shell
-Building configuration: kylin.engine.spark-conf.spark.yarn.queue=YOUR_QUEUE_NAME
-Querying configuration: kylin.storage.columnar.spark-conf.spark.yarn.queue=YOUR_QUEUE_NAME
+### Building configuration
+kylin.engine.spark-conf.spark.yarn.queue=YOUR_QUEUE_NAME
+
+### Querying configuration
+kylin.storage.columnar.spark-conf.spark.yarn.queue=YOUR_QUEUE_NAME
 ```
 
 ![](images/hadoop_queue/2.png)

@@ -11,76 +11,71 @@ keywords:
       - spark dynamic allocation
 draft: false
 last_update:
-      date: 08/16/2022
+      date: 09/12/2024
 ---
 
-In Spark, the resource unit is executor, something like containers in YARN. Under Spark on YARN, we use num-executors to specify the executor numbers. While executor-memory and executor-cores will limit the memory and virtual CPU cores each executor consumes.
+In Spark, the fundamental resource unit is the executor, which is similar to containers in YARN. When running Spark on YARN, you can specify the number of executors using the `num-executors` parameter. Additionally, `executor-memory` and `executor-cores` parameters limit the memory and virtual CPU cores allocated to each executor.
 
-Take Kylin as sample, if user choose fixed resource allocation strategy and set num-executor to 3. Then each Kylin instance will always keep 4 YARN containers(1 for application master and 3 for executor). These 4 containers will be occupied until user log out. While we use Dynamic Resource Allocation, Spark will dynamically increase and reduce executors according to Kylin query engine workload which will dramatically save resource.
+Consider a Kylin instance as an example. When using a fixed resource allocation strategy with `num-executor` set to 3, each Kylin instance will occupy 4 YARN containers (1 for the application master and 3 for executors) until the user logs out. In contrast, Dynamic Resource Allocation enables Spark to dynamically adjust the number of executors based on the Kylin query engine workload, resulting in significant resource savings.
 
-Please refer to official document for details of Spark Dynamic Allocation:
+For more information on Spark Dynamic Allocation, please refer to the official Spark documentation: [http://spark.apache.org/docs/2.4.1/job-scheduling.html#dynamic-resource-allocation](http://spark.apache.org/docs/2.4.1/job-scheduling.html#dynamic-resource-allocation)
 
-http://spark.apache.org/docs/2.4.1/job-scheduling.html#dynamic-resource-allocation
 
-### Spark Dynamic Allocation Config
+### Overview
 
-#### Overview
-There are two parts we need to configure for Spark Dynamic Allocation:
-1.  Resource Management for cluster, it will be diversed due to different resource manager(YARN、Mesos、Standalone).
-2.  Configure file spark-default.conf, this one is irrespective of the environment.
+Configuring Spark Dynamic Allocation involves two key components:
 
-#### Resource Manager Configuration
-##### CDH
+1. **Resource Management**: This varies depending on the cluster's resource manager, which can be YARN, Mesos, or Standalone.
+2. **spark-defaults.conf**: This configuration file is environment-agnostic and applies universally.
 
-1. Log into Cloudera Manager, choose YARN configuration and find NodeManager Advanced Configuration Snippet(Safety Valve) for yarn-site.xml, config as following：
+### Config ResourceManager
+1. For CDH
 
+   Log into Cloudera Manager, choose YARN configuration and find NodeManager Advanced Configuration Snippet(Safety Valve) for `yarn-site.xml`, config as following：
+
+   ```
+   <property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle,spark_shuffle</value>
+   </property>
+   <property>
+    <name>yarn.nodemanager.aux-services.spark_shuffle.class</name>
+    <value>org.apache.spark.network.yarn.YarnShuffleService</value>
+   </property>
+   ```
+
+   Copy the `$KYLIN_HOME/spark/yarn/spark-<version>-yarn-shuffle.jar` and put it under path `/opt/lib/kylin/` of Hadoop node. Find NodeManager Environment Advanced Configuration Snippet  (Safety Valve) in Cloudera Manager, Config:
+
+   ```shell
+   YARN_USER_CLASSPATH=/opt/lib/kylin/*
+   ```
+   Then `yarn-shuffle.jar` will be added into the Node Manager's startup classpath. To apply the changes, save the configuration, restart the Node Manager, and then deploy the client configuration in Cloudera Manager. Finally, restart all services to ensure the updates take effect.
+
+2. For HDP
+
+   Log into Ambari management page, navigate to **Yarn -> Configs -> Advanced**, use the filter to find the following configurations and update them as needed:
+   ```shell
+   yarn.nodemanager.aux-services.spark_shuffle.class=org.apache.spark.network.yarn.YarnShuffleService
+   ```
+
+   To apply the changes, save the configuration, and restart all services to ensure the updates take effect.
+
+### How to Enable
+To enable the Spark Dynamic Allocation, we will need to add some configuration items in Spark config files. Since we can override spark configuraion in kylin.properties, we will add following configuration items in it:
+
+```shell
+kylin.storage.columnar.spark-conf.spark.dynamicAllocation.enabled=true
+kylin.storage.columnar.spark-conf.spark.dynamicAllocation.maxExecutors=5
+kylin.storage.columnar.spark-conf.spark.dynamicAllocation.minExecutors=1
+kylin.storage.columnar.spark-conf.spark.shuffle.service.enabled=true
+kylin.storage.columnar.spark-conf.spark.dynamicAllocation.initialExecutors=3
 ```
-<property>
- <name>yarn.nodemanager.aux-services</name>
- <value>mapreduce_shuffle,spark_shuffle</value>
-</property>
-<property>
- <name>yarn.nodemanager.aux-services.spark_shuffle.class</name>
- <value>org.apache.spark.network.yarn.YarnShuffleService</value>
-</property>
-```
-
-2. Copy the `$KYLIN_HOME/spark/yarn/spark-<version>-yarn-shuffle.jar` and put it under path /opt/lib/kylin/ of Hadoop node.
-
-   Find NodeManager Environment Advanced Configuration Snippet  (Safety Valve) in Cloudera Manager, Config:
-
-   `YARN_USER_CLASSPATH=/opt/lib/kylin/*`
-
-   Then yarn-shuffle.jar will be added into the startup classpath of Node Manager.
-
-3. Save the config and restart
-   In Cloudera Manager, choose actions --> deploy client configuration, save and restart all services.
-
-##### HDP
-1. Log into Ambari management page, choose Yarn -> Configs -> Advanced, find following configurations via filter and update: 
-   `yarn.nodemanager.aux-services.spark_shuffle.class=org.apache.spark.network.yarn.YarnShuffleService`
-
-2. Save the config and restart all services.
-
-
-#### Kylin configuration
-To enable the Spark Dynamic Allocaiton, we will need to add some configuration items in Spark config files. Since we can override spark configuraion in kylin.properties, we will add following configuration items in it:
-
-`kylin.storage.columnar.spark-conf.spark.dynamicAllocation.enabled=true`
-
-`kylin.storage.columnar.spark-conf.spark.dynamicAllocation.maxExecutors=5`
-
-`kylin.storage.columnar.spark-conf.spark.dynamicAllocation.minExecutors=1`
-
-`kylin.storage.columnar.spark-conf.spark.shuffle.service.enabled=true`
-
-`kylin.storage.columnar.spark-conf.spark.dynamicAllocation.initialExecutors=3`
 
 More configurations please refer to: 
 http://spark.apache.org/docs/latest/configuration.html#dynamic-allocation
 
-### Spark Dynamic Allocation Verification
-After above configurations, start Kylin and monitor current executor numbers in Spark Executor page.
+### How to Verification
+After completing the configurations, start the Kylin service and navigate to the Spark Executor page to monitor the current executor numbers. Observe how the executor count adjusts dynamically based on the defined settings.
 
 ![](images/spark_executor_original.jpg)
 

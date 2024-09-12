@@ -143,7 +143,7 @@ const sidebars = {
                 },
                 {
                     type: 'category',
-                    label: 'System Configuration',
+                    label: 'Configuration',
                     link: {
                         type: 'doc',
                         id: 'configuration/intro',
@@ -153,17 +153,10 @@ const sidebars = {
                             type: 'doc',
                             id: 'configuration/configuration'
                         },
-                        {
-                            type: 'doc',
-                            id: 'configuration/spark_dynamic_allocation'
-                        },
+
                         {
                             type: 'doc',
                             id: 'configuration/hadoop_queue_config'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'configuration/query_cache'
                         },
                         {
                             type: 'doc',
@@ -171,11 +164,19 @@ const sidebars = {
                         },
                         {
                             type: 'doc',
-                            id: 'configuration/spark_rpc_encryption'
+                            id: 'configuration/log_rotate'
                         },
                         {
                             type: 'doc',
-                            id: 'configuration/log_rotate'
+                            id: 'configuration/query_cache'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'configuration/spark_dynamic_allocation'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'configuration/spark_rpc_encryption'
                         },
                     ],
                 },

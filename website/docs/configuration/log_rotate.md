@@ -1,36 +1,44 @@
 ---
-title: Log Rotate Configuration
+title: Log Rotate
 language: en
-sidebar_label: Log Rotate Configuration
-pagination_label: Log Rotate Configuration
+sidebar_label: Log Rotate
+pagination_label: Log Rotate
 toc_min_heading_level: 2
 toc_max_heading_level: 6
 pagination_prev: null
 pagination_next: null
 keywords:
-    - log rotate configuration
+    - log rotate
 draft: false
 last_update:
     date: 08/16/2022
 ---
 
-The three log files, `shell.stderr`, `shell.stdout`, and `kylin.out` under the log directory `$KYLIN_HOME/logs/` of Kylin, trigger log rolling checks regularly by default.
+### Log Rotation Configuration
 
-> **Caution:** Any change of configurations below requires a restart to take effect. 
+Kylin's log rotation is configured to manage the three log files: `shell.stderr`, `shell.stdout`, and `kylin.out` located in the `$KYLIN_HOME/logs/` directory.
+**Any changes to the configurations below require a restart to take effect.**
 
-| Properties                               | Descript                        | Default              | Options |
-|------------------------------------------| --------------------------------|----------------------|---------|
-| kylin.env.max-keep-log-file-number       | Maximum number of files to keep for log rotate | 10                   |         |
-| kylin.env.max-keep-log-file-threshold-mb | Log files are rotated when they grow bigger than this  | 256，whose unit is MB |         |
-| kylin.env.log-rotate-check-cron          | The `crontab` time configuration                         | 33 * * * *           |         |
-| kylin.env.log-rotate-enabled             | Whether to enable `crontab` to check log rotate               | true                 | false   |
+| Property | Description | Default Value | Options |
+| --- | --- | --- | --- |
+| `kylin.env.max-keep-log-file-number` | Maximum number of log files to keep | 10 |  |
+| `kylin.env.max-keep-log-file-threshold-mb` | Log file rotation threshold (in MB) | 256 |  |
+| `kylin.env.log-rotate-check-cron` | Crontab time configuration for log rotation | `33 * * * *` |  |
+| `kylin.env.log-rotate-enabled` | Enable log rotation using crontab | `true` | `false` |
 
-### Default Regularly Rotate strategy
+### Default Log Rotation Strategy
 
-To use the default regularly rotate strategy, you need to set the parameter `kylin.env.log-rotate-enabled=true` (default), and also need to ensure that users running Kylin can use the `logrotate` and `crontab` commands to add a scheduled task.
+To use the default log rotation strategy:
 
-When using the rotate strategy, Kylin will add or update `crontab` tasks according to the `kylin.env.log-rotate-check-cron` parameter on startup or restart, and remove the added `crontab` tasks on exit.
+1. Set `kylin.env.log-rotate-enabled` to `true` (default).
+2. Ensure users running Kylin can use the `logrotate` and `crontab` commands to add a scheduled task.
+
+Kylin will:
+
+* Add or update crontab tasks according to `kylin.env.log-rotate-check-cron` on startup or restart.
+* Remove added crontab tasks on exit.
 
 ### Known Limitations
-- If the default regularly rotate policy conditions are not met, Kylin will only trigger the log rolling check at startup. Every time the `kylin.sh start` command is executed, according to the parameter `kylin.env.max-keep-log-file-number` and `kylin.env.max-keep-log-file-threshold-mb` for log rolling. If Kylin runs for a long time, the log file may be too large.
-- When using `crontab` to control log rotation, the rolling operation is implemented by the `logrotate` command. If the log file is too large, the log may be lost during the rotation.
+
+* If the default log rotation policy conditions are not met, Kylin will only perform log rolling checks at startup. This means that log files will be rotated based on the `kylin.env.max-keep-log-file-number` and `kylin.env.max-keep-log-file-threshold-mb` parameters every time the `kylin.sh start` command is executed. Note that prolonged Kylin runtime may result in excessively large log files.
+* Using `crontab` to control log rotation may result in log loss during rotation if the log file is too large.
