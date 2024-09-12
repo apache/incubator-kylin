@@ -55,6 +55,8 @@ public class AuditLog {
 
     private String unitId;
 
+    private String modelUuid;
+
     private String operator;
 
     private String instance;

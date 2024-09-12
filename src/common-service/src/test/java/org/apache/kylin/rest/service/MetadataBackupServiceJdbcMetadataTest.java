@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.kylin.common.persistence.ImageDesc;
 import org.apache.kylin.common.persistence.ResourceStore;
 import org.apache.kylin.common.persistence.StringEntity;
+import org.apache.kylin.common.persistence.metadata.JdbcAuditLogStore;
 import org.apache.kylin.common.persistence.metadata.JdbcAuditLogStoreTool;
 import org.apache.kylin.common.util.HadoopUtil;
 import org.apache.kylin.common.util.JsonUtil;
@@ -72,7 +73,7 @@ class MetadataBackupServiceJdbcMetadataTest {
         val url = getTestConfig().getMetadataUrl();
         val jdbcTemplate = info.getJdbcTemplate();
         JdbcAuditLogStoreTool.prepareJdbcAuditLogStore(null, jdbcTemplate, 100);
-        val table = url.getIdentifier() + "_audit_log";
+        val table = url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX;
         long count = jdbcTemplate.queryForObject("select count(1) from " + table, Long.class);
 
         val rootPath = new Path(kylinConfig.getHdfsWorkingDirectory()).getParent();

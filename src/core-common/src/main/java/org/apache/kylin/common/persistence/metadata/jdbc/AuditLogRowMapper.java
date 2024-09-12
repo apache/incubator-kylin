@@ -44,12 +44,13 @@ public class AuditLogRowMapper implements RowMapper<AuditLog> {
             mvcc = null;
         }
         val unitId = rs.getString(6);
-        val operator = rs.getString(7);
-        val instance = rs.getString(8);
-        val project = rs.getString(9);
-        val diffFlag = rs.getBoolean(10);
+        val modelUuid = rs.getString(7);
+        val operator = rs.getString(8);
+        val instance = rs.getString(9);
+        val project = rs.getString(10);
+        val diffFlag = rs.getBoolean(11);
 
-        return new AuditLog(id, resPath, content == null ? null : ByteSource.wrap(content), ts, mvcc, unitId, operator,
-                instance, project, diffFlag);
+        return new AuditLog(id, resPath, content == null ? null : ByteSource.wrap(content), ts, mvcc, unitId,
+                modelUuid, operator, instance, project, diffFlag);
     }
 }

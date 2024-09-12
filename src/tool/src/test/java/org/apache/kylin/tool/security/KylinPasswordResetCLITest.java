@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import org.apache.commons.dbcp2.BasicDataSourceFactory;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.persistence.ResourceStore;
+import org.apache.kylin.common.persistence.metadata.JdbcAuditLogStore;
 import org.apache.kylin.common.persistence.metadata.jdbc.AuditLogRowMapper;
 import org.apache.kylin.common.persistence.transaction.UnitOfWork;
 import org.apache.kylin.common.util.LogOutputTestCase;
@@ -109,7 +110,7 @@ public class KylinPasswordResetCLITest extends LogOutputTestCase {
 
         val url = getTestConfig().getMetadataUrl();
         val jdbcTemplate = getJdbcTemplate();
-        val all = jdbcTemplate.query("select * from " + url.getIdentifier() + "_audit_log", new AuditLogRowMapper());
+        val all = jdbcTemplate.query("select * from " + url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX, new AuditLogRowMapper());
         Assert.assertTrue(all.stream().anyMatch(auditLog -> auditLog.getResPath().equals("USER_INFO/ADMIN")));
 
         System.setOut(System.out);

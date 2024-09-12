@@ -31,4 +31,9 @@ import lombok.NoArgsConstructor;
 public class DataflowRawResource extends RawResource {
     @JsonProperty("project")
     private String project;
+
+    @Override
+    public String getModelUuid() {
+        return this.getUuid();
+    }
 }

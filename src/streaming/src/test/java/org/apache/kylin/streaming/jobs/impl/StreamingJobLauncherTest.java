@@ -426,7 +426,7 @@ public class StreamingJobLauncherTest extends NLocalFileMetadataTestCase {
         launcher.init(PROJECT, modelId, JobTypeEnum.STREAMING_BUILD);
 
         val dumpSet = launcher.getMetadataDumpList();
-        Assert.assertEquals(17, dumpSet.size());
+        Assert.assertEquals(18, dumpSet.size());
 
         Assert.assertTrue(dumpSet.contains("DATAFLOW/e78a89dd-847f-4574-8afa-8768b4228b72"));
         Assert.assertTrue(dumpSet.contains("SEGMENT/c380dd2a-43b8-4268-b73d-2a5f76236631"));
@@ -445,6 +445,7 @@ public class StreamingJobLauncherTest extends NLocalFileMetadataTestCase {
         Assert.assertTrue(dumpSet.contains("TABLE_INFO/streaming_test.SSB.PART"));
         Assert.assertTrue(dumpSet.contains(METASTORE_IMAGE));
         Assert.assertTrue(dumpSet.contains("STREAMING_JOB/e78a89dd-847f-4574-8afa-8768b4228b72_build"));
+        Assert.assertTrue(dumpSet.contains("STREAMING_JOB/e78a89dd-847f-4574-8afa-8768b4228b72_merge"));
 
     }
 

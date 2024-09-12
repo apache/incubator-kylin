@@ -196,7 +196,9 @@ public class StreamingJobLauncher extends AbstractSparkJobLauncher {
         val metaSet = NDataflowManager.getInstance(config, project).getDataflow(modelId)
                 .collectPrecalculationResource();
         metaSet.add(ResourceStore.METASTORE_IMAGE);
-        metaSet.add(MetadataType.mergeKeyWithType(jobId, STREAMING_JOB));
+        String uuid = jobId.substring(0, 36);
+        metaSet.add(MetadataType.mergeKeyWithType(uuid + "_build", STREAMING_JOB));
+        metaSet.add(MetadataType.mergeKeyWithType(uuid + "_merge", STREAMING_JOB));
         return metaSet;
     }
 

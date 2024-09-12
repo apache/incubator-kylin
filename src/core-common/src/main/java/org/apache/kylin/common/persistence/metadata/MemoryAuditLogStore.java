@@ -56,6 +56,7 @@ public class MemoryAuditLogStore implements AuditLogStore {
         this.config = config;
         this.replayWorker = new AuditLogReplayWorker(config, this);
     }
+
     @Override
     public void save(UnitMessages unitMessages) {
         val unitId = unitMessages.getUnitId();
@@ -67,11 +68,12 @@ public class MemoryAuditLogStore implements AuditLogStore {
                 ResourceCreateOrUpdateEvent e = (ResourceCreateOrUpdateEvent) event;
                 RawResource raw = e.getCreatedOrUpdated();
                 return new AuditLog(id, e.getResPath(), ByteSource.wrap(e.getMetaContent()), raw.getTs(), raw.getMvcc(),
-                        unitId, operator, instance, raw.getProject(), raw.getContentDiff() != null);
+                        unitId, raw.getModelUuid(), operator, instance, raw.getProject(),
+                        raw.getContentDiff() != null);
             } else if (event instanceof ResourceDeleteEvent) {
                 ResourceDeleteEvent e = (ResourceDeleteEvent) event;
-                return new AuditLog(id, e.getResPath(), null, System.currentTimeMillis(), null, unitId, operator,
-                        instance, e.getKey(), false);
+                return new AuditLog(id, e.getResPath(), null, System.currentTimeMillis(), null, unitId,
+                        null, operator, instance, e.getKey(), false);
             }
             return null;
         }).filter(Objects::nonNull).collect(Collectors.toList());

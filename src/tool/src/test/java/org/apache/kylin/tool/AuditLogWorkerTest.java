@@ -164,7 +164,8 @@ public class AuditLogWorkerTest extends NLocalFileMetadataTestCase {
                     ps.setString(4, path);
                 });
             }
-            jdbcTemplate.update(String.format(Locale.ROOT, INSERT_AUDIT_LOG_SQL, table + "_audit_log"), ps -> {
+            jdbcTemplate.update(String.format(Locale.ROOT, INSERT_AUDIT_LOG_SQL,
+                    table + JdbcAuditLogStore.AUDIT_LOG_SUFFIX), ps -> {
                 ps.setString(1, path);
                 ps.setBytes(2, path.getBytes(Charset.defaultCharset()));
                 ps.setLong(3, ts);

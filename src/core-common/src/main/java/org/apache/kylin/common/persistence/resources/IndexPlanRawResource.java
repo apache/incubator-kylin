@@ -32,4 +32,9 @@ public class IndexPlanRawResource extends RawResource {
     @JsonProperty("project")
     private String project;
 
+    @Override
+    public String getModelUuid() {
+        return this.getUuid();
+    }
+
 }

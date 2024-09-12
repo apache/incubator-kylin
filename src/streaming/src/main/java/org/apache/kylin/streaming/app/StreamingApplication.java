@@ -20,13 +20,11 @@ package org.apache.kylin.streaming.app;
 
 import static org.apache.kylin.common.persistence.MetadataType.STREAMING_JOB;
 import static org.apache.kylin.common.persistence.metadata.FileSystemMetadataStore.HDFS_SCHEME;
-import static org.apache.kylin.metadata.cube.model.NDataSegDetails.DATAFLOW_DETAILS_RESOURCE_ROOT;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -99,10 +97,7 @@ public abstract class StreamingApplication implements Application, GracefulStopI
         }
 
         //init audit log store
-        val auditLogStore = new JdbcPartialAuditLogStore(kylinConfig,
-                resPath -> resPath.startsWith(
-                        String.format(Locale.ROOT, "/%s%s/%s", project, DATAFLOW_DETAILS_RESOURCE_ROOT, dataflowId))
-                        || getMetaResPathSet().contains(resPath));
+        val auditLogStore = new JdbcPartialAuditLogStore(kylinConfig, dataflowId);
 
         kylinConfig.setMetadataUrl(distMetaUrl);
 

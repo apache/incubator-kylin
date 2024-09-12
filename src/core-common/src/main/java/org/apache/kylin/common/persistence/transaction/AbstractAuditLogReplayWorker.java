@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.kylin.common.KylinConfig;
@@ -64,7 +63,7 @@ public abstract class AbstractAuditLogReplayWorker {
     protected final long replayWaitMaxTimeoutMills;
 
     @Setter
-    protected Predicate<String> filterByResPath;
+    protected String modelUuid;
 
     protected AbstractAuditLogReplayWorker(KylinConfig config, AuditLogStore auditLogStore) {
         this.config = config;
@@ -102,7 +101,7 @@ public abstract class AbstractAuditLogReplayWorker {
         }
         Map<String, UnitMessages> messagesMap = Maps.newLinkedHashMap();
         for (AuditLog log : logs) {
-            if (filterByResPath != null && !filterByResPath.test(log.getResPath())) {
+            if (modelUuid != null && !modelUuid.equals(log.getModelUuid())) {
                 continue;
             }
 

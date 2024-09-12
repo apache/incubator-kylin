@@ -39,6 +39,7 @@ public interface StreamingJobMapper extends BasicMapper<StreamingJobRawResource>
             @Result(column = "meta_key", property = "metaKey", jdbcType = JdbcType.VARCHAR),
             @Result(column = "project", property = "project", jdbcType = JdbcType.VARCHAR),
             @Result(column = "uuid", property = "uuid", jdbcType = JdbcType.CHAR),
+            @Result(column = "model_uuid", property = "modelUuid", jdbcType = JdbcType.CHAR),
             @Result(column = "mvcc", property = "mvcc", jdbcType = JdbcType.BIGINT),
             @Result(column = "ts", property = "ts", jdbcType = JdbcType.BIGINT),
             @Result(column = "reserved_filed_1", property = "reservedFiled1", jdbcType = JdbcType.VARCHAR),

@@ -34,4 +34,9 @@ public class ModelRawResource extends RawResource {
 
     @JsonProperty("alias")
     private String alias;
+
+    @Override
+    public String getModelUuid() {
+        return this.getUuid();
+    }
 }

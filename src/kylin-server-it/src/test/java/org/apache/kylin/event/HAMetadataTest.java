@@ -156,7 +156,7 @@ public class HAMetadataTest extends NLocalFileMetadataTestCase {
 
         await().atMost(3, TimeUnit.SECONDS)
                 .until(() -> 7 == queryResourceStore.listResourcesRecursively(MetadataType.ALL.name()).size());
-        String table = getTestConfig().getMetadataUrl().getIdentifier() + "_audit_log";
+        String table = getTestConfig().getMetadataUrl().getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX;
         val auditCount = getJdbcTemplate().queryForObject(String.format(Locale.ROOT, "select count(*) from %s", table),
                 Long.class);
         Assert.assertEquals(12L, auditCount.longValue());
@@ -188,7 +188,7 @@ public class HAMetadataTest extends NLocalFileMetadataTestCase {
             resourceStore.checkAndPutResource("PROJECT/path3", ByteSource.wrap("{ \"mvcc\": 3 }".getBytes(charset)), 2);
             return 0;
         }, "p0");
-        String table = getTestConfig().getMetadataUrl().getIdentifier() + "_audit_log";
+        String table = getTestConfig().getMetadataUrl().getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX;
         getJdbcTemplate().update(String.format(Locale.ROOT, "delete from %s where id=7", table));
         try {
             queryResourceStore.catchup();

@@ -280,7 +280,8 @@ public class AuditLogReplayWorker extends AbstractAuditLogReplayWorker {
                     correctedResource.getMvcc());
             String resPath = correctedResource.generateKeyWithType();
             val fixResource = new AuditLog(0L, resPath, correctedResource.getByteSource(), correctedResource.getTs(),
-                    originResource.getMvcc() + 1, null, null, null, correctedResource.getProject(), false);
+                    originResource.getMvcc() + 1, null, null, null,
+                    null, correctedResource.getProject(), false);
             replayer.replay(new UnitMessages(Lists.newArrayList(Event.fromLog(fixResource))));
 
             val currentAuditLog = resourceStore.getAuditLogStore().get(resPath, targetResource.getMvcc());

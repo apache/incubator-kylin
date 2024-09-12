@@ -111,7 +111,7 @@ class JdbcAuditLogStoreTest {
         prepare2Resource();
         val url = getTestConfig().getMetadataUrl();
         val jdbcTemplate = info.getJdbcTemplate();
-        val all = jdbcTemplate.query(SELECT_LIST_TERM + " from " + url.getIdentifier() + "_audit_log",
+        val all = jdbcTemplate.query(SELECT_LIST_TERM + " from " + url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX,
                 new AuditLogRowMapper());
 
         Assert.assertEquals(5, all.size());
@@ -141,7 +141,7 @@ class JdbcAuditLogStoreTest {
             return 0;
         }, "_global");
 
-        val allStep2 = jdbcTemplate.query(SELECT_LIST_TERM + " from " + url.getIdentifier() + "_audit_log",
+        val allStep2 = jdbcTemplate.query(SELECT_LIST_TERM + " from " + url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX,
                 new AuditLogRowMapper());
 
         Assert.assertEquals(7, allStep2.size());
@@ -261,7 +261,7 @@ class JdbcAuditLogStoreTest {
         String unitId = RandomUtil.randomUUIDStr();
         String sql = "insert into %s (id, meta_key,meta_content,meta_ts,meta_mvcc,unit_id,operator,instance,project,"
                 + "diff_flag) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        jdbcTemplate.batchUpdate(String.format(Locale.ROOT, sql, url.getIdentifier() + "_audit_log"),
+        jdbcTemplate.batchUpdate(String.format(Locale.ROOT, sql, url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX),
                 Arrays.asList(
                         new Object[] { 22, "PROJECT/abc",
                                 ("{ \"uuid\" : \"" + UUID.randomUUID()
@@ -287,7 +287,7 @@ class JdbcAuditLogStoreTest {
         String unitId = RandomUtil.randomUUIDStr();
         String sql = "insert into %s (id, meta_key,meta_content,meta_ts,meta_mvcc,unit_id,operator,instance,project,"
                 + "diff_flag) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        jdbcTemplate.batchUpdate(String.format(Locale.ROOT, sql, url.getIdentifier() + "_audit_log"),
+        jdbcTemplate.batchUpdate(String.format(Locale.ROOT, sql, url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX),
                 Arrays.asList(
                         new Object[] { 900, "PROJECT/abc",
                                 ("{ \"uuid\" : \"" + UUID.randomUUID()
@@ -301,7 +301,7 @@ class JdbcAuditLogStoreTest {
         // It will execute a 5s once scheduled thread
         workerStore.getAuditLogStore().restore(3);
         Assertions.assertEquals(3, workerStore.listResourcesRecursively(MetadataType.ALL.name()).size());
-        jdbcTemplate.batchUpdate(String.format(Locale.ROOT, sql, url.getIdentifier() + "_audit_log"),
+        jdbcTemplate.batchUpdate(String.format(Locale.ROOT, sql, url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX),
                 Arrays.asList(
                         new Object[] { 800, "PROJECT/abc3",
                                 ("{ \"uuid\" : \"" + UUID.randomUUID()
@@ -355,7 +355,7 @@ class JdbcAuditLogStoreTest {
         String unitId = RandomUtil.randomUUIDStr();
         String sql = "insert into %s (id, meta_key,meta_content,meta_ts,meta_mvcc,unit_id,operator,instance,project,"
                 + "diff_flag) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        jdbcTemplate.batchUpdate(String.format(Locale.ROOT, sql, url.getIdentifier() + "_audit_log"),
+        jdbcTemplate.batchUpdate(String.format(Locale.ROOT, sql, url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX),
                 Arrays.asList(
                         new Object[] { 900, "PROJECT/abc",
                                 ("{ \"uuid\" : \"" + UUID.randomUUID()
@@ -473,7 +473,7 @@ class JdbcAuditLogStoreTest {
                 StringEntity.serializer);
         Assert.assertEquals(1, workerStore.listResourcesRecursively(MetadataType.ALL.name()).size());
         val jdbcTemplate = info.getJdbcTemplate();
-        val auditLogTableName = testConfig.getMetadataUrl().getIdentifier() + "_audit_log";
+        val auditLogTableName = testConfig.getMetadataUrl().getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX;
 
         val stopped = new AtomicBoolean(false);
         new Thread(() -> {
@@ -524,10 +524,10 @@ class JdbcAuditLogStoreTest {
         val dataSource = BasicDataSourceFactory.createDataSource(props);
         val transactionManager = new DataSourceTransactionManager(dataSource);
         val auditLogStore = new JdbcAuditLogStore(config, jdbcTemplate, transactionManager,
-                config.getMetadataUrl().getIdentifier() + "_audit_log");
+                config.getMetadataUrl().getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX);
         auditLogStore.createIfNotExist();
 
-        val auditLogTableName = config.getMetadataUrl().getIdentifier() + "_audit_log";
+        val auditLogTableName = config.getMetadataUrl().getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX;
         for (int i = 0; i < 1000; i++) {
             val projectName = "p" + (i + 1000);
             String unitId = RandomUtil.randomUUIDStr();
@@ -561,10 +561,10 @@ class JdbcAuditLogStoreTest {
         val dataSource = BasicDataSourceFactory.createDataSource(props);
         val transactionManager = new DataSourceTransactionManager(dataSource);
         val auditLogStore = new JdbcAuditLogStore(config, jdbcTemplate, transactionManager,
-                info.getTableName() + "_audit_log");
+                info.getTableName() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX);
         auditLogStore.createIfNotExist();
 
-        val auditLogTableName = info.getTableName() + "_audit_log";
+        val auditLogTableName = info.getTableName() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX;
         for (int i = 0; i < 1000; i++) {
             val projectNamePrefix = "p" + (i + 1000);
             String unitId = RandomUtil.randomUUIDStr();

@@ -337,7 +337,7 @@ class JdbcMetadataStoreTest {
         Assertions.assertFalse(CompressionUtils.isCompressed(contents));
 
         byte[] auditLogContents = jdbcTemplate.queryForObject(
-                "select meta_content from " + identifier + "_audit_log where meta_key = 'PROJECT/prj1'",
+                "select meta_content from " + identifier + JdbcAuditLogStore.AUDIT_LOG_SUFFIX + " where meta_key = 'PROJECT/prj1'",
                 (rs, rowNum) -> rs.getBytes(1));
 
         Assertions.assertFalse(CompressionUtils.isCompressed(auditLogContents));

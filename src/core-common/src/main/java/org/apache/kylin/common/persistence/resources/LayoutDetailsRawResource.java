@@ -38,4 +38,10 @@ public class LayoutDetailsRawResource extends RawResource {
 
     @JsonProperty("layout")
     private long layoutId;
+
+    @Override
+    public String getModelUuid() {
+        return this.dataflowId;
+    }
+
 }

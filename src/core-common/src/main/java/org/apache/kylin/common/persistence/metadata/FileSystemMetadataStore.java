@@ -876,7 +876,7 @@ public class FileSystemMetadataStore extends MetadataStore {
         }
     }
 
-    private static class SnapShotCompressHandler implements CompressHandlerInterface {
+    public static class SnapShotCompressHandler implements CompressHandlerInterface {
         @Override
         @SuppressWarnings("unchecked")
         public <T extends RawResource> T read(InputStream in, String resPath, long time, MetadataType type)

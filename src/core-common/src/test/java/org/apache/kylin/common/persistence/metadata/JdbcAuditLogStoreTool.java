@@ -44,14 +44,20 @@ public class JdbcAuditLogStoreTool {
     public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
     private static final String LOCAL_INSTANCE = "127.0.0.1";
 
+    public static AuditLog createProjectAuditLog(String projectName, long mvcc, String uuid, String unitId
+            , boolean diffFlag) {
+        return createProjectAuditLog(projectName, mvcc, uuid, unitId, null, diffFlag);
+    }
+
     public static AuditLog createProjectAuditLog(String projectName, long mvcc, String uuid, String unitId,
-            boolean diffFlag) {
+                                                 String modelUuid, boolean diffFlag) {
         AuditLog resource = new AuditLog();
         resource.setResPath("PROJECT/" + projectName);
         resource.setDiffFlag(diffFlag);
         resource.setProject(uuid);
         resource.setInstance(LOCAL_INSTANCE);
         resource.setUnitId(unitId);
+        resource.setModelUuid(modelUuid);
         resource.setByteSource(ByteSource.wrap(("{ \"uuid\" : \"" + uuid + "\",\"meta_key\" : \"" + projectName
                 + "\",\"name\" : \"" + projectName + "\"}").getBytes(DEFAULT_CHARSET)));
         resource.setTimestamp(System.currentTimeMillis());
@@ -61,7 +67,12 @@ public class JdbcAuditLogStoreTool {
 
     public static AuditLog createProjectAuditLog(String projectName, long mvcc) {
         return createProjectAuditLog(projectName, mvcc, UUID.randomUUID().toString(), UUID.randomUUID().toString(),
-                false);
+                null, false);
+    }
+
+    public static AuditLog createProjectAuditLog(String projectName, String modelUuid, long mvcc) {
+        return createProjectAuditLog(projectName, mvcc, UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+                modelUuid, false);
     }
 
     public static AuditLog createProjectAuditLog(String projectName, long mvcc, String uuid, String unitId,
@@ -100,7 +111,7 @@ public class JdbcAuditLogStoreTool {
 
     public static void prepareJdbcAuditLogStore(String projectPrefixName, JdbcTemplate jdbcTemplate, long logNum) {
         val url = getTestConfig().getMetadataUrl();
-        val table = url.getIdentifier() + "_audit_log";
+        val table = url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX;
         for (int i = 0; i < logNum; i++) {
             val projectName = (projectPrefixName != null ? projectPrefixName : "p") + i;
             String unitId = RandomUtil.randomUUIDStr();
@@ -108,7 +119,7 @@ public class JdbcAuditLogStoreTool {
                     "PROJECT/" + projectName,
                     ("{ \"uuid\" : \"" + RandomUtil.randomUUIDStr() + "\",\"meta_key\" : \"" + projectName
                             + "\",\"name\" : \"" + projectName + "\"}").getBytes(DEFAULT_CHARSET),
-                    System.currentTimeMillis(), 0, unitId, null, AddressUtil.getLocalInstance(), projectName, false);
+                    System.currentTimeMillis(), 0, unitId, null, null, AddressUtil.getLocalInstance(), projectName, false);
         }
     }
 
@@ -118,15 +129,15 @@ public class JdbcAuditLogStoreTool {
         val url = getTestConfig().getMetadataUrl();
 
         Object[] log = isDel
-                ? new Object[] { "PROJECT/" + project, null, System.currentTimeMillis(), mvcc, unitId, null,
+                ? new Object[] { "PROJECT/" + project, null, System.currentTimeMillis(), mvcc, unitId, null, null,
                         LOCAL_INSTANCE, null, false }
                 : new Object[] { "PROJECT/" + project,
                         ("{\"name\" : \"" + project + "\",\"uuid\" : \"" + uuid + "\"}").getBytes(DEFAULT_CHARSET),
-                        System.currentTimeMillis(), mvcc, unitId, null, LOCAL_INSTANCE, null, false };
+                        System.currentTimeMillis(), mvcc, unitId, null, null, LOCAL_INSTANCE, null, false };
         List<Object[]> logs = new ArrayList<>();
         logs.add(log);
         jdbcTemplate.batchUpdate(
-                String.format(Locale.ROOT, JdbcAuditLogStore.INSERT_SQL, url.getIdentifier() + "_audit_log"), logs);
+                String.format(Locale.ROOT, JdbcAuditLogStore.INSERT_SQL, url.getIdentifier() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX), logs);
     }
 
     public static void mockAuditLogForProjectEntry(String project, JdbcInfo info, boolean isDel) {

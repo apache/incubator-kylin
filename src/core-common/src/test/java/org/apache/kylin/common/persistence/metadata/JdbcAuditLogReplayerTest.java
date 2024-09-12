@@ -53,7 +53,7 @@ public class JdbcAuditLogReplayerTest {
         auditLogStore.restore(0);
         Assert.assertEquals(2, workerStore.listResourcesRecursively(MetadataType.ALL.name()).size());
 
-        val auditLogTableName = info.getTableName() + "_audit_log";
+        val auditLogTableName = info.getTableName() + JdbcAuditLogStore.AUDIT_LOG_SUFFIX;
 
         jdbcTemplate.batchUpdate("ALTER TABLE " + auditLogTableName + " RENAME TO TEST_AUDIT_LOG_TEST",
                 "ALTER TABLE " + info.getTableName() + "_project RENAME TO TEST_TEST");

@@ -220,6 +220,10 @@ public class RawResource {
         return GLOBAL_PROJECT;
     }
 
+    public String getModelUuid() {
+        return null;
+    }
+
     public void setProject(String resPath) {
         // Filed project is only defined in partial subclasses.
         // Please override this method if needed.

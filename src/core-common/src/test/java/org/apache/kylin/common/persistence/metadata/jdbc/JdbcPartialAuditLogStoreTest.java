@@ -47,8 +47,7 @@ class JdbcPartialAuditLogStoreTest {
     @Test
     void testPartialAuditLogRestore() throws Exception {
         val workerStore = ResourceStore.getKylinMetaStore(getTestConfig());
-        val auditLogStore = new JdbcPartialAuditLogStore(getTestConfig(),
-                resPath -> resPath.startsWith("PROJECT/"));
+        val auditLogStore = new JdbcPartialAuditLogStore(getTestConfig(), null);
         workerStore.getMetadataStore().setAuditLogStore(auditLogStore);
         auditLogStore.restore(101);
         Assertions.assertEquals(101, auditLogStore.getLogOffset());
@@ -58,24 +57,22 @@ class JdbcPartialAuditLogStoreTest {
     @Test
     void testPartialFetchAuditLog() throws Exception {
         val workerStore = ResourceStore.getKylinMetaStore(getTestConfig());
-        var auditLogStore = new JdbcPartialAuditLogStore(getTestConfig(),
-                resPath -> resPath.startsWith("PROJECT/abc"));
+        var auditLogStore = new JdbcPartialAuditLogStore(getTestConfig(), "uuid1");
         workerStore.getMetadataStore().setAuditLogStore(auditLogStore);
 
         workerStore.checkAndPutResource(ResourceStore.METASTORE_UUID_TAG, new StringEntity(RandomUtil.randomUUIDStr()),
                 StringEntity.serializer);
         Assertions.assertEquals(1, workerStore.listResourcesRecursively(MetadataType.ALL.name()).size());
         auditLogStore.batchInsert(Arrays.asList(
-                JdbcAuditLogStoreTool.createProjectAuditLog("abc", 0),
-                JdbcAuditLogStoreTool.createProjectAuditLog("abc2", 0),
-                JdbcAuditLogStoreTool.createProjectAuditLog("abc3", 0),
-                JdbcAuditLogStoreTool.createProjectAuditLog("abc4", 0),
-                JdbcAuditLogStoreTool.createProjectAuditLog("t1", 0)
+                JdbcAuditLogStoreTool.createProjectAuditLog("abc", "uuid1", 0),
+                JdbcAuditLogStoreTool.createProjectAuditLog("abc", null, 0),
+                JdbcAuditLogStoreTool.createProjectAuditLog("abc2", "uuid1", 0),
+                JdbcAuditLogStoreTool.createProjectAuditLog("abc2", "uuid2", 0)
                 )
         );
         auditLogStore.catchupWithMaxTimeout();
         var totalR = workerStore.listResourcesRecursively("PROJECT");
-        Assertions.assertEquals(4, totalR.size());
+        Assertions.assertEquals(2, totalR.size());
         auditLogStore.close();
     }
 

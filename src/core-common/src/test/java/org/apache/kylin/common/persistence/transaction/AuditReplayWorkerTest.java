@@ -285,7 +285,8 @@ public class AuditReplayWorkerTest {
         ReflectionTestUtils.invokeMethod(replayWorker, "recordStepAbsentIdList", stepWin,
                 Collections.singletonList(
                         new AuditLog(101L, "adaasd", RawResourceTool.createByteSource("adaasd"),
-                                1L, 1L, null, null, null, null, false)));
+                                1L, 1L, null, null, null, null,
+                                null, false)));
         Assertions.assertTrue(delayIdQueue.isEmpty());
         replayWorker.close(true);
     }
@@ -302,11 +303,14 @@ public class AuditReplayWorkerTest {
 
         val auditLogs = Arrays.asList(
                 new AuditLog(101L, "adaasd", RawResourceTool.createByteSource("adaasd"),
-                        System.currentTimeMillis() - timeout * 2, 1L, null, null, null, null, false),
+                        System.currentTimeMillis() - timeout * 2, 1L, null, null,
+                        null, null, null, false),
                 new AuditLog(102L, "adaasd", RawResourceTool.createByteSource("adaasd"),
-                        System.currentTimeMillis() - timeout * 2, 1L, null, null, null, null, false),
+                        System.currentTimeMillis() - timeout * 2, 1L, null, null,
+                        null, null, null, false),
                 new AuditLog(103L, "adaasd", RawResourceTool.createByteSource("adaasd"),
-                        System.currentTimeMillis() - timeout * 2, 1L, null, null, null, null, false));
+                        System.currentTimeMillis() - timeout * 2, 1L, null, null,
+                        null, null, null, false));
 
         ReflectionTestUtils.invokeMethod(replayWorker, "recordStepAbsentIdList", stepWin, auditLogs);
 
@@ -326,11 +330,14 @@ public class AuditReplayWorkerTest {
 
         val auditLogs = Arrays.asList(
                 new AuditLog(101L, "adaasd", RawResourceTool.createByteSource("adaasd"),
-                        System.currentTimeMillis(), 1L, null, null, null, null, false),
+                        System.currentTimeMillis(), 1L, null, null, null, null,
+                        null, false),
                 new AuditLog(102L, "adaasd", RawResourceTool.createByteSource("adaasd"),
-                        System.currentTimeMillis(), 1L, null, null, null, null, false),
+                        System.currentTimeMillis(), 1L, null, null, null, null,
+                        null, false),
                 new AuditLog(103L, "adaasd", RawResourceTool.createByteSource("adaasd"),
-                        System.currentTimeMillis(), 1L, null, null, null, null, false));
+                        System.currentTimeMillis(), 1L, null, null, null, null,
+                        null, false));
 
         ReflectionTestUtils.invokeMethod(replayWorker, "recordStepAbsentIdList", stepWin, auditLogs);
 

@@ -68,7 +68,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JdbcAuditLogStore implements AuditLogStore {
 
-    static final String AUDIT_LOG_SUFFIX = "_audit_log";
+    public static final String AUDIT_LOG_SUFFIX = "_audit_log_v2";
 
     public static final String SELECT_TERM = "select ";
 
@@ -77,6 +77,7 @@ public class JdbcAuditLogStore implements AuditLogStore {
     static final String AUDIT_LOG_TABLE_CONTENT = "meta_content";
     static final String AUDIT_LOG_TABLE_TS = "meta_ts";
     static final String AUDIT_LOG_TABLE_MVCC = "meta_mvcc";
+    static final String AUDIT_LOG_MODEL_UUID = "model_uuid";
     static final String AUDIT_LOG_TABLE_UNIT = "unit_id";
     static final String AUDIT_LOG_TABLE_OPERATOR = "operator";
     static final String AUDIT_LOG_TABLE_INSTANCE = "instance";
@@ -90,20 +91,24 @@ public class JdbcAuditLogStore implements AuditLogStore {
 
     static final String INSERT_SQL = "insert into %s (" + Joiner.on(",").join(AUDIT_LOG_TABLE_KEY,
             AUDIT_LOG_TABLE_CONTENT, AUDIT_LOG_TABLE_TS, AUDIT_LOG_TABLE_MVCC, AUDIT_LOG_TABLE_UNIT,
-            AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD, AUDIT_LOG_DIFF_FLAG)
-            + ") values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            AUDIT_LOG_MODEL_UUID, AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD,
+            AUDIT_LOG_DIFF_FLAG)
+            + ") values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     static final String SELECT_BY_RANGE_SQL = SELECT_TERM
-            + Joiner.on(",").join(AUDIT_LOG_TABLE_ID, AUDIT_LOG_TABLE_KEY, AUDIT_LOG_TABLE_CONTENT, AUDIT_LOG_TABLE_TS,
-                    AUDIT_LOG_TABLE_MVCC, AUDIT_LOG_TABLE_UNIT, AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD, AUDIT_LOG_DIFF_FLAG)
+            + Joiner.on(",").join(AUDIT_LOG_TABLE_ID, AUDIT_LOG_TABLE_KEY, AUDIT_LOG_TABLE_CONTENT,
+            AUDIT_LOG_TABLE_TS, AUDIT_LOG_TABLE_MVCC, AUDIT_LOG_TABLE_UNIT, AUDIT_LOG_MODEL_UUID,
+            AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD, AUDIT_LOG_DIFF_FLAG)
             + " from %s where id > %d and id <= %d order by id";
     static final String SELECT_BY_ID_SQL = SELECT_TERM
-            + Joiner.on(",").join(AUDIT_LOG_TABLE_ID, AUDIT_LOG_TABLE_KEY, AUDIT_LOG_TABLE_CONTENT, AUDIT_LOG_TABLE_TS,
-                    AUDIT_LOG_TABLE_MVCC, AUDIT_LOG_TABLE_UNIT, AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD, AUDIT_LOG_DIFF_FLAG)
+            + Joiner.on(",").join(AUDIT_LOG_TABLE_ID, AUDIT_LOG_TABLE_KEY, AUDIT_LOG_TABLE_CONTENT,
+            AUDIT_LOG_TABLE_TS, AUDIT_LOG_TABLE_MVCC, AUDIT_LOG_TABLE_UNIT, AUDIT_LOG_MODEL_UUID,
+            AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD, AUDIT_LOG_DIFF_FLAG)
             + " from %s where id in(%s) order by id";
 
     static final String SELECT_BY_PROJECT_RANGE_SQL = SELECT_TERM
-            + Joiner.on(",").join(AUDIT_LOG_TABLE_ID, AUDIT_LOG_TABLE_KEY, AUDIT_LOG_TABLE_CONTENT, AUDIT_LOG_TABLE_TS,
-                    AUDIT_LOG_TABLE_MVCC, AUDIT_LOG_TABLE_UNIT, AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD, AUDIT_LOG_DIFF_FLAG)
+            + Joiner.on(",").join(AUDIT_LOG_TABLE_ID, AUDIT_LOG_TABLE_KEY, AUDIT_LOG_TABLE_CONTENT,
+            AUDIT_LOG_TABLE_TS, AUDIT_LOG_TABLE_MVCC, AUDIT_LOG_TABLE_UNIT, AUDIT_LOG_MODEL_UUID,
+            AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD, AUDIT_LOG_DIFF_FLAG)
             + " from %s where meta_key like '/%s/%%' and id > %d and id <= %d order by id";
 
     static final String SELECT_MAX_ID_SQL = "select max(id) from %s";
@@ -113,7 +118,8 @@ public class JdbcAuditLogStore implements AuditLogStore {
 
     static final String SELECT_LIST_TERM = SELECT_TERM + Joiner.on(",").join(AUDIT_LOG_TABLE_ID, AUDIT_LOG_TABLE_KEY,
             AUDIT_LOG_TABLE_CONTENT, AUDIT_LOG_TABLE_TS, AUDIT_LOG_TABLE_MVCC, AUDIT_LOG_TABLE_UNIT,
-            AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD, AUDIT_LOG_DIFF_FLAG);
+            AUDIT_LOG_MODEL_UUID, AUDIT_LOG_TABLE_OPERATOR, AUDIT_LOG_TABLE_INSTANCE, PROJECT_FIELD,
+            AUDIT_LOG_DIFF_FLAG);
     static final String SELECT_TS_RANGE = SELECT_LIST_TERM
             + " from %s where id < %d and meta_ts between %d and %d order by id desc limit %d";
 
@@ -198,7 +204,9 @@ public class JdbcAuditLogStore implements AuditLogStore {
                                             CompressionUtils
                                                     .compress(ByteSource.wrap(createEvent.getMetaContent()).read()),
                                             createEvent.getCreatedOrUpdated().getTs(),
-                                            createEvent.getCreatedOrUpdated().getMvcc(), unitId, operator, instance,
+                                            createEvent.getCreatedOrUpdated().getMvcc(), unitId,
+                                            createEvent.getCreatedOrUpdated().getModelUuid(),
+                                            operator, instance,
                                             createEvent.getCreatedOrUpdated().getProject(),
                                             createEvent.getCreatedOrUpdated().getContentDiff() != null };
                                 } catch (IOException ignore) {
@@ -207,7 +215,7 @@ public class JdbcAuditLogStore implements AuditLogStore {
                             } else if (e instanceof ResourceDeleteEvent) {
                                 ResourceDeleteEvent deleteEvent = (ResourceDeleteEvent) e;
                                 return new Object[] { deleteEvent.getResPath(), null, System.currentTimeMillis(), null,
-                                        unitId, operator, instance, deleteEvent.getKey(), false };
+                                        unitId, null, operator, instance, deleteEvent.getKey(), false };
                             }
                             return null;
                         }).filter(Objects::nonNull).collect(Collectors.toList())),
@@ -220,7 +228,7 @@ public class JdbcAuditLogStore implements AuditLogStore {
                     try {
                         val bs = Objects.isNull(x.getByteSource()) ? null : x.getByteSource().read();
                         return new Object[] { x.getResPath(), CompressionUtils.compress(bs), x.getTimestamp(),
-                                x.getMvcc(), x.getUnitId(), x.getOperator(), x.getInstance(), x.getProject(),
+                                x.getMvcc(), x.getUnitId(), x.getModelUuid(), x.getOperator(), x.getInstance(), x.getProject(),
                                 x.isDiffFlag() };
                     } catch (IOException e) {
                         return null;

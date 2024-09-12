@@ -41,8 +41,6 @@ import lombok.EqualsAndHashCode;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE, isGetterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class FusionModel extends RootPersistentEntity implements Serializable {
 
-    private String project;
-
     @EqualsAndHashCode.Include
     @JsonProperty("alias")
     private String alias;

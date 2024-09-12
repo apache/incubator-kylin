@@ -36,7 +36,8 @@ class AuditLogCheckerTest {
     public void testVerify() {
         byte[] removePatch = "[{\"op\":\"remove\",\"path\":\"\"}]".getBytes(StandardCharsets.UTF_8);
         AuditLog auditLog = new AuditLog(1L, "PROJECT/abc", ByteSource.wrap(removePatch), System.currentTimeMillis(),
-                0L, UUID.randomUUID().toString(), null, LOCAL_INSTANCE, null, true);
+                0L, UUID.randomUUID().toString(), null, null, LOCAL_INSTANCE,
+                null, true);
         try {
             verify(auditLog, false);
             Assertions.fail("Not patch mode, but audit log is patch format!");
@@ -46,6 +47,7 @@ class AuditLogCheckerTest {
 
         verify(new AuditLog(1L, "PROJECT/abc",
                 ByteSource.wrap("[{\"op\": \"value1\", \"path\": \"\"}]".getBytes(StandardCharsets.UTF_8)),
-                System.currentTimeMillis(), 0L, UUID.randomUUID().toString(), null, LOCAL_INSTANCE, null, true), true);
+                System.currentTimeMillis(), 0L, UUID.randomUUID().toString(), null,
+                null, LOCAL_INSTANCE, null, true), true);
     }
 }

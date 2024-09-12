@@ -29,4 +29,7 @@ import lombok.EqualsAndHashCode;
 public class StreamingJobRawResource extends RawResource {
     @JsonProperty("project")
     private String project;
+
+    @JsonProperty("model_id")
+    private String modelUuid;
 }

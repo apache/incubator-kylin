@@ -244,7 +244,7 @@ public class AuditLogToolTest extends NLocalFileMetadataTestCase {
 
         val jdbcTemplate = getJdbcTemplate();
         long before = jdbcTemplate.queryForObject(String.format(Locale.ROOT,
-                "select count(1) from test_audit_Log where meta_ts between %d and %d", start, end), Long.class);
+                "select count(1) from test_audit_Log_v2 where meta_ts between %d and %d", start, end), Long.class);
         long after = fileLines(jsonl);
         Assertions.assertThat(after).isEqualTo(before);
     }
@@ -288,7 +288,8 @@ public class AuditLogToolTest extends NLocalFileMetadataTestCase {
                         return new AuditLog(x.get("id").asLong(), x.get("meta_key").asText(),
                                 ByteSource.wrap(JsonUtil.writeValueAsBytes(x.get("meta_content"))),
                                 x.get("meta_ts").asLong(), x.get("meta_mvcc").asLong(), x.get("unit_id").asText(),
-                                x.get("operator").asText(), "", null, false);
+                                x.get("model_uuid").asText(), x.get("operator").asText(), "", null,
+                                false);
                     } catch (IOException e) {
                         throw Throwables.propagate(e);
                     }
