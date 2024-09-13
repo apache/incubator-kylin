@@ -361,7 +361,7 @@ export default class InternalTableSetting extends Vue {
     height: 0px;
   }
   .el-table {
-    min-height: 234px;
+    min-height: 148px;
   }
   .max-width {
     width: 100%;

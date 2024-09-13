@@ -2,9 +2,9 @@
   <el-dialog
     :visible="open"
     :title="dialogTitle"
-    class='data-management'
+    class='internal-table-data-management'
     :before-close="handleDataClose">
-    <div v-show="!showLoadData">
+    <div v-show="!showLoadData" v-loading="internalTableDataListLoading">
       <div>
         <div class="ksd-fleft ky-no-br-space">
           <div class="ke-it-other_actions ksd-fleft">
@@ -19,8 +19,7 @@
         :data="internalTableDataList"
         class="data-list-table"
         style="width: 100%"
-        @selection-change="handleSelectionChange"
-        v-loading="internalTableDataListLoading">
+        @selection-change="handleSelectionChange">
         <el-table-column
           type="selection"
           width="40">
@@ -262,24 +261,22 @@ export default class DataManagement extends Vue {
 }
 </script>
 <style lang="less">
-  .data-management {
+  .internal-table-data-management {
     position: absolute;
 
     .el-dialog {
       width: 960px;
       padding-bottom: 24px;
-
-      .el-dialog__body {
-        overflow: visible !important;
-      }
-      .data-list-table {
-        max-height: 430px;
-        overflow: auto;
-      }
     }
-  }
-  .text-ellipsis {
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+    .el-dialog__body {
+      overflow: visible !important;
+    }
+    .el-dialog__wrapper {
+      overflow: hidden;
+    }
+    .text-ellipsis {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+}
 </style>

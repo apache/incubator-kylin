@@ -1,6 +1,6 @@
 <template>
   <div><el-form :model="ruleForm" :rules="rules" ref="ruleForm">
-    <el-tabs v-model="activeTab" type="card">
+    <el-tabs v-model="activeTab" type="card" class="internal-table-load-data">
       <el-tab-pane name="append" :disabled="!tableInfo.date_partition_format">
         <span slot="label">{{$t('loadModelAppend')}}</span>
         <div>
@@ -9,7 +9,7 @@
               <div class="sub-title">{{$t('timePartitionOptionsTitle')}}</div>
               <div>
                 <el-form-item prop="timePartitionColumn">
-                  <el-select v-model="ruleForm.timePartitionColumn" class='max-width' disabled>
+                  <el-select v-model="tableInfo.time_partition_col" class='max-width' disabled>
                     <el-option
                       v-for="item in timePartitionOptions"
                       :key="item.value"
@@ -24,7 +24,7 @@
               <div class="sub-title">{{$t('timePartitionFormatTitle')}}</div>
               <div>
                 <el-form-item prop="timePartitionFormat">
-                  <el-select v-model="ruleForm.timePartitionFormat" class='max-width' disabled>
+                  <el-select v-model="tableInfo.date_partition_format" class='max-width' disabled>
                     <el-option
                       v-for="item in timePartitionFormatOptions"
                       :key="item.value"
@@ -55,7 +55,7 @@
         <div>
           <div class="sub-title">{{$t('partitionOptionsTitle')}}</div>
           <div>
-            <el-select v-model="ruleForm.partitionColumn" class='max-width' disabled>
+            <el-select v-model="tableInfo.time_partition_col" class='max-width' disabled>
               <el-option
                 v-for="item in partitionOptions"
                 :key="item.value"
@@ -144,7 +144,7 @@ import { timePartitionFormatOptions } from '../const'
     }
   }
 })
-export default class DataManagement extends Vue {
+export default class LoadData extends Vue {
   activeTab = this.tableInfo.date_partition_format ? 'append' : 'full'
 
   @Watch('tableInfo')
@@ -153,17 +153,13 @@ export default class DataManagement extends Vue {
   }
 
   ruleForm = {
-    timePartitionColumn: this.tableInfo.time_partition_col,
-    timePartitionFormat: this.tableInfo.date_partition_format,
     dateRange: (() => {
       const currentDate = new Date()
       return [
         new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, currentDate.getDate() - 1, 10, 10),
         new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1, 10, 10)
       ]
-    })(),
-
-    partitionColumn: this.tableInfo.time_partition_col
+    })()
   }
 
   loading = false
@@ -207,7 +203,7 @@ export default class DataManagement extends Vue {
 }
 </script>
 <style lang="less">
-  .el-tabs__content {
+  .internal-table-load-data .el-tabs__content {
     overflow: visible;
   }
 </style>
