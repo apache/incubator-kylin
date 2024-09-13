@@ -81,6 +81,7 @@ import { mapActions } from 'vuex'
 import * as types from 'src/store/types'
 import { handleSuccessAsync } from 'src/util'
 import { timePartitionFormatOptions } from '../const'
+import { transToUTCMs } from 'util/business'
 
 @Component({
   props: {
@@ -184,11 +185,10 @@ export default class LoadData extends Vue {
             database: this.tableInfo.database,
             table: this.tableInfo.name,
             project: this.tableInfo.project,
-
             incremental: this.activeTab === 'append',
             refresh: false,
-            start_date: this.activeTab === 'append' ? this.ruleForm.dateRange[0].getTime() : null,
-            end_date: this.activeTab === 'append' ? this.ruleForm.dateRange[1].getTime() : null,
+            start_date: this.activeTab === 'append' ? transToUTCMs(this.ruleForm.dateRange[0].getTime()) : null,
+            end_date: this.activeTab === 'append' ? transToUTCMs(this.ruleForm.dateRange[1].getTime()) : null,
             yarn_queue: 'default'
           }).then(handleSuccessAsync).catch(() => {
             this.$message.error(this.$t('saveFailed'))

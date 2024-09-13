@@ -271,6 +271,10 @@ export default class DataManagement extends Vue {
     .el-dialog__body {
       overflow: visible !important;
     }
+    .data-list-table {
+      max-height: 430px;
+      overflow: auto;
+    }
     .el-dialog__wrapper {
       overflow: hidden;
     }
