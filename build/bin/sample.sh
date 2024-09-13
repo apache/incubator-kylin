@@ -108,21 +108,18 @@ fi
 echo "Sample hive tables are created successfully; Going to create sample project..."
 
 mkdir -p ${KYLIN_HOME}/sample_project/sample_model/metadata
-cp -rf ${KYLIN_HOME}/sample_project/template/* ${KYLIN_HOME}/sample_project/sample_model/metadata
+cp -R ${KYLIN_HOME}/sample_project/template/core_meta ${KYLIN_HOME}/sample_project/sample_model/metadata
 
 #### Add version info into model
 kylin_version=5.0.0.0
 echo "kylin version is "$kylin_version
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/_global/project/learn_kylin.json
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/learn_kylin/dataflow/2d07e878-da28-a203-2d2c-185b4c6656f1.json
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/learn_kylin/index_plan/2d07e878-da28-a203-2d2c-185b4c6656f1.json
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/learn_kylin/model_desc/2d07e878-da28-a203-2d2c-185b4c6656f1.json
-
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/learn_kylin/table/SSB.CUSTOMER.json
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/learn_kylin/table/SSB.DATES.json
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/learn_kylin/table/SSB.P_LINEORDER.json
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/learn_kylin/table/SSB.PART.json
-sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/learn_kylin/table/SSB.SUPPLIER.json
+sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/core_meta/PROJECT/learn_kylin.json
+sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/core_meta/TABLE_INFO/learn_kylin.SSB.CUSTOMER.json
+sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/core_meta/TABLE_INFO/learn_kylin.SSB.DATES.json
+sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/core_meta/TABLE_INFO/learn_kylin.SSB.LINEORDER.json
+sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/core_meta/TABLE_INFO/learn_kylin.SSB.P_LINEORDER.json
+sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/core_meta/TABLE_INFO/learn_kylin.SSB.PART.json
+sed -i "s/%default_version%/${kylin_version}/g" ${KYLIN_HOME}/sample_project/sample_model/metadata/core_meta/TABLE_INFO/learn_kylin.SSB.SUPPLIER.json
 
 function printImportResult() {
   error=$1
