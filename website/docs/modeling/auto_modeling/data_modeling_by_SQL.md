@@ -78,7 +78,7 @@ Kylin model consists of tables and their join relations, as well as defined dime
    - **Model Name**: It is automatically generated and takes the format `AUTO_MODEL_FACT TABLE NAME_NUMBER`. You can also manually adjust the model name. It can be any combination of numbers, letters, and underscores (`_`).  The maximum length of the model name is 127 characters. When the fact table name is too long, the system will automatically truncate the fact table name from the end to ensure that the automatically generated model name is less than or equal to 127 characters. When truncated, the model name format is `AUTO_MODEL_TRUNCATED FACT TABLE NAME_NUMBER`.
    - **Add Base Indexes**: Basic indexes include base aggregated indexes and base table indexes. Base aggregated indexes contain all model dimensions and measures, and base table indexes contain columns used in all model dimensions and measures. 
 
-   It's recommended to keep it selected to avoid frequent [query pushdowns](../../query/pushdown/pushdown_to_embedded_spark.md) which may increase query response times. By default, base indexes will automatically update with model changes. 
+   It's recommended to keep it selected to avoid frequent [query push_down](../../query/push_down.md) which may increase query response times. By default, base indexes will automatically update with model changes. 
 
 8. Click **OK**. Kylin will automatically start to design a model and indexes.
 

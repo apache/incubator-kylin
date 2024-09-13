@@ -17,7 +17,7 @@ last_update:
 
 ### 1. Preparation Work
 
-   There is no difference in the query interface between internal table queries and model queries. For details, refer to [SQL Queries](../query/intro.md).
+   There is no difference in the query interface between internal table queries and model queries. For details, refer to [SQL Queries](../query/insight).
 
    You do not need to rewrite any SQL, but you must ensure that all tables you are querying have had internal tables created and have imported data.
 

@@ -61,7 +61,7 @@ Kylin mainly provides recommendations on index addition or deletion, and related
 
 - Question: When system resources are limited, which parameters can I use to control the resources consumed by Intelligent Recommendation?
 
-  Answer: You can reduce the resources that Intelligent Recommendation uses by lowering the value of the following two parameters in system [configuration file](../../configuration/configuration.md). 
+  Answer: You can reduce the resources that Intelligent Recommendation uses by lowering the value of the following two parameters in system [configuration file](../../configuration/config). 
 
   ```
   # This parameter is used for controlling the maximum queries processed by each scheduled task.

@@ -56,7 +56,7 @@ This section will describe the supported computed columns in Kylin, which includ
   - Unexpected errors may occur when the computed column share the same name with other columns.
   - Aggregate functions such as `SUM`, `MIN`, `MAX`, etc. are not allowed when defining the computed column expression.
   - Expression only containing constants is not recommended to create computed column, such as  `POWER(CAST(2 AS DOUBLE), 2)`.
-  - If a function expression contains a column using the keywords as column name, it cannot be recommended as a computed column. For more details about keywords, please refer the **Keywords** section in  [SQL Specification](../../query/insight/sql_spec.md). 
+  - If a function expression contains a column using the keywords as column name, it cannot be recommended as a computed column. For more details about keywords, please refer the **Keywords** section in  [SQL Specification](../../query/specification/sql_spec.md)
   - Computed columns only support `Hive` data source in current version.
   - Computed columns cannot be used as time partition columns and join keys.
   - If a function expression contains a table name or column name that is not started with letters or includes special characters, need to double quote this name. For example: `"100_KYLIN_SALES"."100_PRICE" * "100_KYLIN_SALES"."200_ITEM_COUNT"`

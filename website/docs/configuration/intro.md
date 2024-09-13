@@ -21,7 +21,7 @@ This chapter introduces some configurations for Kylin.
 
 | Component            | File                        | Description                                                  |
 | -------------------- | --------------------------- | ------------------------------------------------------------ |
-| Kylin                | conf/kylin.properties                   | This is the global configuration file, with all configuration properties about Kylin in it. Details will be discussed in the subsequent chapter [Basic Configuration](configuration.md). |
+| Kylin                | conf/kylin.properties                   | This is the global configuration file, with all configuration properties about Kylin in it. Details will be discussed in the subsequent chapter [Basic Configuration](config). |
 | Hadoop               | hadoop_conf/core-site.xml               | Global configuration file used by Hadoop, which defines system-level parameters such as HDFS URLs and Hadoop temporary directories, etc. |
 | Hadoop               | hadoop_conf/hdfs-site.xml               | HDFS configuration file, which defines HDFS parameters such as the storage location of NameNode and DataNode and the number of file copies, etc. |
 | Hadoop               | hadoop_conf/yarn-site.xml               | Yarn configuration file,which defines Hadoop cluster resource management system parameters, such as ResourceManager, NodeManager communication port and web monitoring port, etc. |

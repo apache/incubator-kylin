@@ -290,5 +290,5 @@ server.port=7070
 
 **Q: Is the query pushdown engine turned on by default?**
 
-Yes, if you want to turn it off, please refer to [Pushdown to SparkSQL](../query/pushdown/pushdown_to_embedded_spark.md).
+Yes, if you want to turn it off, please refer to [Pushdown to SparkSQL](../query/push_down.md).
 

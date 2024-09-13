@@ -155,9 +155,9 @@ You can submit a query to analyze your business data and experience the sub-seco
 
    Kylin supports standard SQL queries. After you add a data source table, the query is already pushed down to the Hive data source. You can immediately query the data; however, we do not recommend doing so at this time. Doing so immediately, especially when the data volume is high or the query is complex, can cause the query execution to take a long time.
 
-   Once you have the model and index created and have data loaded in the model, new queries can then hit the model and the pre-calculated data   saved in the model will be used to answer queries. This accelerated query execution method can be 10x to 100x faster. You can read the [Query Analysis](../query/insight/intro.md) section for a detailed explanation of SQL statements.
+   Once you have the model and index created and have data loaded in the model, new queries can then hit the model and the pre-calculated data saved in the model will be used to answer queries. This accelerated query execution method can be 10x to 100x faster. You can read the [Query Analysis](../query/principles/precalculation.md) section for a detailed explanation of SQL statements.
 
-   Your history query will be saved in the **Query -> History** page, you can view the [Query History](../query/history.md) section for more information.
+   Your history query will be saved in the **Query -> History** page, you can view the [Query History](../query/web_ui/query_history.md) section for more information.
 
 2. **Query Analysis Example**
 

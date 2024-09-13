@@ -99,7 +99,7 @@ This article discusses how to work with Kylin Real-Time, including how to load s
 
 - Question: How to check the status of streaming data jobs? 
 
-  Answer: In the left navigation panel, click **Monitor** > **Streaming Job** to check job status. You can customize job parameters by clicking ![](images/par_config.png) of the target job. To learn more about parameters, see [Basic Configuration](../../configuration/configuration.md). 
+  Answer: In the left navigation panel, click **Monitor** > **Streaming Job** to check job status. You can customize job parameters by clicking ![](images/par_config.png) of the target job. To learn more about parameters, see [Basic Configuration](../../configuration/config). 
 
 - Question: If a query can be answered with data from either Kafka or Hive tables, will there be any data duplication?
 

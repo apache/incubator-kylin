@@ -38,7 +38,7 @@ If there's no DNS server in LAN, you need to manually add the IP address and Hos
 
 ### Other requirements
 
-- The time across Kylin and Kafka clusters are synchronized. On how to change the time for Kylin, see [Basic Configuration](../../configuration/configuration.md). 
+- The time across Kylin and Kafka clusters are synchronized. On how to change the time for Kylin, see [Basic Configuration](../../configuration/config). 
 
 - When authentication mechanism is enabled on Hadoop or Kafka cluster, further configurations are needed: 
   

@@ -21,6 +21,6 @@ The job is built in the process of using Kylin, such as building an index and re
 For a clearer understanding of how to trigger a job, we recommend reading the following sections before continuing with this chapter. 
 
 - [Data Source](../../datasource/intro.md)
-- [SQL Query](../../query/intro.md)
+- [SQL Query](../../query/insight)
 - [Model](../../modeling/intro.md)
 
