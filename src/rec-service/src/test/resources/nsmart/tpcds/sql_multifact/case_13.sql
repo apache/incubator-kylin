@@ -1,25 +1,19 @@
 --
--- Copyright (C) 2020 Kyligence Inc. All rights reserved.
+-- Licensed to the Apache Software Foundation (ASF) under one
+-- or more contributor license agreements.  See the NOTICE file
+-- distributed with this work for additional information
+-- regarding copyright ownership.  The ASF licenses this file
+-- to you under the Apache License, Version 2.0 (the
+-- "License"); you may not use this file except in compliance
+-- with the License.  You may obtain a copy of the License at
 --
--- http://kyligence.io
+--     http://www.apache.org/licenses/LICENSE-2.0
 --
--- This software is the confidential and proprietary information of
--- Kyligence Inc. ("Confidential Information"). You shall not disclose
--- such Confidential Information and shall use it only in accordance
--- with the terms of the license agreement you entered into with
--- Kyligence Inc.
---
--- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
--- "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
--- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
--- A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
--- OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
--- SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
--- LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
--- DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
--- THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
--- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
--- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
 --
 select avg(ss_quantity)
        ,avg(ss_ext_sales_price)
@@ -35,28 +29,28 @@ select avg(ss_quantity)
  and((customer_demographics.cd_marital_status = 'M'
   and customer_demographics.cd_education_status = '4 yr Degree'
   and store_sales.ss_sales_price between 100.00 and 150.00
-  and household_demographics.hd_dep_count = 3   
+  and household_demographics.hd_dep_count = 3
      )or
      (customer_demographics.cd_marital_status = 'D'
   and customer_demographics.cd_education_status = 'Primary'
-  and store_sales.ss_sales_price between 50.00 and 100.00   
+  and store_sales.ss_sales_price between 50.00 and 100.00
   and household_demographics.hd_dep_count = 1
-     ) or 
+     ) or
      (customer_demographics.cd_marital_status = 'U'
   and customer_demographics.cd_education_status = 'Advanced Degree'
-  and store_sales.ss_sales_price between 150.00 and 200.00 
-  and household_demographics.hd_dep_count = 1  
+  and store_sales.ss_sales_price between 150.00 and 200.00
+  and household_demographics.hd_dep_count = 1
      ))
  and((customer_address.ca_country = 'United States'
   and customer_address.ca_state in ('KY', 'GA', 'NM')
-  and store_sales.ss_net_profit between 100 and 200  
+  and store_sales.ss_net_profit between 100 and 200
      ) or
      (customer_address.ca_country = 'United States'
   and customer_address.ca_state in ('MT', 'OR', 'IN')
-  and store_sales.ss_net_profit between 150 and 300  
+  and store_sales.ss_net_profit between 150 and 300
      ) or
      (customer_address.ca_country = 'United States'
   and customer_address.ca_state in ('WI', 'MO', 'WV')
-  and store_sales.ss_net_profit between 50 and 250  
+  and store_sales.ss_net_profit between 50 and 250
      ))
 ;

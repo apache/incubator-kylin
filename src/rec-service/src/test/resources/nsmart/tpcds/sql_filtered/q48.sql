@@ -1,25 +1,19 @@
 --
--- Copyright (C) 2020 Kyligence Inc. All rights reserved.
+-- Licensed to the Apache Software Foundation (ASF) under one
+-- or more contributor license agreements.  See the NOTICE file
+-- distributed with this work for additional information
+-- regarding copyright ownership.  The ASF licenses this file
+-- to you under the Apache License, Version 2.0 (the
+-- "License"); you may not use this file except in compliance
+-- with the License.  You may obtain a copy of the License at
 --
--- http://kyligence.io
+--     http://www.apache.org/licenses/LICENSE-2.0
 --
--- This software is the confidential and proprietary information of
--- Kyligence Inc. ("Confidential Information"). You shall not disclose
--- such Confidential Information and shall use it only in accordance
--- with the terms of the license agreement you entered into with
--- Kyligence Inc.
---
--- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
--- "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
--- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
--- A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
--- OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
--- SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
--- LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
--- DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
--- THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
--- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
--- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
 --
 -- SQL q48.sql
 
@@ -28,32 +22,32 @@ select sum (ss_quantity)
  join store on store.s_store_sk = store_sales.ss_store_sk
  join customer_demographics on customer_demographics.cd_demo_sk = store_sales.ss_cdemo_sk
  join customer_address on store_sales.ss_addr_sk = customer_address.ca_address_sk
- join date_dim on store_sales.ss_sold_date_sk = date_dim.d_date_sk 
+ join date_dim on store_sales.ss_sold_date_sk = date_dim.d_date_sk
  where d_year = 1998
- and  
+ and
  (
   (
    cd_marital_status = 'M'
-   and 
+   and
    cd_education_status = '4 yr Degree'
-   and 
-   ss_sales_price between 100.00 and 150.00  
+   and
+   ss_sales_price between 100.00 and 150.00
    )
  or
   (
    cd_marital_status = 'M'
-   and 
+   and
    cd_education_status = '4 yr Degree'
-   and 
-   ss_sales_price between 50.00 and 100.00   
+   and
+   ss_sales_price between 50.00 and 100.00
   )
- or 
+ or
  (
    cd_marital_status = 'M'
-   and 
+   and
    cd_education_status = '4 yr Degree'
-   and 
-   ss_sales_price between 150.00 and 200.00  
+   and
+   ss_sales_price between 150.00 and 200.00
  )
  )
  and
@@ -62,20 +56,20 @@ select sum (ss_quantity)
   ca_country = 'United States'
   and
   ca_state in ('KY', 'GA', 'NM')
-  and ss_net_profit between 0 and 2000  
+  and ss_net_profit between 0 and 2000
   )
  or
   (
   ca_country = 'United States'
   and
   ca_state in ('MT', 'OR', 'IN')
-  and ss_net_profit between 150 and 3000 
+  and ss_net_profit between 150 and 3000
   )
  or
   (
   ca_country = 'United States'
   and
   ca_state in ('WI', 'MO', 'WV')
-  and ss_net_profit between 50 and 25000 
+  and ss_net_profit between 50 and 25000
   )
  )
