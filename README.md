@@ -11,10 +11,12 @@ Check version
 node -v
 ```
 
+If node.js version less than 18.20.4, can use `n` to install latest stable node.js
 ```shell
 sudo npm cache clean -f
 sudo npm install -g n
 sudo n stable
+# update latest npm
 sudo npm install npm@latest -g
 ```
 
