@@ -1,39 +1,33 @@
 --
--- Copyright (C) 2020 Kyligence Inc. All rights reserved.
+-- Licensed to the Apache Software Foundation (ASF) under one
+-- or more contributor license agreements.  See the NOTICE file
+-- distributed with this work for additional information
+-- regarding copyright ownership.  The ASF licenses this file
+-- to you under the Apache License, Version 2.0 (the
+-- "License"); you may not use this file except in compliance
+-- with the License.  You may obtain a copy of the License at
 --
--- http://kyligence.io
+--     http://www.apache.org/licenses/LICENSE-2.0
 --
--- This software is the confidential and proprietary information of
--- Kyligence Inc. ("Confidential Information"). You shall not disclose
--- such Confidential Information and shall use it only in accordance
--- with the terms of the license agreement you entered into with
--- Kyligence Inc.
---
--- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
--- "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
--- LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
--- A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
--- OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
--- SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
--- LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
--- DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
--- THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
--- (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
--- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
 --
 -- SQL q30.sql
 -- start query 30 in stream 0 using template query30.tpl
 with customer_total_return as
  (select wr_returning_customer_sk as ctr_customer_sk
-        ,ca_state as ctr_state, 
+        ,ca_state as ctr_state,
  	sum(wr_return_amt) as ctr_total_return
  from web_returns
      ,date_dim
      ,customer_address
- where wr_returned_date_sk = d_date_sk 
+ where wr_returned_date_sk = d_date_sk
    and wr_returned_date_sk between 2452276 and 2452640
    and d_year =2002
-   and wr_returning_addr_sk = ca_address_sk 
+   and wr_returning_addr_sk = ca_address_sk
  group by wr_returning_customer_sk
          ,ca_state)
   select  c_customer_id,c_salutation,c_first_name,c_last_name,c_preferred_cust_flag
@@ -43,7 +37,7 @@ with customer_total_return as
      ,customer_address
      ,customer
  where ctr1.ctr_total_return > (select avg(ctr_total_return)*1.2
- 			  from customer_total_return ctr2 
+ 			  from customer_total_return ctr2
                   	  where ctr1.ctr_state = ctr2.ctr_state)
        and ca_address_sk = c_current_addr_sk
        and ca_state = 'NY'
