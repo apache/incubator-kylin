@@ -86,11 +86,11 @@ Model design is one of the core functions of Kylin. Good model design can help a
 
 2. **Method of Model Design**
 
-   Please create a model in the **Data Asset -> Model** interface and enter the model editing interface to visually complete the creation of the multidimensional model. The specific method of model design will be described in detail in the [Model Design Basics](../modeling/intro.md) section. Here is a brief introduction to the following steps:
+   Please create a model in the **Data Asset -> Model** interface and enter the model editing interface to visually complete the creation of the multidimensional model. The specific method of model design will be described in detail in the [Model Design Basics](../model/intro.md) section. Here is a brief introduction to the following steps:
 
    - Design Model: Select the source table according to the business logic and set the association between the tables. Then set the fact table and dimension tables.
    - Add Dimensions: Identify dimensions from table columns for business analysis.
-   - Add Measures: Identify metrics and their aggregate functions for business analytics. You can see the detailed methods in the [Measures](../modeling/model_design/measure_design/intro.md) section.
+   - Add Measures: Identify metrics and their aggregate functions for business analytics. You can see the detailed methods in the [Measures](../model/model_design/measures/intro.md) section.
 
    As shown in the following diagram, we built the model using the source tables in the SSB dataset.
 
@@ -106,8 +106,8 @@ After the model is created, you need to define the index in the model; this shou
 
    Not every dimension combination is needed for business analysis. In this case, pre-calculating all the dimension combinations will bring a large workload and can result in a long indexing time and a large data storage space. We can improve this by adding aggregate index and table index.
 
-   - Aggregate Index: A group of dimension combinations customized to a particular business analysis. For example, an online store analyst needs to analyze the purchasing power of male and female customers in different cities, and the dimension combination in the index is `[city, customer gender]`. At this time, other dimensions are not needed in the index. If you do not need to analyze the product category, then there is no need to include it in any index. You can find out more in the [Aggregate Index](../modeling/model_design/aggregation_group.md) section.
-   - Table Index: Table index supports efficient querying of detailed data records. For example, an online store analyst needs to query the detailed order data, they can add `[OrderKey, OrderDate, PartKey, CustomerKey, OrderQuantity, OrderAmount]` in a table index. After building the index and loading the data, they can query the detailed data records efficiently. You can find out more in the [Table Index](../modeling/model_design/table_index.md) section. 
+   - Aggregate Index: A group of dimension combinations customized to a particular business analysis. For example, an online store analyst needs to analyze the purchasing power of male and female customers in different cities, and the dimension combination in the index is `[city, customer gender]`. At this time, other dimensions are not needed in the index. If you do not need to analyze the product category, then there is no need to include it in any index. You can find out more in the [Aggregate Index](../model/model_design/aggregation_group.md) section.
+   - Table Index: Table index supports efficient querying of detailed data records. For example, an online store analyst needs to query the detailed order data, they can add `[OrderKey, OrderDate, PartKey, CustomerKey, OrderQuantity, OrderAmount]` in a table index. After building the index and loading the data, they can query the detailed data records efficiently. You can find out more in the [Table Index](../model/model_design/table_index.md) section. 
 2. **How to design an index**
 
    - Edit aggregate group: On the left navigation bar, click **Data Asset -> Model**. In the **Model List** page, click one model to enter the specific model page, click **Index**. In the **Index Overview** tab, click **+ Index -> Aggregate Group**. The diagram below shows an aggregation group in the built-in demo. There are basically four concepts in an aggregation group in order to control the combination of dimensions:
@@ -124,13 +124,13 @@ After the model is created, you need to define the index in the model; this shou
 
 ### <span id="loaddata">Load Data</span>
 
-Kylin applies pre-calculation technology to achieve sub-second query response time in the big data era. After creating the model and editing the index, you need to load the data for the model. The process of loading data is also the pre-calculation process for the pre-defined index. Models that do not have data loaded cannot serve queries. You can find out more about how to load data from the [Load Data](../modeling/load_data/intro.md) section.
+Kylin applies pre-calculation technology to achieve sub-second query response time in the big data era. After creating the model and editing the index, you need to load the data for the model. The process of loading data is also the pre-calculation process for the pre-defined index. Models that do not have data loaded cannot serve queries. You can find out more about how to load data from the [Load Data](../model/load_data/intro.md) section.
 
 1. **Principle of Loading Data**
 
    - Set time partition column: The data in the fact table in the model generally increases over time, such as new orders grow over time in the order table. Then the order date can be the time partition column to partition orders into daily incremental batches. Setting the time partition column occurs after saving the model design.
-   - Full load: When the model does not have a time partition column, then data in fact table is loaded fully every time. If you need to load the latest week of data in the order table, all data will be reloaded because the model does not have a time partition column. You can find out more in the [Full Load](../modeling/load_data/full_build.md) section.
-   - Incremental load: When the model has been built and put into business analysis, and the model has a time partition column, you can still incrementally load new data while serving queries. For example, new data in the order table can be loaded incrementally daily. Incremental loading eliminates the need to reload pre-calculated data, this increases productivity and saves resources. You can find out more by looking at the [Load by Date/Time](../modeling/load_data/by_date.md) section.
+   - Full load: When the model does not have a time partition column, then data in fact table is loaded fully every time. If you need to load the latest week of data in the order table, all data will be reloaded because the model does not have a time partition column. You can find out more in the [Full Load](../model/load_data/full_build.md) section.
+   - Incremental load: When the model has been built and put into business analysis, and the model has a time partition column, you can still incrementally load new data while serving queries. For example, new data in the order table can be loaded incrementally daily. Incremental loading eliminates the need to reload pre-calculated data, this increases productivity and saves resources. You can find out more by looking at the [Load by Date/Time](../model/load_data/by_date.md) section.
 
 2. **How to Load Data**
   

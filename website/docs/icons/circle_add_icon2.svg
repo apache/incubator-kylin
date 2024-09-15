@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1024 1024"
+     width="10" height="10">
+    <circle cx="650" cy="650" r="350" stroke="black" fill="none" stroke-width="64"/>
+    <path d="M650 325v650M325 650h650" stroke="black" fill="none" stroke-width="64"/>
+</svg>

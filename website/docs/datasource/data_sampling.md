@@ -14,7 +14,7 @@ last_update:
     date: 08/19/2022
 ---
 
-Kylin provides the data sampling function to facilitate table data analysis. With data sampling, you can collect table characteristics, such as cardinality, max value, and min value for each column, to improve [model designing](../modeling/intro.md). 
+Kylin provides the data sampling function to facilitate table data analysis. With data sampling, you can collect table characteristics, such as cardinality, max value, and min value for each column, to improve [model designing](../model/intro.md). 
 
 ## Known limitations
 
@@ -70,5 +70,5 @@ For more information about commands, see [ALTER TABLE Statement](https://dev.mys
 
 ### See also
 
-[Model](../modeling/intro.md)
+[Model](../model/intro.md)
 

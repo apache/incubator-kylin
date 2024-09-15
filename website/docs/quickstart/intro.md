@@ -61,23 +61,7 @@ docker pull apachekylin/apache-kylin-standalone:5.0.0-GA
 
    For production environments, we strongly recommend setting up a dedicated metastore using either PostgreSQL or MySQL to ensure reliability.
 
-6. Install InfluxDB(**Deprecated**).
-
-   Kylin utilizes InfluxDB to store system monitoring data. This step is optional, but highly recommended for production environments to leverage monitoring capabilities.
-   
-   ```sh
-   # download influxdb
-   $KYLIN_HOME/sbin/download-influxdb.sh
-   
-   cd $KYLIN_HOME/influxdb
-   
-   # install influxdb
-   rpm -ivh influxdb-1.6.5.x86_64.rpm
-   ```
-   
-   For more details, please refer to [Use InfluxDB as Time-Series Database](../operations/system-monitoring/influxdb/influxdb.md).
-   
-7. Create a working directory on HDFS and grant permissions.
+6. Create a working directory on HDFS and grant permissions.
 
    The default working directory is `/kylin`. Also ensure the Linux account has access to its home directory on HDFS. Meanwhile, create directory `/kylin/spark-history` to store the spark log files.
 

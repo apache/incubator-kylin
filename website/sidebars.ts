@@ -68,10 +68,6 @@ const sidebars = {
                                     type: 'doc',
                                     id: 'deployment/on-premises/rdbms_metastore/usepg_as_metadb'
                                 },
-                                {
-                                    type: 'doc',
-                                    id: 'deployment/on-premises/rdbms_metastore/query_history_fields'
-                                },
                             ]
                         },
                         {
@@ -215,193 +211,158 @@ const sidebars = {
                 }
             ],
         },
+        //////////////////////////////////////// Model category \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
         {
             type: 'category',
             label: 'Model',
             link: {
                 type: 'doc',
-                id: 'modeling/intro'
+                id: 'model/intro'
             },
             items: [
                 {
-                    type: 'doc',
-                    id: 'modeling/manual_modeling'
-                },
-                {
                     type: 'category',
-                    label: 'Auto Modeling',
+                    label: 'Manual Modeling',
                     link: {
                         type: 'doc',
-                        id: 'modeling/auto_modeling/intro'
+                        id: 'model/manual/modeling'
                     },
                     items: [
                         {
                             type: 'doc',
-                            id: 'modeling/auto_modeling/data_modeling_by_SQL'
+                            id: 'model/manual/aggregation_group'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/auto_modeling/basic_concept_actions'
+                            id: 'model/manual/table_index'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/auto_modeling/rule_setting'
+                            id: 'model/manual/computed_column'
+                        },
+                    ]
+                },
+                {
+                    type: 'category',
+                    label: 'Recommendation',
+                    link: {
+                        type: 'doc',
+                        id: 'model/rec/intro'
+                    },
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'model/rec/sql_modeling'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/auto_modeling/scalar_subquery'
+                            id: 'model/rec/optimize_by_qh'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'model/rec/index_optimization'
                         },
                     ],
                 },
                 {
                     type: 'category',
-                    label: 'Auto Index Optimization',
-                    link: {
-                        type: 'doc',
-                        id: 'modeling/auto_modeling/optimize_index/intro'
-                    },
+                    label: 'Management',
                     items: [
                         {
                             type: 'doc',
-                            id: 'modeling/auto_modeling/optimize_index/index_optimization'
+                            id: 'model/manage/model_info'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/auto_modeling/optimize_index/review_index'
+                            id: 'model/manage/model_operation'
                         },
+                        {
+                            type: 'doc',
+                            id: 'model/manage/import_export'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'model/manage/data_loading'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'model/manage/segment'
+                        },
+                        /*{
+                            type: 'doc',
+                            id: 'model/manage/configuration'
+                        }*/
                     ],
                 },
                 {
                     type: 'doc',
-                    id: 'modeling/model_management'
-                },
-                {
-                    type: 'doc',
-                    id: 'modeling/snapshot_management'
+                    id: 'model/snapshot/snapshot'
                 },
                 {
                     type: 'category',
-                    label: 'Advanced Mode Design',
-                    link: {
-                        type: 'doc',
-                        id: 'modeling/model_design/intro'
-                    },
+                    label: 'Advanced Features',
                     items: [
                         {
                             type: 'category',
                             label: 'Measures',
                             link: {
                                 type: 'doc',
-                                id: 'modeling/model_design/measure_design/intro'
+                                id: 'model/features/measures/intro'
                             },
                             items: [
                                 {
                                     type: 'doc',
-                                    id: 'modeling/model_design/measure_design/topn'
+                                    id: 'model/features/measures/topn'
                                 },
                                 {
                                     type: 'doc',
-                                    id: 'modeling/model_design/measure_design/count_distinct_bitmap'
+                                    id: 'model/features/measures/count_distinct_bitmap'
                                 },
                                 {
                                     type: 'doc',
-                                    id: 'modeling/model_design/measure_design/count_distinct_hllc'
+                                    id: 'model/features/measures/count_distinct_hllc'
                                 },
                                 {
                                     type: 'doc',
-                                    id: 'modeling/model_design/measure_design/percentile_approx'
+                                    id: 'model/features/measures/percentile_approx'
                                 },
                                 {
                                     type: 'doc',
-                                    id: 'modeling/model_design/measure_design/corr'
+                                    id: 'model/features/measures/corr'
                                 },
                                 {
                                     type: 'doc',
-                                    id: 'modeling/model_design/measure_design/collect_set'
+                                    id: 'model/features/measures/collect_set'
                                 },
                             ],
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/model_design/computed_column'
+                            id: 'model/features/scd2'
+                        },
+                        // {
+                        //     type: 'doc',
+                        //     id: 'model/features/excluded_column'
+                        // },
+                        {
+                            type: 'doc',
+                            id: 'model/features/runtime_join'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/model_design/slowly_changing_dimension'
+                            id: 'model/features/multi_partitioning'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/model_design/aggregation_group'
+                            id: 'model/features/scalar_subquery'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/model_design/table_index'
-                        },
-                        {
-                            type: 'category',
-                            label: 'Model Advanced Settings',
-                            link: {
-                                type: 'doc',
-                                id: 'modeling/model_design/advance_guide/intro'
-                            },
-                            items: [
-                                {
-                                    type: 'doc',
-                                    id: 'modeling/model_design/advance_guide/model_metadata_managment'
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'modeling/model_design/advance_guide/multilevel_partitioning'
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'modeling/model_design/advance_guide/fast_bitmap'
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'modeling/model_design/advance_guide/integer_encoding'
-                                },
-                            ],
+                            id: 'model/features/fast_bitmap'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/model_design/precompute_join_relations'
-                        },
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Data Loading',
-                    link: {
-                        type: 'doc',
-                        id: 'modeling/load_data/intro'
-                    },
-                    items: [
-                        {
-                            type: 'doc',
-                            id: 'modeling/load_data/full_build'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'modeling/load_data/by_date'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'modeling/load_data/build_index'
-                        },
-                        {
-                            type: 'category',
-                            label: 'Segment Operation and Settings',
-                            link: {
-                                type: 'doc',
-                                id: 'modeling/load_data/segment_operation_settings/intro'
-                            },
-                            items: [
-                                {
-                                    type: 'doc',
-                                    id: 'modeling/load_data/segment_operation_settings/segment_merge'
-                                },
-                            ],
+                            id: 'model/features/integer_encoding'
                         },
                     ],
                 },
@@ -410,26 +371,26 @@ const sidebars = {
                     label: 'Streaming',
                     link: {
                         type: 'doc',
-                        id: 'modeling/real-time/intro'
+                        id: 'model/streaming/intro'
                     },
                     items: [
                         {
                             type: 'doc',
-                            id: 'modeling/real-time/prerequisite'
+                            id: 'model/streaming/prerequisite'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/real-time/real-time'
+                            id: 'model/streaming/real-time'
                         },
                         {
                             type: 'doc',
-                            id: 'modeling/real-time/custom-parser'
+                            id: 'model/streaming/custom-parser'
                         },
                     ],
                 },
             ],
         },
-
+        //////////////////////////////////////// Query Category \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
         {
             type: 'category',
             label: 'Query',
@@ -518,9 +479,20 @@ const sidebars = {
                     id: 'query/push_down'
                 },
                 {
-                    type: 'doc',
-                    id: 'query/query_history'
+                    type: 'category',
+                    label: 'Query History',
+                    items: [
+                        {
+                            type: 'doc',
+                            id: 'query/history/query_history'
+                        },
+                        {
+                            type: 'doc',
+                            id: 'query/history/query_history_fields'
+                        },
+                    ],
                 },
+
                 {
                     type: 'doc',
                     id: 'query/async_query'

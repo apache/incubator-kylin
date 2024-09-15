@@ -40,7 +40,7 @@ You can view the job details in the navigation bar **Monitor -> Job**. As shown 
 
    - In the navigation bar **Data Asset -> Model**, creating new models will trigger this job.
 
-     > **Tips**: For details on how to build an index, please see [Aggregate Index](../../modeling/model_design/aggregation_group.md).
+     > **Tips**: For details on how to build an index, please see [Aggregate Index](../../model/model_design/aggregation_group.md).
 
 2. **Load Data**: Job for incrementally loading data on existing models/indices.
 
@@ -48,7 +48,7 @@ You can view the job details in the navigation bar **Monitor -> Job**. As shown 
 
    - In the navigation bar **Data Asset -> Model**, loading data within a time range of the model will trigger the job.
 
-3. **Merge Data**: When the system detects a sufficient number of segments, it will automatically trigger the job of merging data. You can set the parameters of merging segments in the navigation bar **Setting -> Segment Settings**. For detailed message, you can refer to [Segment Operation and Settings](../../modeling/load_data/segment_operation_settings/intro.md).
+3. **Merge Data**: When the system detects a sufficient number of segments, it will automatically trigger the job of merging data. You can set the parameters of merging segments in the navigation bar **Setting -> Segment Settings**. For detailed message, you can refer to [Segment Operation and Settings](../../model/load_data/segment_operation_settings/intro.md).
 
 4. **Refresh Data**: Job for refreshing segments.
 

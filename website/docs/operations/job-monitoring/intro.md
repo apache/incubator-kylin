@@ -22,5 +22,5 @@ For a clearer understanding of how to trigger a job, we recommend reading the fo
 
 - [Data Source](../../datasource/intro.md)
 - [SQL Query](../../query/insight)
-- [Model](../../modeling/intro.md)
+- [Model](../../model/intro.md)
 

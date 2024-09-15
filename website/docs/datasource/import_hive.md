@@ -20,7 +20,7 @@ Leveraging the capability of Apache Hive, Kylin has effectively solved the query
 
 Apache Hive is a distributed, fault-tolerant data warehouse software that enables analytics at a massive scale. With Apache Hive to map structured data into tables and precomputation offered by Kylin, you can easily identify and manage your business' most valuable data, and uncover new insights from any size dataset, at any time, and from anywhere. 
 
-This article introduces how to load Hive data source to a Kylin [project](../operations/project-managing/project_management.md) for [model designing](../modeling/intro.md) and [data analysis](../query/insight). 
+This article introduces how to load Hive data source to a Kylin [project](../operations/project-managing/project_management.md) for [model designing](../model/intro.md) and [data analysis](../query/insight). 
 
 ### Notes
 
@@ -71,5 +71,5 @@ This article introduces how to load Hive data source to a Kylin [project](../ope
 
 ### Next step 
 
-[Model](../modeling/intro.md)
+[Model](../model/intro.md)
 

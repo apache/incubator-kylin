@@ -89,7 +89,7 @@ Kylin provides REST APIs on checking model information, index build and model ma
             - `primary_key` - `required` `string[]`, primary key
             - `simplified_non_equi_join_conditions` -  `optional` `JSON Object`, non-equivalent join conditions
 
-              (note1: The support of this settings should have 'Support History Table' enabled in advance. Seeing [Slowly Changing Dimension](../../modeling/model_design/slowly_changing_dimension.md)
+              (note1: The support of this settings should have 'Support History Table' enabled in advance. Seeing [Slowly Changing Dimension](../../model/model_design/scd2)
 
               (note2: Join relationship >= and < must be used in pairs, and same column must be joint in both conditions)
 
@@ -102,7 +102,7 @@ Kylin provides REST APIs on checking model information, index build and model ma
         - `join_relation_type` -  `optional` `string`, join type: MANY_TO_ONE,MANY_TO_MANY, default: MANY_TO_ONE
     - `partition_desc` -  `optional` `JSON Object`, partition columns info
         - `partition_date_column` - `required` `string`, partition date column, format: TABLE.COLUMN
-        - `partition_date_format` - `required` `string`, partition date column format, including: yyyy-MM-dd, yyyyMMdd... Supported date format please check "[Model Design Basics](../../modeling/intro.md)"
+        - `partition_date_format` - `required` `string`, partition date column format, including: yyyy-MM-dd, yyyyMMdd... Supported date format please check "[Model Design Basics](../../model/intro.md)"
         - `partition_type` -  `optional` `string`, partition type, including: APPEND, default: APPEND
     - `owner` -  `optional` `string`, the owner of model, default current user
     - `description` -  `optional` `string`, model description
@@ -367,7 +367,7 @@ Kylin provides REST APIs on checking model information, index build and model ma
 
   > [!NOTE]
   >
-  > For parameters not listed in this page, you may go to the [Model Concepts and Operations](../../modeling/model_management.md) for details.
+  > For parameters not listed in this page, you may go to the [Model Concepts and Operations](../../model/model_management.md) for details.
 
   ```json
     {
@@ -511,7 +511,7 @@ Kylin provides REST APIs on checking model information, index build and model ma
                 - `hierarchy_dims`: `JSON`, dimension hierarchy
                 - `mandatory_dims`: `JSON`, required hierarchy
                 - `joint_dims`:  `JSON`, joint dimensions
-                - `computed_columns`: `JSON`, [Computed Column](../../modeling/model_design/computed_column.md)
+                - `computed_columns`: `JSON`, [Computed Column](../../model/model_design/computed_column.md)
                 - `tableIdentity`: `String`, table ID
                 - `tableAlias`: `String`, table alias
                 - `columnName`: `String`, column name

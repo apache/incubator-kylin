@@ -37,7 +37,7 @@ Kylin now support internal table, which is designed for flexible query and lakeh
 With recommendation engine, you don't have to be an expert of modeling. Kylin now can auto modeling and optimizing indexes from you query history.
 You can also create model by importing sql text.
 
->More details, please refer to [Auto Modeling](modeling/auto_modeling/intro.md) and [Index Optimization](modeling/auto_modeling/optimize_index/intro.md)
+>More details, please refer to [Auto Modeling](model/rec/sql_modeling.md) and [Index Optimization](model/rec/optimize_index/intro.md)
 
 ### 3. Native Compute Engine
 
