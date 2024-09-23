@@ -327,14 +327,14 @@ export default {
   },
   // 通过优化建议
   acceptRecommendations (para) {
-    return window.kapVm.$http.post(apiUrl + `recommendations/${para.modelId}`, para)
+    return Vue.resource(apiUrl + `recommendations/${para.modelId}`).save(para)
   },
   // 获取优化建议详情
   getRecommendDetails (para) {
     return Vue.resource(apiUrl + `recommendations/${para.modelId}/${para.id}`).get(para)
   },
   validateRecommend (para) {
-    return window.kapVm.$http.post(apiUrl + `recommendations/${para.modelId}/validation`, para)
+    return Vue.resource(apiUrl + `recommendations/${para.modelId}/validation`).save(para)
   },
   fetchHitModelsList (para) {
     return Vue.resource(apiUrl + 'query/query_history_models').get(para)
