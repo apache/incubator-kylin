@@ -20,10 +20,10 @@ Kylin has quickly been adopted by thousands of organizations world widely as the
 
 Kylin has following key strengths:
 
-- High Performance, Sub-second Query Latency
-- Unified Big Data Warehouse Architecture
-- Seamless Integration with BI tools
-- Comprehensive and Enterprise-ready Capabilities
+- High qerformance, high concurrency, sub-second query latency
+- Unified big data warehouse architecture
+- Seamless integration with BI tools
+- Comprehensive and enterprise-ready capabilities
 
 ## New Features in Kylin 5.0
 
@@ -32,7 +32,7 @@ Kylin now support internal table, which is designed for flexible query and lakeh
 
 >More details, please refer to [Internal Table](internaltable/intro.md)
 
-### 2. Recommendation Engine
+### 2. Model & Index Recommendation
 
 With recommendation engine, you don't have to be an expert of modeling. Kylin now can auto modeling and optimizing indexes from you query history.
 You can also create model by importing sql text.

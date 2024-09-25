@@ -2,17 +2,91 @@
  * CSS files with the .module.css suffix will be treated as CSS modules
  * and scoped locally.
  */
+.hero{
+  align-items:center;
+  background-color:var(--ifm-hero-background-color);
+  color:var(--ifm-hero-text-color);
+  display:flex;
+  padding:4rem 2rem
+}
+.hero--primary{
+  --ifm-hero-background-color:var(--ifm-color-primary);
+  --ifm-hero-text-color:var(--ifm-font-color-base-inverse)
+}
+
+.title{
+  font-size:3rem;
+  color: white;
+}
+.subtitle{
+  font-size:1.5rem;
+  color: white;
+}
 
 .heroBanner {
-  padding: 4rem 0;
-  text-align: center;
+  text-align: start;
   position: relative;
   overflow: hidden;
+  background-image: url("@site/static/img/kylin/PNG/kylin_home_bl.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.container {
+    max-width: 50%;
+    min-width: 500px;
+    margin-left: 5%;
+}
+
+@media screen and (max-width: 3840px) {
+  .heroBanner {
+    padding: 19rem 0;
+  }
+}
+
+@media screen and (max-width: 2560px) {
+  .heroBanner {
+    padding: 9rem 0;
+  }
+}
+
+@media screen and (max-width: 2304px) {
+  .heroBanner {
+    padding: 8rem 0;
+  }
+}
+
+@media screen and (max-width: 1920px) {
+  .heroBanner {
+    padding: 5rem 0;
+  }
+}
+
+@media screen and (max-width: 1300px) {
+  .heroBanner {
+    padding: 1rem 0;
+  }
 }
 
 @media screen and (max-width: 996px) {
   .heroBanner {
-    padding: 2rem;
+    padding: 0rem 0;
+  }
+  .container {
+    padding: 1rem;
+    max-width: 40%;
+    min-width: 250px;
+  }
+  .title{font-size:1.5rem}
+  .subtitle{font-size:1rem}
+}
+
+@media screen and (max-width: 480px) {
+  .heroBanner {
+    padding: 0;
   }
 }
 
@@ -21,7 +95,31 @@
 }
 
 .buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 0;
+  background-color: #bde6f6;
+  color: #FFFFFF;
+  vertical-align:middle
+  /* transition: background-color var(--ifm-transition-fast) */
+}
+
+.buttons:hover {
+  background-color: #000000;
+  color: #FFFFFF;
+  border: 0;
+  vertical-align:middle;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.buttons1 {
+  border: 0;
+  color: #FFFFFF;
+  background-color: #bde6f6;
+  /* transition: background-color var(--ifm-transition-fast) */
+}
+
+.buttons1:hover {
+  background-color: #000000;
+  color: #FFFFFF;
+  border: 0;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }

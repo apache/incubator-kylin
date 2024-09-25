@@ -1,11 +1,24 @@
 .features {
   display: flex;
-  align-items: center;
+  align-items: start;
   padding: 2rem 0;
   width: 100%;
 }
 
+.featureContainer {
+  display: flex;
+  padding: 0.5rem;
+}
+
 .featureSvg {
-  height: 150px;
-  width: 150px;
+  height: 64px;
+  width: 64px;
+  color: #3cad6e;
+  /*filter: drop-shadow(#9ca0a4 0px 0);*/
+  /*transform: translateX(-0px);*/
+}
+
+.featureTitle {
+  margin-left: 10px;
+  margin-top: 10px;
 }

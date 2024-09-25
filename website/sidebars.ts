@@ -748,18 +748,8 @@ const sidebars = {
             },
             items: [
                 {
-                    type: 'category',
-                    label: 'Drivers',
-                    link: {
-                        type: 'doc',
-                        id: 'integration/driver/intro'
-                    },
-                    items: [
-                        {
-                          type: 'doc',
-                          id: 'integration/driver/jdbc',
-                        },
-                    ],
+                  type: 'doc',
+                  id: 'integration/jdbc',
                 },
             ],
         },

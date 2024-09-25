@@ -55,6 +55,13 @@ npm start
 npm deploy
 ```
 
+### How to versioning docs
+We use [Docusaurus](https://docusaurus.io/docs/versioning) versioning feature to manage docs.
+To generate a new version snapshot, run the following command:
+```sh
+npm run docusaurus docs:version 4.0.4
+```
+This will create a new versioned docs folder under `website/versioned_docs/` and sidebar file under `website/versioned_sidebars`
 
 ### How to push to apache website
 

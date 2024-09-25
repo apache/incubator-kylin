@@ -33,15 +33,42 @@
   background-color: var(--ifm-navbar-link-hover-color);
 }
 
-
-/* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+[data-theme='light'] .DocSearch {
+  /* --docsearch-primary-color: var(--ifm-color-primary); */
+  /* --docsearch-text-color: var(--ifm-font-color-base); */
+  --docsearch-muted-color: var(--ifm-color-secondary-darkest);
+  --docsearch-container-background: rgba(94, 100, 112, 0.7);
+  /* Modal */
+  --docsearch-modal-background: var(--ifm-color-secondary-lighter);
+  /* Search box */
+  --docsearch-searchbox-background: var(--ifm-color-secondary);
+  --docsearch-searchbox-focus-background: var(--ifm-color-white);
+  /* Hit */
+  --docsearch-hit-color: var(--ifm-font-color-base);
+  --docsearch-hit-active-color: var(--ifm-color-white);
+  --docsearch-hit-background: var(--ifm-color-white);
+  /* Footer */
+  --docsearch-footer-background: var(--ifm-color-white);
 }
+
+/*div[class^='announcementBar_'] {*/
+/*  font-size: 20px;*/
+/*  !*--site-announcement-bar-stripe-color1: hsl(*!*/
+/*  !*  var(--site-primary-hue-saturation) 85%*!*/
+/*  !*);*!*/
+/*  !*--site-announcement-bar-stripe-color2: hsl(*!*/
+/*  !*  var(--site-primary-hue-saturation) 95%*!*/
+/*  !*);*!*/
+
+/*  --site-announcement-bar-stripe-color1: #153E7B;*/
+/*  --site-announcement-bar-stripe-color2: #000;*/
+
+/*  background: repeating-linear-gradient(*/
+/*          135deg,*/
+/*          var(--site-announcement-bar-stripe-color1),*/
+/*          var(--site-announcement-bar-stripe-color1) 30px,*/
+/*          var(--site-announcement-bar-stripe-color2) 100px,*/
+/*          var(--site-announcement-bar-stripe-color2) 40px*/
+/*  );*/
+/*  font-weight: bold;*/
+/*}*/

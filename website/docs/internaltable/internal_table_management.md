@@ -22,7 +22,9 @@ You can currently create internal tables in two ways:
 
 1. When importing a data source table, check the option "Load as Internal Table." This method is suitable for batch creation of internal tables while initially importing the data source table.
 
-```Note: When creating internal tables in batch, the system will not set partition columns or other information by default. If you need to set partition columns, sort columns, etc., please update them later on the internal table management page.```
+:::info Note
+When creating internal tables in batch, the system will not set partition columns or other information by default. If you need to set partition columns, sort columns, etc. please update them later on the internal table management page.
+:::
 
 2. Click the "Create Internal Table" button on the page of the imported data source table and complete the relevant table property settings to finish creating the internal table.
 

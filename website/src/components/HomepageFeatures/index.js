@@ -5,47 +5,59 @@ import styles from './styles.module.css';
 const FeatureList = [
 
     {
-        title: 'Unified Data Analytics Platform',
-        Svg: require('@site/static/img/main_page_01.svg').default,
+        title: 'Ultra Fast Query Experience',
+        Svg: require('@site/static/img/homepage/fast.svg').default,
         description: (
             <>
-				Support data analytics from different platform including Hadoop/Cloud/RDBMS,
-				while providing a unified interface for downstream applications.
+				Provide sub-second query performance based on leading pre-calculation technology.
+                Support large-scaled, high concurrency data analytics with low hardware and development cost.
+            </>
+
+        ),
+    },
+    {
+        title: 'Model & Index Recommendation',
+        Svg: require('@site/static/img/homepage/paperplane.svg').default,
+        description: (
+            <>
+                Modeling with SQL text & automatic index optimization based on query history.
+                More intelligent and easier for user to get started.
             </>
         ),
     },
     {
-        title: 'Native Compute Engine',
-        Svg: require('@site/static/img/main_page_02.svg').default,
+        title: 'Internal Table with Native Compute Engine',
+        Svg: require('@site/static/img/homepage/plugin.svg').default,
         description: (
             <>
-                Use Native Engine to enable vector acceleration and cpu instruction level optimization.
-                <br></br> Gluten and Datafusion will be integrated into Kylin. (This task is working in process.)
+                More flexible query analysis base on internal table.
+                Integrate apache gluten as native compute engine, which brings over 2x performance improvement.
             </>
         ),
     },
     {
-        title: 'Cloud Native Architecture',
-        Svg: require('@site/static/img/main_page_03.svg').default,
+        title: 'Powerful Data Warehouse Capabilities',
+        Svg: require('@site/static/img/homepage/warehouse.svg').default,
         description: (
             <>
-                Support deployment on K8S and use a separate storage and
-                computing architecture and allow the elastic scaling of resources.
-            </>
-        ),
-    },
-    {
-        title: 'Support BI/Excel',
-        Svg: require('@site/static/img/main_page_04.svg').default,
-        description: (
-            <>
+                Advanced multi-dimensional analysis, various data functions.
                 Support connecting to different BI tools, like Tableau/Power BI/Excel.
             </>
         ),
     },
     {
-		title: 'Brand New Frontend',
-		Svg: require('@site/static/img/main_page_05.svg').default,
+        title: 'Streaming-Batch Fusion Analysis',
+        Svg: require('@site/static/img/homepage/streaming.svg').default,
+        description: (
+            <>
+                New designed streaming/fusion model capability, reduce data analysis latency to seconds-minutes level.
+                Support fusion analysis with batch data, which brings more accurate and reliable results.
+            </>
+        ),
+    },
+    {
+		title: 'Brand New Web UI',
+		Svg: require('@site/static/img/homepage/web.svg').default,
 		description: (
 			<>
 				New modeling process are concise by letting user define table
@@ -58,13 +70,15 @@ const FeatureList = [
 function Feature({Svg, title, description}) {
     return (
         <div className={clsx('col col--4')}>
-            <div className="text--center">
+
+            <div className={styles.featureContainer}>
                 <Svg className={styles.featureSvg} role="img"/>
+                <h3 className={styles.featureTitle}>{title}</h3>
             </div>
             <div className="text--center padding-horiz--md">
-                <h3>{title}</h3>
                 <p>{description}</p>
             </div>
+
         </div>
     );
 }
@@ -73,6 +87,7 @@ export default function HomepageFeatures() {
     return (
         <section className={styles.features}>
             <div className="container">
+                <h1 className="text--center padding-horiz--md">Key Features</h1>
                 <div className="row">
                     {FeatureList.map((props, idx) => (
                         <Feature key={idx} {...props} />

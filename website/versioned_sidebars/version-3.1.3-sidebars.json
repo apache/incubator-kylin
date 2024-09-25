@@ -1,0 +1,258 @@
+{
+  "DocumentSideBar": [
+    {
+      "type": "category",
+      "label": "Getting Started",
+      "items": [
+        {
+          "type": "doc",
+          "id": "overview"
+        },
+        {
+          "type": "doc",
+          "id": "release_notes"
+        },
+        {
+          "type": "doc",
+          "id": "gettingstarted/concepts"
+        },
+        {
+          "type": "doc",
+          "id": "gettingstarted/terminology"
+        },
+        {
+          "type": "doc",
+          "id": "gettingstarted/faq"
+        },
+        {
+          "type": "doc",
+          "id": "gettingstarted/events"
+        },
+        {
+          "type": "doc",
+          "id": "gettingstarted/best_practices"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Installation",
+      "items": [
+        {
+          "type": "doc",
+          "id": "install/index"
+        },
+        {
+          "type": "doc",
+          "id": "install/kylin_cluster"
+        },
+        {
+          "type": "doc",
+          "id": "install/configuration"
+        },
+        {
+          "type": "doc",
+          "id": "install/advance_settings"
+        },
+        {
+          "type": "doc",
+          "id": "install/kylin_aws_emr"
+        },
+        {
+          "type": "doc",
+          "id": "install/kylin_docker"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Tutorial",
+      "items": [
+        {
+          "type": "doc",
+          "id": "tutorial/kylin_sample"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/web"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/create_cube"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/cube_build_job"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/cube_spark"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/cube_streaming"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/cube_build_performance"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/kylin_client_tool"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/query_pushdown"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/setup_systemcube"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/use_cube_planner"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/use_dashboard"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/setup_jdbc_datasource"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/project_level_acl"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/acl"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Integration",
+      "items": [
+        {
+          "type": "doc",
+          "id": "tutorial/odbc"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/jdbc"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/tableau"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/tableau_91"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/powerbi"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/microstrategy"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/squirrel"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/flink"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/spark"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/hue"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/Qlik"
+        },
+        {
+          "type": "doc",
+          "id": "tutorial/superset"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "How To",
+      "items": [
+        {
+          "type": "doc",
+          "id": "howto/howto_use_restapi"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_build_cube_with_restapi"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_optimize_cubes"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_backup_metadata"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_cleanup_storage"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_upgrade"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_jdbc"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_use_cli"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_ldap_and_sso"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_use_beeline"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_update_coprocessor"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_enable_zookeeper_acl"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_install_ranger_kylin_plugin"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_use_beeline"
+        },
+        {
+          "type": "doc",
+          "id": "howto/howto_use_mr_hive_dict"
+        },
+        {
+          "type": "doc",
+          "id": "howto/sample_dataset"
+        }
+      ]
+    }
+  ]
+}

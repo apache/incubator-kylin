@@ -35,7 +35,7 @@ For details, please refer to the [Manage Internal Tables](./internal_table_manag
 
 ### How to Distinguish Between Data Source Tables and Internal Tables?
 
-There is no need to distinguish between data source tables and internal tables during the query. You can consider them as one table in Kylin, which only has a database name and a table name. The difference lies in that when the internal table function is not turned on or the internal table is not created, the table does not directly manage data and is only used for modeling.
+There is no need to distinguish between data source tables and internal tables during the query. You can consider them as one table in Kylin, which only has one database name and one table name. The difference lies in that when the internal table function is not turned on or the internal table is not created, the table does not directly manage data and is only used for modeling.
 
 ### How to Enable the Use of Internal Table Features at the Project Level?
 

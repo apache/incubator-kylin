@@ -1,0 +1,45 @@
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+.committer {
+  font-size: 15px;
+}
+
+.committerMeta {
+  color: var(--ifm-color-emphasis-700);
+}
+
+.committerMeta strong {
+  color: var(--ifm-font-color-base);
+}
+
+.section {
+  padding: 40px 0;
+}
+
+.sectionAlt {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.sectionInner {
+  margin: 0 auto;
+}
+
+.committersSection > :global(.col) > * {
+  margin-bottom: 2rem;
+}
+
+.featureImage {
+  width: auto;
+  max-height: 128px;
+  margin: 0 auto;
+}
+
+.featureHeading {
+  font-size: var(--ifm-h3-font-size);
+  padding-top: 1rem;
+}

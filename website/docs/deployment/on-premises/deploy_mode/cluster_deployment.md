@@ -54,8 +54,6 @@ Kylin job engine is used to execute building jobs, schedule jobs and metadata op
 
 Since Kylin 5.0, Kylin works "Multi-Active" mode, which meanings every healthy `all` and `job` node can execute building tasks. When one job engine is stopped, the other job engines will take over the running task on it. That will ensure the high availability of Kylin services.
 
-It should be noted that, due to the existence of project locks, when jobs are allocated to nodes, the project is the smallest unit of allocation, that is, all jobs in a project can only be executed on one job engine. Different projects and jobs can be executed on different job engines.
-
 If you want to enable this function, add `kylin.server.mode=all` or `kylin.server.mode=job` into `$KYLIN_HOME/conf/kylin.properties` for more than one node.
 
 The related config items are shown below:
@@ -75,9 +73,8 @@ kylin.job.ssh-password=password
 
 1. Enable session sharing is required when using Kylin HA. Add `spring.session.store-type=jdbc` into `$KYLIN_HOME/conf/kylin.properties` for each node.
 2. Please make sure there is no clock skew in the cluster. You can use `ntp` service to sync the clock in the cluster.
-3. When a Kylin job engine node is down, may lead to all projects owned by this node send metadata related requests, the hint is: `System is trying to recover, please try again later.`
-4. When all Kylin job engine nodes are down, you may see the hint when you trying to send metadata related requests in the `query` node: `There is no active All node, please contact to your administrator to check and fix.`.
-5. It is necessary to configure password-free login between each node, or ensure that the ssh login information between each node is consistent.
+3. When all Kylin job engine nodes are down, you may see the hint when you trying to send metadata related requests in the `query` node: `There is no active All node, please contact to your administrator to check and fix.`.
+4. It is necessary to configure password-free login between each node, or ensure that the ssh login information between each node is consistent.
 
 **Note:**
 

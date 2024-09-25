@@ -2,11 +2,10 @@
 // Note: type annotations allow type checking and IDEs autocompletion
 import VersionsArchived from './versionsArchived.json';
 import versions from './versions.json';
-
+import NodeRequire from '@types/node/globals'
 import {themes, type PrismTheme} from 'prism-react-renderer';
 
 const lightCodeTheme = themes.github
-const darkCodeTheme = themes.duotoneDark;
 
 const ArchivedVersionsDropdownItems = Object.entries(VersionsArchived).splice(
     0,
@@ -23,7 +22,8 @@ function isPrerelease(version: string) {
 }
 
 function getLastStableVersion() {
-  const lastStableVersion = versions.find((version) => !isPrerelease(version));
+  // const lastStableVersion = versions.find((version) => !isPrerelease(version));
+  const lastStableVersion = '5.0.0';
   if (!lastStableVersion) {
     throw new Error('unexpected, no stable Docusaurus version?');
   }
@@ -155,19 +155,32 @@ const config = {
           // Remove this to remove the "edit this page" links.
           editUrl:
             'https://github.com/apache/kylin/tree/doc5.0/website/',
-          lastVersion: '5.0.0',
+          lastVersion: 'current',
           versions: {
             current: {
-              label: 'Canary 🚧',
+              label: '5.0.0',
               badge: true,
               path: '/',
               banner: 'none',
             },
-            '5.0.0': {
-              label: '5.0.0',
-              path: '/5.0.0/',
-              banner: 'none'
-            }
+            '4.0.4': {
+              label: '4.0.4',
+              badge: true,
+              path: '/4.0.4/',
+              banner: 'unmaintained'
+            },
+            '3.1.3': {
+              label: '3.1.3',
+              badge: true,
+              path: '/3.1.3/',
+              banner: 'unmaintained'
+            },
+            '2.4.0': {
+              label: '2.4.0',
+              badge: true,
+              path: '/2.4.0/',
+              banner: 'unmaintained'
+            },
           },
           showLastUpdateAuthor: false,
           showLastUpdateTime: true,
@@ -192,29 +205,35 @@ const config = {
     ],
   ],
 
+  scripts: [
+    {
+      src: 'https://buttons.github.io/buttons.js',
+      async: true,
+      defer: true,
+    },
+  ],
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      colorMode:{
+        defaultMode: 'light',
+        disableSwitch: true,
+      },
       navbar: {
         title: 'Apache Kylin',
         logo: {
           alt: 'Kylin Logo',
-          src: 'img/kylin_logo.png',
+          src: 'img/kylin/SVG/Apache-Kylin-blue.svg',
         },
         items: [
           {
             type: 'docsVersionDropdown',
-            position: 'left',
+            position: 'right',
             dropdownActiveClassDisabled: true,
             dropdownItemsAfter: [
               {
                 type: 'html',
                 value: '<hr class="dropdown-separator">',
-              },
-              {
-                type: 'html',
-                className: 'dropdown-archived-versions',
-                value: '<b>Archived versions</b>',
               },
               ...ArchivedVersionsDropdownItems.map(
                   ([versionName, versionUrl]) => ({
@@ -222,24 +241,32 @@ const config = {
                     href: versionUrl,
                   }),
               ),
+              {
+                type: 'html',
+                value: '<hr class="dropdown-separator">',
+              },
+              {
+                to: 'docs/release_notes',
+                label: 'Release Notes',
+              },
             ]
           },
           {
             type: 'doc',
             docId: 'overview',
-            position: 'right',
+            position: 'left',
             label: 'Documentation',
           },
           {
             type: 'doc',
             docId: 'community',
-            position: 'right',
+            position: 'left',
             label: 'Community',
           },
           {
             type: 'doc',
             docId: 'development/intro',
-            position: 'right',
+            position: 'left',
             label: 'Development',
           },
           {
@@ -247,11 +274,6 @@ const config = {
             docId: 'download',
             position: 'right',
             label: 'Download',
-          },
-          {
-            to: '/blog',
-            label: 'Blogs',
-            position: 'right'
           },
           {
             href: 'https://github.com/apache/kylin',
@@ -267,14 +289,14 @@ const config = {
       },
       announcementBar: {
         id: `announcementBar-v${announcedVersion}`,
-        backgroundColor: '#205d3b',
+        backgroundColor: '#153E7B',
         textColor: '#FFFFFF',
-        content: `⭐️ <b><a target="_blank" href="https://kylin.apache.org/blog/releases/${announcedVersion}">Apache Kylin ${announcedVersion}</a> is released! 🎉🥳️ If you like Kylin, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/apache/kylin">GitHub</a>!</b> ❤️`,
+        content: `⭐️ <b><a target="_blank" href="release_notes">Apache Kylin ${announcedVersion}</a> is released! 🎉 If you like Kylin, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/apache/kylin">GitHub</a>!</b> ❤️`,
       },
       footer: {
         logo: {
           alt: 'Apache',
-          src: 'img/feather-small.gif',
+          src: 'img/asf_logo.svg',
           href: 'https://apache.org',
           width: 160,
           height: 51,
@@ -334,13 +356,11 @@ const config = {
           },
         ],
         copyright: `Copyright © ${new Date().getFullYear()} Apache Software Foundation under the terms of the Apache License v2.
-        <br>Apache Kylin and its logo are trademarks of the Apache Software Foundation. 
-        <br>Built with Docusaurus.`,
+        <br>Apache Kylin and its logo are trademarks of the Apache Software Foundation.`,
       },
       prism: {
         additionalLanguages: ['java'],
         theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
       },
       docs: {
         sidebar: {

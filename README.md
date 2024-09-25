@@ -60,6 +60,14 @@ npm start
 npm run deploy
 ```
 
+### How to tag a new version
+```shell
+# example, tag a new version 5.1.0
+npm run docusaurus docs:version 5.1.0
+```
+
+
+
 ### Website TODO List
 
 - [x] Search in document
