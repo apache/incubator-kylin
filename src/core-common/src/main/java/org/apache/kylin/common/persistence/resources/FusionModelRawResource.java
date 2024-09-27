@@ -32,6 +32,8 @@ public class FusionModelRawResource extends RawResource {
     @JsonProperty("project")
     private String project;
 
-    @JsonProperty("model_uuid")
-    private String modelUuid;
+    @Override
+    public String getModelUuid() {
+        return this.getUuid();
+    }
 }

@@ -30,8 +30,6 @@ public final class FusionModelDynamicSqlSupport {
 
     public static final class FusionModel extends BasicSqlTable<FusionModel> {
 
-        public final SqlColumn<String> modelUuid = column("model_uuid", JDBCType.CHAR);
-
         public FusionModel() {
             super("fusion_model", FusionModel::new);
         }

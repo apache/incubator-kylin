@@ -31,6 +31,7 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.kylin.common.persistence.metadata.jdbc.ContentTypeHandler;
 import org.apache.kylin.common.persistence.metadata.jdbc.SqlWithRecordLockProviderAdapter;
 import org.apache.kylin.common.persistence.resources.StreamingJobRawResource;
+import org.mybatis.dynamic.sql.BasicColumn;
 import org.mybatis.dynamic.sql.select.SelectDSLCompleter;
 import org.mybatis.dynamic.sql.select.render.SelectStatementProvider;
 import org.mybatis.dynamic.sql.util.SqlProviderAdapter;
@@ -40,6 +41,11 @@ public interface StreamingJobMapper extends BasicMapper<StreamingJobRawResource>
     @Override
     default BasicSqlTable getSqlTable() {
         return sqlTable;
+    }
+
+    @Override
+    default BasicColumn[] getSelectList() {
+        return getSelectListWithAdditions(sqlTable.modelUuid);
     }
 
     @Override

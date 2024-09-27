@@ -262,17 +262,17 @@ object TableScanPlan extends LogEx {
     val otherDims = Sets.newHashSet(context.getDimensions)
     otherDims.removeAll(groups)
     // expand derived (xxxD means contains host columns only, derived columns were translated)
-    val groupsD = expandDerived(context.getBatchCandidate, groups)
+    val groupsD = expandDerived(context.getCandidate, groups)
     val otherDimsD: util.Set[TblColRef] =
-      expandDerived(context.getBatchCandidate, otherDims)
+      expandDerived(context.getCandidate, otherDims)
     otherDimsD.removeAll(groupsD)
 
     // identify cuboid
     val dimensionsD = new util.LinkedHashSet[TblColRef]
     dimensionsD.addAll(groupsD)
     dimensionsD.addAll(otherDimsD)
-    val model = context.getBatchCandidate.getLayoutEntity.getModel
-    context.getBatchCandidate.getDerivedToHostMap.asScala.toList.foreach(m => {
+    val model = context.getCandidate.getLayoutEntity.getModel
+    context.getCandidate.getDerivedToHostMap.asScala.toList.foreach(m => {
       if (m._2.`type` == DeriveInfo.DeriveType.LOOKUP && !m._2.isOneToOne) {
         m._2.columns.asScala.foreach(derivedId => {
           if (mapping.getIndexOf(model.getColRef(derivedId)) != -1) {
@@ -288,7 +288,7 @@ object TableScanPlan extends LogEx {
       dataflow.getLatestReadySegment,
       gtColIdx,
       olapContext.getReturnTupleInfo,
-      context.getBatchCandidate)
+      context.getCandidate)
     if (derived.hasDerived) {
       newPlan = derived.joinDerived(newPlan)
     }
