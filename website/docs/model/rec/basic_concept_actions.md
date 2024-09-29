@@ -52,10 +52,10 @@ After the above scoring, Kylin will filter indexes based on:
 
 Kylin mainly provides recommendations on index addition or deletion, and related dimension, measure, and computed column adjustments. Click the **Model List** page to check and evaluate whether to accept the pushed recommendations.  
 
-| Type           | Description                                                                                                                                                                                                                  |
-| -------------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Add indexes    | Add indexes that match queries exactly to reduce response times for related queries.                                                                                                                                         |
-| Delete indexes | Delete redundant or low-frequency indexes to save storage capacity or lower model expansion rate. For more information, see [Index Optimization Strategies](optimize_index/index_optimization.md). |
+| Type           | Description                                                                                                                                                                                                   |
+| -------------- |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Add indexes    | Add indexes that match queries exactly to reduce response times for related queries.                                                                                                                          |
+| Delete indexes | Delete redundant or low-frequency indexes to save storage capacity or lower model expansion rate. For more information, see [Index Optimization Strategies](index_optimization.md). |
 
 ### FAQ
 

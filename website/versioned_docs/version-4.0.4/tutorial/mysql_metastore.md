@@ -25,7 +25,9 @@ Please create it yourself, if you do not have this directory.
 2.Configure `kylin.metadata.url={metadata_name}@jdbc` in the configuration file `kylin.properties`. 
 The description of each configuration item in this parameter is as follows, where `url`, `username` and `password` are required.
 
-> Note: {metadata_name} needs to be replaced with the metadata table name, if the table already exists, the existing table will be used; if it does not exist, the table will be created automatically.
+:::note Note
+`{metadata_name}` needs to be replaced with the metadata table name, if the table already exists, the existing table will be used; if it does not exist, the table will be created automatically.
+:::
 
 - `url`: URL of the JDBC connection
 - `username`: JDBC username

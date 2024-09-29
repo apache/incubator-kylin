@@ -98,7 +98,7 @@ For Windows dev machine, setup the Kylin dev env in [Windows Subsystem for Linux
 
 Like other ASF projects, we use [JIRA](http://issues.apache.org/jira/browse/KYLIN) to track tasks for kylin development.
 
-:::caution report a possible vulnerability privately
+:::warning report a possible vulnerability privately
 For a possible vulnerability, do not use JIRA as making the info public may harm existing users immediately. Please follow the guide to [report possible vulnerability](https://apache.org/security/committers.html#report) in a private manner.
 :::
 

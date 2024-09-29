@@ -177,7 +177,7 @@ statefulset.apps/kylin-query created
 5 Kylin Service
 
 - Visit Web UI
-  - http://${HOSTNAME}:30012/kylin for Query Server
+  - `http://${HOSTNAME}:30012/kylin` for Query Server
 
 6 Clean up
 

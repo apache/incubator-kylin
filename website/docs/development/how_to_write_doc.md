@@ -311,7 +311,7 @@ We are using [Code Block](https://docusaurus.io/docs/markdown-features/code-bloc
 We recommend you use the [admonitions feature](https://docusaurus.io/docs/markdown-features/admonitions) to highlight a sentence/paragraph, following is an example:
 
 ```
-:::caution
+:::warning
 Some **content** with _Markdown_ `syntax`. Check [this `api`](#).
 :::
 ```

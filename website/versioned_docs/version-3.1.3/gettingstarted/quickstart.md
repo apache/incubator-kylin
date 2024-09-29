@@ -63,7 +63,7 @@ When the container starts, the following services are automatically started:
 - Kafka
 - Kylin
 
-It will also automatically run $ KYLIN_HOME / bin / sample.sh and create a kylin_streaming_topic in Kafka and continue to send data to that topic to allow users to experience building and querying cubes in batches and streams as soon as the container is launched.
+It will also automatically run `$KYLIN_HOME/bin/sample.sh` and create a kylin_streaming_topic in Kafka and continue to send data to that topic to allow users to experience building and querying cubes in batches and streams as soon as the container is launched.
 
 Users can enter the container through the docker exec command. The relevant environment variables in the container are as follows:
 - JAVA_HOME = /home/admin/jdk1.8.0_141
@@ -137,11 +137,11 @@ If you don’t have a Spark environment already downloaded, you can also downloa
 $KYLIN_HOME/bin/download-spark.sh
 ```
 
-The script will place the decompressed Spark in the $ KYLIN_HOME directory. If SPARK_HOME is not set in the system, the Spark in the $ KYLIN_HOME directory will be found automatically when Kylin is started.
+The script will place the decompressed Spark in the `$KYLIN_HOME` directory. If SPARK_HOME is not set in the system, the Spark in the `$KYLIN_HOME` directory will be found automatically when Kylin is started.
 
 #### Step4. Environmental Inspection
 Kylin runs on a Hadoop cluster and has certain requirements for the version, access permissions and CLASSPATH of each component. 
-To avoid encountering various environmental problems, you can run the $ KYLIN_HOME / bin / check-env.sh script to perform an environment check to see if there are any problems. 
+To avoid encountering various environmental problems, you can run the `$KYLIN_HOME/bin/check-env.sh` script to perform an environment check to see if there are any problems. 
 The script will print out detailed error messages if any errors are identified. If there is no error message, your environment is suitable for Kylin operation.
 
 #### Step5. Start Kylin
@@ -159,7 +159,7 @@ Check the log at /usr/local/apache-kylin-3.1.0-bin-cdh57/logs/kylin.log
 Web UI is at http://<hostname>:7070/kylin
 ```
 
-The default port started by Kylin is 7070. You can use $ KYLIN_HOME/bin/kylin-port-replace-util.sh set number to modify the port. The modified port is 7070 + number.
+The default port started by Kylin is 7070. You can use `$KYLIN_HOME/bin/kylin-port-replace-util.sh` set number to modify the port. The modified port is 7070 + number.
 
 #### Step6. Visit Kylin
 After Kylin starts, you can access it through your browser: `http://<hostname>:port/kylin` – where `<hostname>` is the specific machine name, IP address or domain name, port is the Kylin port and the default is 7070. 
@@ -177,7 +177,7 @@ After completing, log in to Kylin, click System -> Configuration -> Reload Metad
 After the metadata is reloaded, you can see a project named learn_kylin in Project in the upper left corner. 
 This contains kylin_sales_cube and kylin_streaming_cube, which are a batch cube and a streaming cube, respectively. 
 You can build the kylin_sales_cube directly and you can query it after the build is completed. 
-For kylin_streaming_cube, you need to set KAFKA_HOME and then execute $ {KYLIN_HOME} /bin/sample-streaming.sh. 
+For kylin_streaming_cube, you need to set KAFKA_HOME and then execute `${KYLIN_HOME}/bin/sample-streaming.sh`. 
 This script will create a Kafka Topic named kylin_streaming_topic in the localhost: 9092 broker and it will also randomly send 100 messages to kylin_streaming_topic, then you can build kylin_streaming_cube.
 
 For sample cube, you can refer to:[Sample Cube](/docs31/tutorial/kylin_sample.html)
@@ -280,7 +280,7 @@ Click Submit to submit the build task directly. If a time partition column is se
 After setting the start and end time, click Submit to submit the build task. 
 You can then observe the status of the build task on the Monitor page. 
 Kylin displays the running status of each step on the page, the output log and MapReduce tasks. 
-You can view more detailed log information in ${KYLIN_HOME}/logs/kylin.log.
+You can view more detailed log information in `${KYLIN_HOME}/logs/kylin.log`.
 
 ![](../../images/docs/quickstart/job_monitor.png)
 

@@ -31,7 +31,7 @@ Different from regular query engines, Kylin uses precalculated results to replac
 
 3. If all the `FROM` clauses match successfully, Kylin will execute the query using index data.
 
-   All the `FROM` clauses will be replaced by precalculated results, and the query will execute from there to get the final result. If you execute queries via Web UI, you can find the name(s) of the answering model(s) in the **Answered By** field after a query returns successfully. For more details, please refer to [Execute SQL Query in Web UI](../web_ui/insight.md).
+   All the `FROM` clauses will be replaced by precalculated results, and the query will execute from there to get the final result. If you execute queries via Web UI, you can find the name(s) of the answering model(s) in the **Answered By** field after a query returns successfully. For more details, please refer to [Execute SQL Query in Web UI](../insight.md).
 
 4. If there is one or more `FROM` clause cannot find a matching index, then Kylin cannot execute the query using index data.x
 

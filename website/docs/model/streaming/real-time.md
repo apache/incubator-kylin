@@ -69,7 +69,7 @@ This article discusses how to work with Kylin Real-Time, including how to load s
 
 3. Build the model. For more information, see [Model Design](../intro.md). When building the model, you can use the data just loaded from Kafka data source as the fact table. 
 
-4. Build indexes. For more information, see [Aggregate Index ](../model_design/aggregation_group.md)and [Table Index](../model_design/table_index.md). 
+4. Build indexes. For more information, see [Aggregate Index ](../manual/aggregation_group.md)and [Table Index](../manual/table_index.md). 
 
    If you turned on the **Attach a Hive Table** toggle switch when loading the fact table, you can further specify data range for index building: 
 

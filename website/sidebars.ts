@@ -40,131 +40,78 @@ const sidebars = {
                 id: 'deployment/intro',
             },
             items: [
-                {
-                    type: 'category',
-                    label: 'On Premises',
-                    link: {
-                        type: 'doc',
-                        id: 'deployment/on-premises/intro'
+                    {
+                        type: 'category',
+                        label: 'Prerequisite',
+                        link: {
+                            type: 'doc',
+                            id: 'deployment/prerequisite',
+                        },
+                        items: [
+                            {
+                                type: 'doc',
+                                id: 'deployment/rdbms_metastore/use_mysql_as_metadb'
+                            },
+                            {
+                                type: 'doc',
+                                id: 'deployment/rdbms_metastore/usepg_as_metadb'
+                            },
+                        ]
                     },
-                    items: [
-                        {
-                            type: 'doc',
-                            id: 'deployment/on-premises/prerequisite',
-                        },
-                        {
-                            type: 'category',
-                            label: 'Metastore',
-                            link: {
-                                type: 'doc',
-                                id: 'deployment/on-premises/rdbms_metastore/intro',
-                            },
-                            items: [
-                                {
-                                    type: 'doc',
-                                    id: 'deployment/on-premises/rdbms_metastore/use_mysql_as_metadb'
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'deployment/on-premises/rdbms_metastore/usepg_as_metadb'
-                                },
-                            ]
-                        },
-                        {
-                            type: 'category',
-                            label: 'Deploy Mode',
-                            link: {
-                                type: 'doc',
-                                id: 'deployment/on-premises/deploy_mode/intro',
-                            },
-                            items: [
-                                {
-                                    type: 'doc',
-                                    id: 'deployment/on-premises/deploy_mode/cluster_deployment'
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'deployment/on-premises/deploy_mode/service_discovery'
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'deployment/on-premises/deploy_mode/rw_separation'
-                                },
-                            ]
-                        },
-                        {
-                            type: 'category',
-                            label: 'Install and Uninstall',
-                            link: {
-                                type: 'doc',
-                                id: 'deployment/on-premises/installation/intro',
-                            },
-                            items: [
-                                {
-                                    type: 'category',
-                                    label: 'Install On Platforms',
-                                    link: {
-                                        type: 'doc',
-                                        id: 'deployment/on-premises/installation/platform/intro',
-                                    },
-                                    items: [
-                                        {
-                                            type: 'doc',
-                                            id: 'deployment/on-premises/installation/platform/install_on_apache_hadoop',
-                                        },
-                                    ],
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'deployment/on-premises/installation/uninstallation',
-                                },
-                                {
-                                    type: 'doc',
-                                    id: 'deployment/on-premises/installation/install_validation',
-                                },
-                            ],
-                        },
-                    ],
-                },
-                {
-                    type: 'category',
-                    label: 'Configuration',
-                    link: {
+                    {
                         type: 'doc',
-                        id: 'configuration/intro',
+                        id: 'deployment/single_node_mode'
                     },
-                    items: [
-                        {
+                    {
+                        type: 'doc',
+                        id: 'deployment/cluster_mode'
+                    },
+                    {
+                        type: 'doc',
+                        id: 'deployment/rw_separation'
+                    },
+                    {
+                        type: 'category',
+                        label: 'Configuration',
+                        link: {
                             type: 'doc',
-                            id: 'configuration/config'
+                            id: 'configuration/intro',
                         },
-
-                        {
-                            type: 'doc',
-                            id: 'configuration/hadoop_queue_config'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'configuration/https'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'configuration/log_rotate'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'configuration/query_cache'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'configuration/spark_dynamic_allocation'
-                        },
-                        {
-                            type: 'doc',
-                            id: 'configuration/spark_rpc_encryption'
-                        },
-                    ],
-                },
+                        items: [
+                            {
+                                type: 'doc',
+                                id: 'configuration/config'
+                            },
+                            {
+                                type: 'doc',
+                                id: 'configuration/gluten_config'
+                            },
+                            {
+                                type: 'doc',
+                                id: 'configuration/hadoop_queue_config'
+                            },
+                            {
+                                type: 'doc',
+                                id: 'configuration/https'
+                            },
+                            {
+                                type: 'doc',
+                                id: 'configuration/log_rotate'
+                            },
+                            {
+                                type: 'doc',
+                                id: 'configuration/query_cache'
+                            },
+                            {
+                                type: 'doc',
+                                id: 'configuration/spark_dynamic_allocation'
+                            },
+                            {
+                                type: 'doc',
+                                id: 'configuration/spark_rpc_encryption'
+                            },
+                        ],
+                    },
             ],
         },
         {
@@ -896,6 +843,11 @@ const sidebars = {
             type: 'doc',
             id: 'community',
             label: 'Community',
+        },
+        {
+            type: 'doc',
+            id: 'poweredby',
+            label: 'Use Cases',
         },
     ],
     DownloadSideBar: [

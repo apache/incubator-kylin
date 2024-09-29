@@ -35,6 +35,7 @@
     // tests, removing this would make things much harder to catch.
     "skipLibCheck": false,
     "types": ["jest"],
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react"
   },
 }

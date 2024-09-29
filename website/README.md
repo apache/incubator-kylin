@@ -4,7 +4,7 @@
 Learn more from https://docusaurus.io/ .
 
 #### Install nodejs
-Make sure node.js 16.14 or above is installed.
+Make sure node.js 18.20.4 or above is installed.
 
 Check version
 ```shell

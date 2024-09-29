@@ -16,10 +16,6 @@ last_update:
 
 Kylin provides the data sampling function to facilitate table data analysis. With data sampling, you can collect table characteristics, such as cardinality, max value, and min value for each column, to improve [model designing](../model/intro.md). 
 
-## Known limitations
-
-Sampling on Kafka data source is currently not supported. 
-
 ## Operation steps
 
 Kylin supports data sampling during data loading. If you want to manually sample data, follow the steps below: 
@@ -56,7 +52,7 @@ Kylin supports data sampling during data loading. If you want to manually sample
 
 Question: Why are the Chinese comments garbled in the sampled results?
 
-Answer: This issue is often caused by improper encoding settings. Please confirm whether any Chinese comments in the source Hive table are garbled via the Hive client. If yes, please modify the encoding in MySQL metabase. Below we use [Apache Hadoop](../deployment/on-premises/installation/platform/install_on_apache_hadoop.md) platform as an example to show how to modify encoding: 
+Answer: This issue is often caused by improper encoding settings. Please confirm whether any Chinese comments in the source Hive table are garbled via the Hive client. If yes, please modify the encoding in MySQL metabase. Below we use [Apache Hadoop](../deployment/intro.md) platform as an example to show how to modify encoding: 
 
 1. Log in to the server. 
 2. Run the `mysql -uroot -p` command and enter your password. 

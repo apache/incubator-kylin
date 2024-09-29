@@ -365,10 +365,6 @@ Kylin provides REST APIs on checking model information, index build and model ma
 
 - Response Example
 
-  > [!NOTE]
-  >
-  > For parameters not listed in this page, you may go to the [Model Concepts and Operations](../../model/model_management.md) for details.
-
   ```json
     {
         "code":"000",
@@ -511,7 +507,7 @@ Kylin provides REST APIs on checking model information, index build and model ma
                 - `hierarchy_dims`: `JSON`, dimension hierarchy
                 - `mandatory_dims`: `JSON`, required hierarchy
                 - `joint_dims`:  `JSON`, joint dimensions
-                - `computed_columns`: `JSON`, [Computed Column](../../model/model_design/computed_column.md)
+                - `computed_columns`: `JSON`, ([What is Computed Column?](../../model/manual/computed_column.md))
                 - `tableIdentity`: `String`, table ID
                 - `tableAlias`: `String`, table alias
                 - `columnName`: `String`, column name

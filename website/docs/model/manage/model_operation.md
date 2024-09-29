@@ -30,15 +30,11 @@ You are only allowed to operate on models. You can hover on the right most colum
 
 - **Export Model**: Export single model metadata.
 
-  > **Note**: Since the locked indexes will be deleted after the new indexes have been built, the exported model metadata will not include the locked index.
-
 - **Export TDS**: Export TDS file of the model .
 
 - **Rename**: Renames the model.
 
 - **Clone**: Clones an identical model. You can give a new name for this new model. The new model has the same fact table, dimension tables, join relationship, dimensions, measures, computed columns, date partition column, aggregate indexes, table indexes, etc. as the origin model. But the new model does not have data, you need to load data for this cloned model manually.
-
-  > **Note**: Since the locked indexes will be deleted after the new indexes have been built, the cloned model will not include the locked index.
 
 - **Change Owner**：Change model owner. Only system administrators and project administrators have the authority to modify model owner.
 
@@ -50,4 +46,7 @@ You are only allowed to operate on models. You can hover on the right most colum
 
 - **Online**: Makes a *Offline* model online. An online model should be able to answer related queries.
 
-> **Note:** If the model is in *BROKEN* status, only the **delete** operation is allowed.
+:::note Note 
+1. Locked Indexes will not be included in exported and cloned model
+2. If the model is in *BROKEN* status, only the **delete** operation is allowed.
+:::

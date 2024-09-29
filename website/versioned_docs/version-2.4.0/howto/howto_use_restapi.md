@@ -47,7 +47,7 @@ This page lists the major RESTful APIs provided by Kylin.
 
 #### Request Header
 Authorization data encoded by basic auth is needed in the header, such as:
-Authorization:Basic {data}
+Authorization:Basic `{data}`
 
 #### Response Body
 * userDetails - Defined authorities and status of current user.

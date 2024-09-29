@@ -18,7 +18,7 @@ Kylin uses indexes to accelerate data queries. Powered by the built-in recommend
 
 For more information about index optimization, see: 
 
-- [Index Optimization Strategies](index_optimization.md)
+- [Index Optimization Strategies](../index_optimization.md)
 
 - [Check Recommendations](review_index.md)
 

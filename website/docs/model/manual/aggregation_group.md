@@ -106,7 +106,7 @@ This setting applies to all aggregate groups. If an aggregate group does not con
 
 
 
-Based on your business scenario, you can decide whether to add an index that includes the dimensions and measures defined across all aggregate groups. This index can support queries that span multiple aggregate groups but may not achieve the optimal query performance. Besides, incorporating this index comes with higher storage and building costs. How to set this configuration, please refer to the [configuration](manage/configuration.md) chapter.
+Based on your business scenario, you can decide whether to add an index that includes the dimensions and measures defined across all aggregate groups. This index can support queries that span multiple aggregate groups but may not achieve the optimal query performance. Besides, incorporating this index comes with higher storage and building costs. How to set this configuration, please refer to the [configuration](../manage/configuration.md) chapter.
 
 ```shell
 # generating base cuboid of all aggregate groups, by default this is true

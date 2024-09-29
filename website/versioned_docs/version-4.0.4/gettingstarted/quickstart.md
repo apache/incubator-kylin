@@ -71,7 +71,7 @@ If you don’t have a Spark environment already downloaded, you can also downloa
 $KYLIN_HOME/bin/download-spark.sh
 ```
 
-The script will place the decompressed Spark in the $ KYLIN_HOME directory. If SPARK_HOME is not set in the system, the Spark in the $ KYLIN_HOME directory will be found automatically when Kylin is started.
+The script will place the decompressed Spark in the `$KYLIN_HOME` directory. If SPARK_HOME is not set in the system, the Spark in the `$KYLIN_HOME` directory will be found automatically when Kylin is started.
 
 #### Step4. Configure MySQL metastore
 
@@ -87,7 +87,7 @@ Please refer to [Configure Mysql as Metastore](/docs/tutorial/mysql_metastore.ht
 
 #### Step5. Environmental Inspection
 Kylin runs on a Hadoop cluster and has certain requirements for the version, access permissions and CLASSPATH of each component. 
-To avoid encountering various environmental problems, you can run the $ KYLIN_HOME / bin / check-env.sh script to perform an environment check to see if there are any problems. 
+To avoid encountering various environmental problems, you can run the `$KYLIN_HOME/bin/check-env.sh` script to perform an environment check to see if there are any problems. 
 The script will print out detailed error messages if any errors are identified. If there is no error message, your environment is suitable for Kylin operation.
 
 #### Step6. Start Kylin
@@ -105,11 +105,11 @@ Check the log at /usr/local/apache-kylin-4.0.0-bin/logs/kylin.log
 Web UI is at http://<hostname>:7070/kylin
 ```
 
-The default port started by Kylin is 7070. You can use $ KYLIN_HOME/bin/kylin-port-replace-util.sh set number to modify the port. The modified port is 7070 + number.
+The default port started by Kylin is 7070. You can use `$KYLIN_HOME/bin/kylin-port-replace-util.sh` set number to modify the port. The modified port is 7070 + number.
 
 #### Step7. Visit Kylin
 After Kylin starts, you can access it through your browser: `http://<hostname>:port/kylin` , where `<hostname>` is the specific machine name, IP address or domain name, port is the Kylin port and the default is 7070. 
-The initial username and password are ADMIN/KYLIN. After the server starts, you can get the runtime log by looking at $ KYLIN_HOME/logs/kylin.log.
+The initial username and password are ADMIN/KYLIN. After the server starts, you can get the runtime log by looking at `$KYLIN_HOME/logs/kylin.log`.
 
 #### Step8. Create Sample Cube
 Kylin provides a script to create a sample cube for users to quickly experience Kylin. Run from the command line:
@@ -226,7 +226,7 @@ Click Submit to submit the build task directly. If a time partition column is se
 After setting the start and end time, click Submit to submit the build task. 
 You can then observe the status of the build task on the Monitor page. 
 Kylin displays the running status of each step on the page, the output log and MapReduce tasks. 
-You can view more detailed log information in ${KYLIN_HOME}/logs/kylin.log.
+You can view more detailed log information in `${KYLIN_HOME}/logs/kylin.log`.
 
 ![](../../images/docs/quickstart/job_monitor4.x.png)
 

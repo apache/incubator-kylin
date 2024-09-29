@@ -14,7 +14,7 @@ last_update:
     date: 08/19/2022
 ---
 
-Pre-computation of the join relations refers to the process of expanding the joined tables of a model into a flat table based on mappings, and then building indexes based on the flat table. Kylin will precompute each join relation and generate a flat table that contains dimensions, measures and columns referenced by [computed columns](computed_column.md) by default. This article will cover the principles and features of **Precompute** **Join Relationships**.
+Pre-computation of the join relations refers to the process of expanding the joined tables of a model into a flat table based on mappings, and then building indexes based on the flat table. Kylin will precompute each join relation and generate a flat table that contains dimensions, measures and columns referenced by [computed columns](../manual/computed_column.md) by default. This article will cover the principles and features of **Precompute** **Join Relationships**.
 
 ### Principles
 
@@ -60,7 +60,7 @@ If *Fact* inner joins *Dim* and **Precompute Join Relationships** is disabled, t
 
 ### Feature comparison 
 
-To strike the right balance between performance and cost, you can choose whether to enable **Precompute Join Relationships** based on your business needs and data characteristics when [designing a model](../manual_modeling.md). The following table compares the features of enabling and disabling **Precompute Join Relationships**. 
+To strike the right balance between performance and cost, you can choose whether to enable **Precompute Join Relationships** based on your business needs and data characteristics when [designing a model](../manual/modeling.md). The following table compares the features of enabling and disabling **Precompute Join Relationships**. 
 
 | **Precompute Join Relationships** | **Query performance** | **Building duration** | **Storage costs** | **Adaptability to new query scenarios** | **Impact**                                                   |
 | -------------------------- | ------------ | ------------ | ------------ | -------------------- | ------------------------------------------------------------ |

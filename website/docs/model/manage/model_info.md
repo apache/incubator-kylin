@@ -37,7 +37,7 @@ last_update:
 	    - *WARNING* indicates this model is warning and can only server parts of queries. Mostly happens when the segments exist holes or indexes are waiting to build.
 	  - **Last Updated Time**: The lastest time to update model.
 	
-	- **More Actions**: The **More Actions** button will appear when you are hovering on model name area, please refer to [Model Operations](#operation) for details.
+	- **More Actions**: The **More Actions** button will appear when you are hovering on model name area, please refer to [Model Operations](model_operation.md) for details.
 	
 	- **Owner**: The user who created this model.
 	

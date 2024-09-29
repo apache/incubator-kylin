@@ -50,7 +50,7 @@ const config = {
   title: 'Apache Kylin',
   tagline: 'Kylin is a high concurrency, high performance and intelligent OLAP engine that provides low-cost and ultimate data analytics experience  .',
   url: 'https://kylin.apache.org',
-  baseUrl: '/latest/',
+  baseUrl: '',
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
@@ -276,6 +276,11 @@ const config = {
             label: 'Download',
           },
           {
+            to: '/blog',
+            label: 'Blogs',
+            position: 'left'
+          },
+          {
             href: 'https://github.com/apache/kylin',
             position: 'right',
             className: 'header-github-link',
@@ -291,7 +296,7 @@ const config = {
         id: `announcementBar-v${announcedVersion}`,
         backgroundColor: '#153E7B',
         textColor: '#FFFFFF',
-        content: `⭐️ <b><a target="_blank" href="release_notes">Apache Kylin ${announcedVersion}</a> is released! 🎉 If you like Kylin, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/apache/kylin">GitHub</a>!</b> ❤️`,
+        content: `⭐️ <b><a target="_blank" href="http://kylin.apache.org/latest/docs/release_notes">Apache Kylin ${announcedVersion}</a> is released! 🎉 If you like Kylin, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/apache/kylin">GitHub</a>!</b> ❤️`,
       },
       footer: {
         logo: {

@@ -86,7 +86,7 @@ Metadata recovery is required in Kylin with the **command line**.
    - `--after-truncate` - optional, if this parameter is added, the project metadata will be completely restored, otherwise only the deleted and modified metadata will be restored, and the new metadata will still be retained.
    
 
-## Metadata Migration {#metadata_migration}
+## Metadata Migration {#migration}
 
 Since Kylin 5.0-alpha and Kylin 5.0.0 underwent a metadata refactoring, you will need to use this tool to perform a metadata migration on versions prior to 5.0.0. The steps for migration are as follows:
 

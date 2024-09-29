@@ -60,4 +60,4 @@ In traditional model development mode, data modelers may need to frequently upda
 
 - Question: What index optimization strategies are supported?
 
-  Answer: Kylin supports the low-frequency, inclusion, and similarity strategies to help you reduce build pressure and storage cost. For details, see [Index Optimization Strategies](index_optimization.md).
+  Answer: Kylin supports the low-frequency, inclusion, and similarity strategies to help you reduce build pressure and storage cost. For details, see [Index Optimization Strategies](../index_optimization.md).

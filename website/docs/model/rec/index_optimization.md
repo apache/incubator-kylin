@@ -75,7 +75,7 @@ The following table lists all the parameter values supported by Kylin and their 
 
 - **Question:** If I followed a recommendation to delete indexes, are there any other files I need to delete?
   
-  **Answer:** This operation only deletes the index metadata and does not remove the index data stored in HDFS or other storage engine. You can clean these files either automatically or manually. For more details, see [Junk File Clean](../../../operations/system-operation/junk_file_clean.md).
+  **Answer:** This operation only deletes the index metadata and does not remove the index data stored in HDFS or other storage engine. You can clean these files either automatically or manually. For more details, see [Junk File Clean](../../operations/system-operation/junk_file_clean.md).
 
 - **Question:** What is a ShardBy column?
   
