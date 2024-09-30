@@ -134,9 +134,9 @@ In the `conf` directory under the root directory of the installation package, yo
 4. Configure Gluten
    Apache Gluten is required by internal table feature, it's enabled by default. Add the following config to your `${KYLIN_HOME}\conf\kylin.properties(.override)`
    :::info Example
-   # gluten for query
-   kylin.storage.columnar.spark-conf.spark.gluten.sql.columnar.backend.ch.runtime_config.storage_configuration.disks.hdfs.endpoint=hdfs://olivernameservice/
-   # gluten for build
+   **gluten for query**<br></br>
+   kylin.storage.columnar.spark-conf.spark.gluten.sql.columnar.backend.ch.runtime_config.storage_configuration.disks.hdfs.endpoint=hdfs://olivernameservice/<br></br>
+   **gluten for build**<br></br>
    kylin.engine.spark-conf.spark.gluten.sql.columnar.backend.ch.runtime_config.storage_configuration.disks.hdfs.endpoint=hdfs://olivernameservice/
    :::
 
