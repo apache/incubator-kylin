@@ -296,7 +296,7 @@ const config = {
         id: `announcementBar-v${announcedVersion}`,
         backgroundColor: '#153E7B',
         textColor: '#FFFFFF',
-        content: `⭐️ <b><a target="_blank" href="http://kylin.apache.org/latest/docs/release_notes">Apache Kylin ${announcedVersion}</a> is released! 🎉 If you like Kylin, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/apache/kylin">GitHub</a>!</b> ❤️`,
+        content: `⭐️ <b><a target="_blank" href="http://kylin.apache.org/docs/release_notes">Apache Kylin ${announcedVersion}</a> is released! 🎉 If you like Kylin, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/apache/kylin">GitHub</a>!</b> ❤️`,
       },
       footer: {
         logo: {

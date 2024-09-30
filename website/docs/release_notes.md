@@ -5,7 +5,7 @@ categories: gettingstarted
 permalink: /docs/release_notes.html
 ---
 
-To download the latest release, please visit: [http://kylin.apache.org/download/](http://kylin.apache.org/download/),
+To download the latest release, please visit: [http://kylin.apache.org/docs/download/](http://kylin.apache.org/docs/download/),
 there are source code package, binary package and installation guide avaliable.
 
 Any problem or issue, please report to Apache Kylin JIRA project: [https://issues.apache.org/jira/browse/KYLIN](https://issues.apache.org/jira/browse/KYLIN)
