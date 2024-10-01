@@ -31,8 +31,6 @@ Kylin has following key strengths:
 
 ## What's New in Kylin 5.0
 
----
-
 ### 📊 1. Internal Table
 Kylin now support internal table, which is designed for flexible query and lakehouse scenarios.
 
@@ -52,8 +50,6 @@ Kylin now support Apache Kafka as streaming data source of model building. Users
 
 ## Significant Change
 
----
-
 ### 🤖1. Metadata Refactory
 In Kylin 5.0, we have refactored the metadata storage structure and the transaction process, removed the project lock and Epoch mechanism. This has significantly improved transaction interface performance and system concurrency capabilities.
 
@@ -61,12 +57,10 @@ To upgrade from 5.0 alpha, beta, follow the [Metadata Migration Guide](https://k
 
 The metadata migration tool for upgrading from Kylin 4.0 is not tested, please contact kylin user or dev mailing list for help.
 
-## Other Optimizations and Improvements
+### Other Optimizations and Improvements
 Please refer to [Release Notes](https://kylin.apache.org/docs/release_notes/) for more details.
 
 ## Quick Start
-
----
 
 ### 🐳 Play Kylin in Docker
 
@@ -114,6 +108,8 @@ Kylin utilizes multidimensional modeling theory to build star or snowflake schem
     - **Table Index**: A multilevel index in a wide table and can be used to answer detailed queries such as the last 100 transactions of a certain user.
 
 
+---
+
 ### Why Use Kylin
 
 + **Low Query Latency vs. Large Volume**
@@ -133,11 +129,11 @@ Kylin utilizes multidimensional modeling theory to build star or snowflake schem
 
 + **Manual Modeling vs. Recommendation**
 
-  Before Kylin 5.0, model design had to be done manually, which was a tedious process requiring extensive knowledge of multidimensional modeling. However, this changed with the introduction of Kylin 5.0. We now offer a new approach to model design, called **recommendation**, which allows models to be created by importing SQL, along with an automatic way to remove unnecessary indexes. Additionally, the system can leverage query history to generate index recommendations, further optimizing query performance. For more details, please refer to [Recommendation](rec/intro.md).
+  Before Kylin 5.0, model design had to be done manually, which was a tedious process requiring extensive knowledge of multidimensional modeling. However, this changed with the introduction of Kylin 5.0. We now offer a new approach to model design, called **recommendation**, which allows models to be created by importing SQL, along with an automatic way to remove unnecessary indexes. Additionally, the system can leverage query history to generate index recommendations, further optimizing query performance. For more details, please refer to [Recommendation](https://kylin.apache.org/docs/model/rec/intro).
 
 
 + **Batch Data vs. Streaming Data**
 
   In the OLAP field, data has traditionally been processed in batches. However, this is changing as more companies are now required to handle both batch and streaming data to meet their business objectives. The ability to process data in real-time has become increasingly critical for applications such as real-time analytics, monitoring, and event-driven decision-making.
 
-  To address these evolving needs, we have introduced support for streaming data in the new version. This allows users to efficiently process and analyze data as it is generated, complementing the traditional batch processing capabilities. For more details, please refer to [Streaming](streaming/intro.md).
+  To address these evolving needs, we have introduced support for streaming data in the new version. This allows users to efficiently process and analyze data as it is generated, complementing the traditional batch processing capabilities. For more details, please refer to [Streaming](https://kylin.apache.org/docs/model/streaming/intro).
