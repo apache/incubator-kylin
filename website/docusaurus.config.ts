@@ -8,16 +8,16 @@ import {themes, type PrismTheme} from 'prism-react-renderer';
 const lightCodeTheme = themes.github
 
 const ArchivedVersionsDropdownItems = Object.entries(VersionsArchived).splice(
-    0,
-    5,
+  0,
+  5,
 );
 
 function isPrerelease(version: string) {
   return (
-      version.includes('-') ||
-      version.includes('alpha') ||
-      version.includes('beta') ||
-      version.includes('rc')
+    version.includes('-') ||
+    version.includes('alpha') ||
+    version.includes('beta') ||
+    version.includes('rc')
   );
 }
 
@@ -59,7 +59,7 @@ const config = {
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'apache', // Usually your GitHub org/user name.
   projectName: 'kylin', // Usually your repo name.
-  deploymentBranch:'kylin5_doc',
+  deploymentBranch: 'kylin5_doc',
 
   // add search plugin
 
@@ -90,10 +90,10 @@ const config = {
     locales: ['en', 'zh-Hans'],
     // path: 'i18n',
     localeConfigs: {
-    //   'en': {
-    //     label: 'English',
-    //     htmlLang: 'en-GB',
-    //   },
+      'en': {
+        label: 'English',
+        htmlLang: 'en-GB',
+      },
       'zh-Hans': {
         label: '简体中文',
         path: 'zh-Hans',
@@ -149,7 +149,7 @@ const config = {
           blogSidebarCount: 20,
           showReadingTime: true,
           readingTime: ({content, frontMatter, defaultReadingTime}) =>
-                      defaultReadingTime({content, options: {wordsPerMinute: 100}}),
+            defaultReadingTime({content, options: {wordsPerMinute: 100}}),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
@@ -170,9 +170,9 @@ const config = {
     },
   ],
   themeConfig:
-    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
+  /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      colorMode:{
+      colorMode: {
         defaultMode: 'light',
         disableSwitch: true,
       },
@@ -188,20 +188,20 @@ const config = {
             position: 'right',
             dropdownActiveClassDisabled: true,
             dropdownItemsAfter: [
-              {
-                type: 'html',
-                value: '<hr class="dropdown-separator">',
-              },
-              ...ArchivedVersionsDropdownItems.map(
-                  ([versionName, versionUrl]) => ({
-                    label: versionName,
-                    href: versionUrl,
-                  }),
-              ),
-              {
-                type: 'html',
-                value: '<hr class="dropdown-separator">',
-              },
+              //   {
+              //     type: 'html',
+              //     value: '<hr class="dropdown-separator">',
+              //   },
+              // ...ArchivedVersionsDropdownItems.map(
+              //   ([versionName, versionUrl]) => ({
+              //     label: versionName,
+              //     href: versionUrl,
+              //   }),
+              // ),
+              // {
+              //   type: 'html',
+              //   value: '<hr class="dropdown-separator">',
+              // },
               {
                 to: 'docs/release_notes',
                 label: 'Release Notes',
