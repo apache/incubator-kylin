@@ -26,7 +26,7 @@ In the above diagram, the components which require user deployment are below:
 
 ### Configure Metadata DB
 
-Kylin uses RDBMS to store metadata, please refer to [Use RDBMS as Metastore](./rdbms_metastore/intro.md).
+Kylin uses RDBMS to store metadata, please refer to [Use RDBMS as Metastore](./intro.md).
 
 ### Kylin Server
 

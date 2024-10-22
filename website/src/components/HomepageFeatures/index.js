@@ -3,6 +3,8 @@ import clsx from 'clsx';
 import styles from './styles.module.css';
 import FeatureList from '@site/src/data/features.tsx'
 
+import Translate, {translate} from '@docusaurus/Translate';
+
 function Feature({Svg, title, description}) {
     return (
         <div className={clsx('col col--4')}>
@@ -29,7 +31,7 @@ const home_arc = [
 function  Homearc({Svg, title}) {
     return (
         <div className={clsx('col')}>
-            <h1 className="text--center padding-horiz--md">Apache Kylin Overview</h1>
+            <h1 className="text--center padding-horiz--md"><Translate>Apache Kylin Overview</Translate></h1>
             <Svg className={styles.homearc} role="img"/>
         </div>
     );
@@ -40,7 +42,7 @@ export default function HomepageFeatures() {
         <div>
             <section className={styles.features}>
                 <div className="container">
-                    <h1 className="text--center padding-horiz--md">Key Features</h1>
+                    <h1 className="text--center padding-horiz--md"><Translate>Key Features</Translate></h1>
                     <div className="row">
                         {FeatureList.map((props, idx) => (
                             <Feature key={idx} {...props} />
