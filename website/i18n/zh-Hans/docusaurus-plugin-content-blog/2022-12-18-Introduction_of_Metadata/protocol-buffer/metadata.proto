@@ -1,0 +1,643 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**************************************************************************************************
+ * 文档说明
+ *
+ * Kylin 5.0 的元数据和之前的版本存在比较大的额不兼容情况, 所以这里希望梳理元数据字段的含义, 方便用户和开发者进行
+ * 理解和开发. (https://kylin.apache.org/5.0/blog/introduction_of_metadata_cn)
+ *
+ * 标签说明
+ * - [TODO]    这个说明待补充
+ * - [Trivial] 这个配置项不太重要, 不太影响产品行为, 可以不关心
+ *
+ * 对应版本 : 5.0.0-alpha
+ * 更新时间 : 2023-01-16
+ ************************************************************************************************/
+syntax = "proto3";
+
+package org.apache.kylin.metadata;
+
+// ================================================================================================
+// ================================================================================================
+// ===================================== Part I ===================================================
+
+/**
+ * 包含了所有元数据的公共字段
+ */
+message RootPersistentEntity {
+  /**
+   * 该元数据的全局唯一标示符
+   */
+  string uuid = 1;
+  int64 createTime = 2;
+  int64 lastModified = 3;
+
+  // [Trivial] 标记这个元数据是由哪个版本的 Kylin 生成的, 可以用作元数据版本校验, 当前实际未使用
+  string version = 4;
+  /**
+   * 用于避免元数据写入相互覆盖的自增字段
+   */
+  int64 mvcc = 5;
+  /**
+   * TODO
+   */
+  bool isBroken = 6;
+}
+
+message ProjectInstance {
+  RootPersistentEntity basicProp = 1;
+  string name = 2;
+  string owner = 3;
+  ProjectStatusEnum status = 4;
+  int64 createTimeUTC = 5;
+  string defaultDatabase = 6;
+  string description = 7;
+
+  // [TODO]
+  string principal = 8;
+
+  // [TODO]
+  string keytab = 9;
+
+  // [Trivial]
+  MaintainModelType maintain_model_type = 10;
+
+  /**
+   * 项目级别的配置(键值对), 可以覆盖全局的配置
+   */
+  map<string, string> override_kylin_properties = 11;
+
+  /**
+   * 项目级别的 Segment 自动合并策略的配置
+   */
+  SegmentConfig segment_config = 12;
+
+  enum ProjectStatusEnum {
+    // [TODO]
+    DISABLED = 0;
+    ENABLED = 1;
+  };
+
+  // [TODO]
+  enum MaintainModelType {
+    MANUAL_MAINTAIN = 0;
+  }
+}
+
+message TableDesc {
+  RootPersistentEntity basicProp = 1;
+
+  string name = 2;
+  repeated ColumnDesc columns = 3;
+
+  SourceTypeEnum sourceType = 4;
+
+  /**
+   * 用于区分一个表是不是视图, 外部表还是内部表
+   */
+  CatalogTableType tableType = 5;
+
+  // [Trivial] for front end only
+  bool isTop = 6;
+
+  // [Trivial]
+  string data_gen = 7;
+
+  // [TODO]
+  string increment_loading = 8;
+
+  string last_snapshot_path = 9;
+
+  int64 last_snapshot_size = 10;
+  int64 snapshot_last_modified = 11;
+
+  int32 query_hit_count = 12;
+
+  string partition_column = 13;
+
+  map<string, string> snapshot_partitions = 14;
+  map<string, string> snapshot_partitions_info = 15;
+
+  int64 snapshot_total_rows = 16;
+  string snapshot_partition_col = 17;
+  string selected_snapshot_partition_col = 18;
+  string temp_snapshot_path = 19;
+  bool snapshot_has_broken = 20;
+
+  string database = 21;
+
+  bool transactional = 22;
+
+  bool rangePartition = 23;
+  PartitionDesc partition_desc = 24;
+
+  enum SourceTypeEnum {
+    ID_HIVE = 0;
+    ID_STREAMING = 1; // UNDER DEVELOPED
+    ID_SPARKSQL = 5;
+    ID_EXTERNAL = 7;
+    ID_JDBC = 8;
+    ID_SPARK = 9;
+  }
+
+  /**
+   * 参考 org.apache.spark.sql.catalyst.catalog.CatalogTableType
+   */
+  enum CatalogTableType {
+    EXTERNAL = 0;
+    MANAGED = 1;
+    VIEW = 2;
+  }
+}
+
+// ================================================================================================
+// ================================================================================================
+// ===================================== Part II ==================================================
+
+/**
+ * Kylin 5 之前的 DataModel 和 CubeDesc 的合并
+ */
+message NDataModel {
+
+  RootPersistentEntity basicProp = 1;
+
+  // model basic properties
+  string alias = 11;
+  string owner = 12;
+
+  // 谁上次修改了模型级别配置项
+  string configLastModifier = 13;
+
+  // 上次修改了模型级别配置项的时刻
+  int64 configLastModified = 14;
+  string description = 15;
+
+  // model schema
+  string rootFactTableName = 20;
+  string rootFactTableAlias = 21;
+
+  // 描述了事实表和维度表当前是如何连接的
+  repeated JoinTableDesc joinTables = 22;
+
+  // 打平表时是过滤数据的条件
+  string filterCondition = 23;
+  PartitionDesc partitionDesc = 24;
+
+  // all dimension and deleted column
+  repeated NamedColumn allNamedColumns = 25;
+  repeated Measure allMeasures = 26;
+  repeated ComputedColumnDesc computedColumnDescs = 27;
+
+  // misc
+  DataCheckDesc dataCheckDesc = 40;
+
+  // [Trivial]
+  string managementType = 41;
+
+  // check https://kylin.apache.org/5.0/blog/introduction_of_metadata_cn#significant-change
+  int32 semanticVersion = 42;
+
+  // [Trivial]
+  int32 storageType = 43;
+
+  // [Trivial]
+  ModelType modelType = 44;
+
+  // [Trivial]
+  int32 recommendationsCount = 45;
+
+  // [Trivial] for front end only
+  string canvas = 46;
+
+  // Broken reason because of schema change
+  BrokenReason brokenReason = 47;
+
+  // [Trivial]
+  RealizationCapacity capacity = 48;
+
+  // TODO
+  string multiPartitionDesc = 49;
+
+  // TODO
+  string multiPartitionKeyMapping = 50;
+
+  // [Trivial] for streaming feature
+  string fusionId = 51;
+
+  // Some configuration of auto segment merge
+  SegmentConfig segmentConfig = 61;
+
+  enum ModelType {
+    BATCH = 0; // Source is Hive only
+    STREAMING = 1; // Source is Kafka only, still under developing
+    HYBRID = 2; // Source is Kafka and Hive, still under developing
+    UNKNOWN = 3;
+  }
+  enum RealizationCapacity {
+    SMALL = 0;
+    MEDIUM = 1;
+    LARGE = 2;
+  }
+  enum BrokenReason {
+    SCHEMA = 0;
+    NULL = 1;
+    EVENT = 2;
+  }
+}
+
+/**
+ * IndexPlan 是 Kylin5 中用来组织 Index/Layout 的元数据，它里面包含两个最重要的信息 RuleBasedIndex 和 Indexes，
+ * 前者用于管理聚合组索引，后者用于管理被物化的索引。
+ */
+message IndexPlan {
+  string description = 1;
+  int64 retentionRange = 8;
+
+  // [Trivial]
+  int32 engineType = 9;
+  repeated int64 autoMergeTimeRanges = 7;
+
+  /**
+   * 静态 Index 剪枝策略, 例如聚合组规则
+   */
+  RuleBasedIndex ruleBasedIndex = 3;
+
+  /**
+   * Indexes 属性用于管理用户
+   * 1. 自定义明细索引
+   * 2. 基础明细索引、基础聚合索引
+   * 3. 以及用户通过扩展 Kylin 自动生成的索引, 例如 CubePlanner
+   */
+  repeated IndexEntity indexes = 4;
+
+  /**
+   * 全局字典相关的属性
+   */
+  repeated DictionaryDesc dictionaries = 10;
+
+  /**
+   * 因为 Schema Change 而需要删除的索引
+   */
+  repeated IndexEntity toBeDeletedIndexes = 6;
+
+  // TODO
+  map<int32, string> indexPlanOverrideIndexes = 10;
+
+  // TODO
+  repeated int32 aggShardByColumns = 13;
+
+  // TODO
+  map<int64, int32> layoutBucketNumMapping = 15;
+
+  int64 nextAggregationIndexId = 11;
+  int64 nextTableIndexId = 12;
+  map<string, string> overrideProps = 5;
+}
+
+/**
+ * Kylin 5 之前的 CubeInstance, 保存了索引和 Segment 相关数据的描述信息和统计数据
+ */
+message DataFlow {
+  RealizationStatusEnum status = 1;
+  enum RealizationStatusEnum {
+    OFFLINE = 0;
+    ONLINE = 1;
+    BROKEN = 2;
+  }
+
+  int32 cost = 2;
+  int32 queryHitCount = 3;
+  int64 lastQueryTime = 4;
+  repeated DataSegment segments = 6;
+}
+
+// ================================================================================================
+// ================================================================================================
+// ===================================== Part III =================================================
+
+message JoinTableDesc {
+  string table = 1;
+  TableKind kind = 2;
+  enum TableKind {
+    FACT = 0;
+    LOOKUP = 1;
+  }
+  string alias = 3;
+  JoinDesc join = 4;
+  ModelJoinRelationTypeEnum joinRelationTypeEnum = 6;
+  enum ModelJoinRelationTypeEnum {
+    MANY_TO_ONE = 0;
+    ONE_TO_ONE = 1;
+    ONE_TO_MANY = 2;
+    MANY_TO_MANY = 3;
+  }
+}
+
+message NamedColumn {
+  int32 id = 1;
+  string name = 2;
+  string aliasDotColumn = 3;
+
+  ColumnStatus status = 4;
+  enum ColumnStatus {
+    TOMB = 0;
+    EXIST = 1;
+    DIMENSION = 2;
+  }
+}
+
+message Measure {
+  string name = 1;
+  int32 id = 2;
+
+  bool tomb = 3;
+  FunctionDesc function = 4;
+  string column = 5;
+  string comment = 6;
+}
+
+message ComputedColumnDesc {
+  // the table identity DB.TABLE (ignoring alias) in the model where the computed column be int64 to
+  // this field is more useful for frontend, for backend code, usage should be avoided
+  string tableIdentity = 1;
+  string tableAlias = 2;
+  string columnName = 3; // the new col name
+  string expression = 4;
+  string datatype = 5;
+
+  string comment = 6;
+  string uuid = 7;
+}
+
+message RuleBasedIndex {
+  repeated int32 dimensions = 2; // dimension id
+  repeated int32 measures = 3; //measure id
+  repeated int32 globalDimCap = 4;
+  repeated AggregationGroup aggregationGroups = 5;
+  repeated int32 layoutIdMapping = 6; // all of the layout id in agg group
+
+  int32 parentForward = 7;
+  int64 indexStartId = 8;
+  int32 schedulerVersion = 11;
+  bool indexUpdateEnabled = 12;
+
+  int64 lastModifiedTime = 9;
+}
+
+message IndexEntity {
+  int64 id = 1;
+  repeated int32 dimensions = 2;
+  repeated int32 measures = 3;
+  repeated LayoutEntity layouts = 4;
+  int64 nextLayoutOffset = 5;
+}
+
+message LayoutEntity {
+  int64 id = 1;
+  int64 updateTime = 10;
+  string name = 2;
+  string owner = 3;
+
+  repeated int32 colOrder = 4;
+  repeated int32 shardByColumns = 6;
+  repeated int32 partitionByColumns = 7;
+  repeated int32 sortByColumns = 8;
+
+  int32 storageType = 9;
+  bool isBase = 13;
+  string draftVersion = 14;
+  Range indexRange = 15;
+}
+
+message DataCheckDesc {
+  CheckOptions checkOptions = 1;
+  enum CheckOptions {
+    PK_DUPLICATE = 0;
+    DATA_SKEW = 1;
+    NULL_OR_BLANK_VALUE = 2;
+    FORCE_ANALYSIS_LOOKUP = 3;
+  }
+
+  int64 faultThreshold = 2;
+  int64 faultActions = 3;
+}
+
+message DataSegment {
+  string id = 1;
+  string name = 2;
+  int64 createTimeUTC = 3;
+
+  SegmentStatusEnum status = 4;
+  enum SegmentStatusEnum {
+    NEW = 0;
+    READY = 1;
+    WARNING = 2;
+  }
+  SegmentRange segmentRange = 5;
+  TimeRange timeRange = 6;
+
+  map<string, DimensionRangeInfo> dimensionRangeInfoMap = 7;
+  map<string, string> dictionaries = 9; // table/column ==> dictionary resource path
+  map<string, string> snapshots = 10; // table name ==> snapshot resource path
+  int64 lastBuildTime = 11; // last segment incr build job
+
+  // stats
+  int64 sourceCount = 12;
+  int64 sourceBytesSize = 13;
+  map<string, int64> columnSourceBytes = 14;
+  map<string, int64> oriSnapshotSize = 15;
+  int64 storageSize = 16;
+  int64 storageFileCount = 17;
+  map<string, string> additionalInfo = 18;
+
+
+  // resumable flag, don't cross building jobs
+  // worked only in HDFSMeteStore
+  bool isSnapshotReady = 20;
+
+  // resumable flag, don't cross building jobs
+  // worked only in HDFSMeteStore
+  bool isDictReady = 21;
+
+  // resumable flag, don't cross building jobs
+  // worked only in HDFSMeteStore
+  bool isFlatTableReady = 22;
+
+  // resumable flag, don't cross building jobs
+  // worked only in HDFSMeteStore
+  bool isFactViewReady = 23;
+
+  int64 maxBucketId = 25;
+  map<string, string> parameters = 8;
+}
+
+
+message DataFlowDetails {
+  string dataflowId = 1;
+  repeated DataLayout layouts = 2;
+}
+
+message DataLayout {
+  int64 layoutId = 1;
+  int64 createTime = 11;
+
+  string buildJobId = 2;
+
+  int64 rows = 3;
+  int64 byteSize = 4;
+  int64 fileCount = 5;
+  int64 sourceRows = 6;
+  int64 sourceByteSize = 7;
+  // partition num may be diff with file num
+  int32 partitionNum = 8;
+  repeated string partitionValues = 9;
+
+  bool isReady = 10;
+}
+
+
+
+message JoinDesc {
+  string type = 1;
+  repeated string primaryKey = 2;
+  repeated string foreignKey = 3;
+  NonEquiJoinCondition nonEquiJoinCondition = 4;
+  string primaryTable = 5;
+  string foreignTable = 6;
+}
+
+message NonEquiJoinCondition {
+  NonEquiJoinConditionType type = 1;
+  enum NonEquiJoinConditionType {
+    EXPRESSION = 0; // expression with other NonEquiJoinCondition as operands
+    COLUMN = 1;
+    LITERAL = 2;
+  }
+  string dataType = 2;
+  SqlKind op = 3; // kind of the operator
+  enum SqlKind {
+    OTHER = 0;
+    SELECT = 1;
+    JOIN = 2;
+    IDENTIFIER = 3;
+    // .etc
+  }
+  string opName = 4; // name of the operator
+  repeated NonEquiJoinCondition operands = 5; // nested operands
+  string value = 6; // literal or column identity at leaf node
+  string expr = 7; // set at runtime with model init
+}
+
+message FunctionDesc {
+  string expression = 1;
+  repeated ParameterDesc parameters = 2;
+  string returnType = 3;
+
+  map<string, string> configuration = 4;
+}
+
+message ParameterDesc {
+  string type = 1;
+  string value = 2;
+}
+
+message PartitionDesc {
+  string partitionDateColumn = 1;
+  string partitionDateFormat = 2;
+  PartitionType partitionType = 3;
+  string partitionConditionBuilderClz = 4;
+
+  enum PartitionType {
+    APPEND = 0;
+    UPDATE_INSERT = 1;
+  }
+}
+
+message ColumnDesc {
+  string id = 1;
+  string name = 2;
+
+  string datatype = 3;
+  string comment = 4;
+
+  string data_gen = 5;
+  string index = 6;
+
+  /**
+   * 如果是一个普通列,那么这里是 null, 否则表示这是一个可计算列
+   */
+  string computedColumnExpr = 7;
+  string caseSensitiveName = 8;
+
+  // [Trivial] 没有意义
+  bool isPartitioned = 9;
+}
+
+message SnapshotPartitionInfo {
+  int64 totalRows = 1;
+}
+
+message StorageDescription {
+  string path = 1;
+}
+
+message AggregationGroup {
+  repeated int32 includes = 1;
+  repeated int32 measures = 2;
+  SelectRule selectRule = 3;
+  Range indexRange = 4;
+}
+
+enum Range {
+  BATCH = 0;
+  STREAMING = 1;
+  HYBRID = 2;
+  EMPTY = 3;
+}
+
+message SelectRule {
+  repeated int32 hierarchyDims = 1;
+  repeated int32 mandatoryDims = 2;
+  repeated int32 jointDims = 3;
+  repeated int32 dimCap = 4;
+}
+
+message DictionaryDesc {
+  int32 id = 1;
+  int32 reuseId = 2;
+  string builderClass = 3;
+}
+
+message DimensionRangeInfo {
+  int64 min = 1;
+  int64 max = 2;
+}
+
+message SegmentRange {
+  int64 start = 1;
+  int64 end = 2;
+}
+
+message TimeRange {
+  int64 start = 1;
+  int64 end = 2;
+}
+
+message SegmentConfig {
+}

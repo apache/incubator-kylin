@@ -1,0 +1,154 @@
+{
+  "version.label": {
+    "message": "5.0.0",
+    "description": "The label for version current"
+  },
+  "sidebar.DocumentSideBar.category.Quick Start": {
+    "message": "快速启动",
+    "description": "The label for category Quick Start in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Deployment": {
+    "message": "部署",
+    "description": "The label for category Deployment in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Prerequisite": {
+    "message": "环境准备",
+    "description": "The label for category Prerequisite in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Configuration": {
+    "message": "配置",
+    "description": "The label for category Configuration in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Datasource": {
+    "message": "数据源",
+    "description": "The label for category Datasource in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Internal Table": {
+    "message": "内表",
+    "description": "The label for category Internal Table in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Model": {
+    "message": "模型",
+    "description": "The label for category Model in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Manual Modeling": {
+    "message": "手工建模",
+    "description": "The label for category Manual Modeling in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Recommendation": {
+    "message": "智能建模",
+    "description": "The label for category Recommendation in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Management": {
+    "message": "模型管理",
+    "description": "The label for category Management in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Advanced Features": {
+    "message": "高级功能",
+    "description": "The label for category Advanced Features in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Measures": {
+    "message": "度量",
+    "description": "The label for category Measures in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Streaming": {
+    "message": "实时功能",
+    "description": "The label for category Streaming in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Query": {
+    "message": "查询",
+    "description": "The label for category Query in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.SQL Specification": {
+    "message": "SQL 规范",
+    "description": "The label for category SQL Specification in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Advanced Functions": {
+    "message": "高级函数",
+    "description": "The label for category Advanced Functions in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Query Tuning": {
+    "message": "查询优化",
+    "description": "The label for category Query Tuning in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Query History": {
+    "message": "查询历史",
+    "description": "The label for category Query History in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Maintenance Guide": {
+    "message": "维护指南",
+    "description": "The label for category Maintenance Guide in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Project Managing": {
+    "message": "项目管理",
+    "description": "The label for category Project Managing in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Access Control": {
+    "message": "访问控制",
+    "description": "The label for category Access Control in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Data Access Control": {
+    "message": "数据访问控制",
+    "description": "The label for category Data Access Control in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.System Operation": {
+    "message": "系统管理",
+    "description": "The label for category System Operation in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Diagnosis": {
+    "message": "诊断",
+    "description": "The label for category Diagnosis in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.CLI Operation Tool": {
+    "message": "命令行工具",
+    "description": "The label for category CLI Operation Tool in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Job Monitoring": {
+    "message": "任务监控",
+    "description": "The label for category Job Monitoring in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.System Monitoring": {
+    "message": "系统监控",
+    "description": "The label for category System Monitoring in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.InfluxDB": {
+    "message": "InfluxDB",
+    "description": "The label for category InfluxDB in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Logs": {
+    "message": "日志",
+    "description": "The label for category Logs in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Integration": {
+    "message": "BI 集成",
+    "description": "The label for category Integration in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Rest API": {
+    "message": "Rest API",
+    "description": "The label for category Rest API in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Model Management": {
+    "message": "模型管理",
+    "description": "The label for category Model Management in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.ACL Management API": {
+    "message": "权限管理 API",
+    "description": "The label for category ACL Management API in sidebar DocumentSideBar"
+  },
+  "sidebar.DevelopmentSideBar.category.Development Guide": {
+    "message": "开发指南",
+    "description": "The label for category Development Guide in sidebar DevelopmentSideBar"
+  },
+  "sidebar.CommunitySideBar.doc.Community": {
+    "message": "社区",
+    "description": "The label for the doc item Community in sidebar CommunitySideBar, linking to the doc community"
+  },
+  "sidebar.CommunitySideBar.doc.Use Cases": {
+    "message": "使用案例",
+    "description": "The label for the doc item Use Cases in sidebar CommunitySideBar, linking to the doc poweredby"
+  },
+  "sidebar.DownloadSideBar.doc.Download": {
+    "message": "下载",
+    "description": "The label for the doc item Download in sidebar DownloadSideBar, linking to the doc download"
+  }
+}

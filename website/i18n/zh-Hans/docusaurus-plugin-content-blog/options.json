@@ -1,0 +1,14 @@
+{
+  "title": {
+    "message": "博客",
+    "description": "The title for the blog used in SEO"
+  },
+  "description": {
+    "message": "Kylin 5.0 技术博客",
+    "description": "The description for the blog used in SEO"
+  },
+  "sidebar.title": {
+    "message": "技术博客",
+    "description": "The label for the left sidebar"
+  }
+}
