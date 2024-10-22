@@ -1,0 +1,30 @@
+{
+  "title": {
+    "message": "Apache Kylin",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "Kylin Logo",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Documentation": {
+    "message": "文档",
+    "description": "Navbar item with label Documentation"
+  },
+  "item.label.Community": {
+    "message": "社区",
+    "description": "Navbar item with label Community"
+  },
+  "item.label.Development": {
+    "message": "开发者",
+    "description": "Navbar item with label Development"
+  },
+  "item.label.Download": {
+    "message": "下载",
+    "description": "Navbar item with label Download"
+  },
+  "item.label.Blogs": {
+    "message": "博客",
+    "description": "Navbar item with label Blogs"
+  }
+}
