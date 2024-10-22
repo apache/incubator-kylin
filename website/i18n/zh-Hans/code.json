@@ -331,7 +331,7 @@
     "description": "Smarter and Faster"
   },
   "Kylin is a high concurrency, high performance and intelligent OLAP engine that provides low-cost and ultimate data analytics experience.": {
-    "message": "Kylin是一款高并发、高性能、智能的DAB引擎，可提供低成本、终极的数据分析体验。",
+    "message": "Kylin是一款高并发、高性能、智能的 OLAP 引擎，可提供低成本、终极的数据分析体验。",
     "description": "siteConfig.tagline"
   },
   "What's New": {
