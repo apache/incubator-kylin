@@ -14,7 +14,7 @@
     "write-heading-ids": "docusaurus write-heading-ids"
   },
   "dependencies": {
-    "@cmfcmf/docusaurus-search-local": "^1.2.0",
+    "docusaurus-plugin-search-local": "^2.1.0",
     "@eightshift/ui-components": "^1.2.2",
     "@infinum/docusaurus-theme": "^0.5.0",
     "@docusaurus/core": "^3.5.2",
@@ -31,7 +31,7 @@
     "@docusaurus/types": "^3.5.2"
   },
   "overrides": {
-    "@cmfcmf/docusaurus-search-local": {
+    "docusaurus-plugin-search-local": {
       "@docusaurus/core": "^3.5.2"
     }
   },
