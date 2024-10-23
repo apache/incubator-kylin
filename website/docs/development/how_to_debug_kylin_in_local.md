@@ -53,7 +53,7 @@ Please visit [Software Requirement](how_to_package#software_reqiurement), and ma
 
 - Build front-end source code.
   
-    (Please use node.js **v18.20.4**, for how to use a specific version of node.js, please check [how to switch to a specific node js](how_to_package#install_older_node) )
+    (Please use node.js **v18.20.4**, for how to use a specific version of node.js, please check [how to switch to a specific node js](how_to_package#install_other_node) )
     
     ```shell
     cd kystudio

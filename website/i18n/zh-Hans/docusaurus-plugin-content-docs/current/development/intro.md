@@ -1,6 +1,6 @@
 ---
 title: 开发者指南
-language: en
+language: zh-Hans
 sidebar_label: Guide of Developer
 pagination_label: Guide of Developer
 toc_min_heading_level: 2

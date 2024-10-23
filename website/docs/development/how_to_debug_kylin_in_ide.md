@@ -49,7 +49,7 @@ mvn clean install -DskipTests
 ```
 
 - Build front-end source code. 
-(Please use node.js **v12.14.0**, for how to use a specific version of node.js, please check [how to switch to a specific node js](how_to_package#install_older_node) )
+(Please use node.js **v16.20.2**, for how to use a specific version of node.js, please check [how to switch to a specific node js](how_to_package#install_other_node) )
 ```shell
 cd kystudio
 npm install
