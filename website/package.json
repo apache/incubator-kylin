@@ -14,7 +14,7 @@
     "write-heading-ids": "docusaurus write-heading-ids"
   },
   "dependencies": {
-    "docusaurus-plugin-search-local": "^2.1.0",
+    "@easyops-cn/docusaurus-search-local":  "^0.45.0",
     "@eightshift/ui-components": "^1.2.2",
     "@infinum/docusaurus-theme": "^0.5.0",
     "@docusaurus/core": "^3.5.2",
