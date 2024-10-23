@@ -29,6 +29,7 @@ function getLastStableVersion() {
   }
   return lastStableVersion;
 }
+
 const announcedVersion = getAnnouncedVersion();
 
 function getLastStableVersionTuple(): [string, string, string] {
@@ -65,7 +66,7 @@ const config = {
 
   plugins: [
     [
-      require.resolve("docusaurus-plugin-search-local"),
+      require.resolve("@easyops-cn/docusaurus-search-local"),
       {
         // Options here
         // whether to index docs pages
@@ -77,6 +78,10 @@ const config = {
         // whether to index static pages
         // /404.html is never indexed
         indexPages: false,
+
+        hashed: true,
+        language: ["en", "zh"],
+
       },
     ],
   ],
