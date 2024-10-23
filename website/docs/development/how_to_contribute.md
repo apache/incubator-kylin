@@ -208,8 +208,8 @@ A patch which doesn't comply with the above rules may not get merged.
 
 ### Patch +1 Policy
 
-Patches that fit within the scope of a single component require, at least, a +1 by one of the component’s owners before commit. If owners are absent — busy or otherwise — two +1s by non-owners but committers will suffice.
+Patches that fit within the scope of a single component require, at least, a +1 by one of the component’s owners before commit. If owners are absent — busy or otherwise — two +1 by non-owners but committers will suffice.
 
-Patches that span components need at least two +1s before they can be committed, preferably +1s by owners of components touched by the x-component patch.
+Patches that span components need at least two +1 before they can be committed, preferably +1 by owners of components touched by the x-component patch.
 
 Any -1 on a patch by anyone vetoes a patch; it cannot be committed until the justification for the -1 is addressed.
