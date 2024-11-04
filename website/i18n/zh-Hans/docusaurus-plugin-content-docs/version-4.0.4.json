@@ -1,0 +1,26 @@
+{
+  "version.label": {
+    "message": "4.0.4",
+    "description": "The label for version 4.0.4"
+  },
+  "sidebar.DocumentSideBar.category.Getting Started": {
+    "message": "快速启动",
+    "description": "The label for category Getting Started in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Installation": {
+    "message": "Installation",
+    "description": "The label for category Installation in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Tutorial": {
+    "message": "Tutorial",
+    "description": "The label for category Tutorial in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.Integration": {
+    "message": "Integration",
+    "description": "The label for category Integration in sidebar DocumentSideBar"
+  },
+  "sidebar.DocumentSideBar.category.How To": {
+    "message": "How To",
+    "description": "The label for category How To in sidebar DocumentSideBar"
+  }
+}
