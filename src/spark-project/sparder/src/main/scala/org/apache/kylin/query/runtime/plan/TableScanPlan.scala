@@ -515,8 +515,15 @@ object TableScanPlan extends LogEx {
     val tableScan = rel.asInstanceOf[OlapTableScan]
     val project = QueryContext.current().getProject
     val tableIdentity = tableScan.getTableName
-    val allColumns = tableScan.getFields.map(idx => tableScan.getColumnRowType.getColumnByIndex(idx).getName)
-    val sql = f"select ${allColumns.mkString("`", "`, `", "`")} from INTERNAL_CATALOG.$project.$tableIdentity"
+    val allColumns = tableScan.getOlapTable.getSourceColumns.asScala
+      .map(
+        column =>
+          if (column.isComputedColumn || column.getZeroBasedIndex < 0) {
+            "1"
+          } else {
+            column.getBackTickName
+          })
+    val sql = f"select ${allColumns.mkString(",")} from INTERNAL_CATALOG.$project.$tableIdentity"
     sparkSession.sql(sql).queryExecution.analyzed
   }
 

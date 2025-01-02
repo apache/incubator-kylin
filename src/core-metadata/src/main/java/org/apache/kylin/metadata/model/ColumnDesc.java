@@ -163,6 +163,10 @@ public class ColumnDesc implements Serializable {
         return BACK_TICK + table.getName() + BACK_TICK + "." + BACK_TICK + getName() + BACK_TICK;
     }
 
+    public String getBackTickName() {
+        return BACK_TICK + getName() + BACK_TICK;
+    }
+
     @JsonSetter("name")
     public void setName(String name) {
         this.name = name;
